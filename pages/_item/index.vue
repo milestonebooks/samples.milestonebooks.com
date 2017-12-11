@@ -20,15 +20,15 @@ export default {
 }
 </script>
 
-<style scoped>
-/*$base-size: 10px;*/
+<style lang="scss" scoped>
+$base-size: 10px;
 
 .audio-player {
-  font: 10px/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
+  font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   background-color: green;
   box-sizing: border-box;
+  font-size: $base-size * 2.4;
   height: 26px;
-  font-size: 24px;
   padding: 0.25em;
 }
 </style>
