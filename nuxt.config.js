@@ -12,7 +12,10 @@ module.exports = {
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
       { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css' },
-    ]
+    ],
+    script: [
+      { src:'https://cdn.jsdelivr.net/npm/zepto@1.2.0/dist/zepto.min.js' }, // zepto: jquery substitute @9.9 KB gzipped (used by player)
+    ],
   },
   /*
   ** Customize the progress bar color

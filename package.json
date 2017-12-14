@@ -13,7 +13,9 @@
     "precommit": "npm run lint"
   },
   "dependencies": {
-    "nuxt": "^1.0.0-rc11"
+    "nuxt": "^1.0.0-rc11",
+    "vue-no-ssr": "^0.2.2",
+    "vue-slider-component": "^2.4.7"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",

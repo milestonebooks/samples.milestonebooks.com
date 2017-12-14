@@ -12,11 +12,18 @@ module.exports = {
   ],
   // add your custom rules here
   rules: {
-    'comma-dangle': ['off'],
-    'semi':         ['off'],
+    'key-spacing':    ['off'],
+    'comma-dangle':   ['off'],
+    'semi':           ['off'],
+    'spaced-comment': ['off'],
+    'space-before-function-paren': ['off'],
 
     'indent':                ['warn'],
     'no-constant-condition': ['warn'],
+    'no-undef':              ['warn'],
+    'no-extra-boolean-cast': ['warn'],
+    'no-unused-vars':        ['warn'],
+    'no-unreachable':        ['warn'],
   },
   globals: {}
 };
