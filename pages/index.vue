@@ -3,7 +3,7 @@
     <div>
       <logo/>
       <h1 class="title">
-        samples2
+        samples
       </h1>
       <h2 class="subtitle">
         Nuxt.js project
@@ -27,7 +27,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .container {
   min-height: 100vh;
   display: flex;

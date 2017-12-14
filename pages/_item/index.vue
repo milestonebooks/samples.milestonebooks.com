@@ -1,9 +1,8 @@
 <template>
   <aside class="audio-player">
     <div class="controls">
-      <button class="btn-play" tabindex="2">
-        <svg class="icon-play" width="28" viewBox="0 0 28 28"><path d="M6,2 l 21,12 -21,12 z"></path></svg>
-        <svg class="icon-pause" width="28" viewBox="0 0 28 28"><path d="M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z"></path></svg>
+      <button class="btn-play loading" tabindex="2">
+        <svg class="icon-play" width="28" viewBox="0 0 28 28"><path :d="btn_play_path"></path></svg>
       </button>
       <a class="prev" href="#">Prev</a>
       <a class="next" href="#">Next</a>
@@ -19,11 +18,13 @@
 </template>
 
 <script>
-// import Logo from '~/components/Logo.vue'
 
 export default {
-  components: {
-//    Logo
+  components: {},
+  computed: {
+    btn_play_path () {
+      return 'M6,2 l 21,12 -21,12';// : 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z');
+    }
   }
 }
 </script>
@@ -79,6 +80,29 @@ button {
   top: 0;
   fill: currentColor;
   margin: .6em;
+}
+
+.btn-play.loading::before {
+  position: absolute;
+  content: '';
+  left: 50%;
+  top: 50%;
+  margin: -2em;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: $color;
+  animation: sk-scaleout 1.0s infinite ease-in-out;
+}
+
+@keyframes sk-scaleout {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1.0);
+    opacity: 0;
+  }
 }
 
 $progress_height: 4px;

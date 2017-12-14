@@ -12,8 +12,11 @@ module.exports = {
   ],
   // add your custom rules here
   rules: {
-    "comma-dangle": ["off"],
-    "indent": ["warn"],
+    'comma-dangle': ['off'],
+    'semi':         ['off'],
+
+    'indent':                ['warn'],
+    'no-constant-condition': ['warn'],
   },
   globals: {}
 };
