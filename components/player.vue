@@ -26,7 +26,8 @@ export default {
 
   data () {
     return {
-      selHandle: '.bar-handle',
+      selDragbar: '.bar-seek',
+      selHandle:  '.bar-handle',
     }
   }, // data()
 
@@ -54,43 +55,36 @@ export default {
       // convenience to avoid triggering 'no-undef' compile warnings
       let $ = window.$;
 
-      $.fn.playhandle = function(o) {
-        o = o || {};
-        o.axis = (typeof o.axis === 'undefined' || o.axis === 'x' ? 'x' : 'y');
+      $(this.selHandle).on('mousedown touchstart', {this:this}, function(e) {
 
-        this.on('mousedown touchstart', function(e) {
-          let $dragbar = $(this).parents('.bar-seek').addClass('handle-dragging');
-          let minX = $dragbar.offset().left;
-          //t = undefined;
+        let dragClass = 'handle-dragging';
+        let $dragbar = $(this).parents(e.data.this.selDragbar).addClass(dragClass);
+        let minX = $dragbar.offset().left;
 
-          $(window).on('mousemove.playhandle touchmove.playhandle', function(e) {
-            let x = e.pageX;
-            let maxX = minX + $dragbar.width();
-            //width could change (based on loading state) during drag
+        $(window).on('mousemove touchmove', {this:e.data.this}, function(e) {
+          let x = e.pageX;
+          let maxX = minX + $dragbar.width();
+          // width could change (based on loading state) during drag
 
-            if (x < minX) x = minX;
-            if (x > maxX) x = maxX;
+          if (x < minX) x = minX;
+          if (x > maxX) x = maxX;
 
-            let pct = ((x - minX) / (maxX - minX)) * 100;
+          let pct = ((x - minX) / (maxX - minX)) * 100;
 
-            //if (typeof $JP !== 'undefined') $JP.jPlayer('playHead', pct);
-            $('.bar-play').css({width: pct + '%'});
-
-            e.preventDefault();
-          }).one('mouseup touchend touchcancel', function() {
-            $(this).off('mousemove.playhandle touchmove.playhandle click.playhandle');
-            $dragbar.removeClass('handle-dragging');
-            $('.bar-handle').focus();
-          });
+          //if (typeof $JP !== 'undefined') $JP.jPlayer('playHead', pct);
+          $('.bar-play').css({width: pct + '%'});
 
           e.preventDefault();
-        }).on('click', function(e) {
-          return false;
+        }).one('mouseup touchend touchcancel', function() {
+          $(this).off('mousemove touchmove click');
+          $dragbar.removeClass(dragClass);
+          $('.bar-handle').focus();
         });
-        return this;
-      };
 
-      $(this.selHandle).playhandle();
+        e.preventDefault();
+      }).on('click', function(e) {
+        return false;
+      });
     }, // initHandle()
   }, // methods{}
 };

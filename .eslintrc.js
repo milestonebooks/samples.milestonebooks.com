@@ -14,9 +14,12 @@ module.exports = {
   rules: {
     'key-spacing':    ['off'],
     'comma-dangle':   ['off'],
+    'comma-spacing':  ['off'],
     'semi':           ['off'],
+    'padded-blocks':  ['off'],
     'spaced-comment': ['off'],
     'space-before-function-paren': ['off'],
+    'space-before-blocks':         ['off'],
 
     'indent':                ['warn'],
     'no-constant-condition': ['warn'],
