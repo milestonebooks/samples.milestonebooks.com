@@ -26,14 +26,7 @@ export default {
 
   data () {
     return {
-      value: 50,
-      slider: {
-        width: '100%',
-        min: 0,
-        max: 100,
-        interval: 0.01,
-        value: 75,
-      },
+      selHandle: '.bar-handle',
     }
   }, // data()
 
@@ -41,67 +34,66 @@ export default {
     ...mapGetters({
       ui_class: 'player/ui_class'
     }),
-    btn_play_path () {
+    btn_play_path() {
       return this.$store.state.player.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : 'M6,2 l 21,12 -21,12';
     }
   }, // computed {}
 
   mounted() {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.init();
   },
 
   methods: {
-    init () {
-      if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
-      attachHandleFn('.bar-handle');
-    }
-  } // methods{}
+    init() {
+      this.initHandle();
+    }, // init()
+
+    // [adapted from: TimelessTruths.org < https://gist.github.com/Arty2/11199162]
+    initHandle() {
+      // convenience to avoid triggering 'no-undef' compile warnings
+      let $ = window.$;
+
+      $.fn.playhandle = function(o) {
+        o = o || {};
+        o.axis = (typeof o.axis === 'undefined' || o.axis === 'x' ? 'x' : 'y');
+
+        this.on('mousedown touchstart', function(e) {
+          let $dragbar = $(this).parents('.bar-seek').addClass('handle-dragging');
+          let minX = $dragbar.offset().left;
+          //t = undefined;
+
+          $(window).on('mousemove.playhandle touchmove.playhandle', function(e) {
+            let x = e.pageX;
+            let maxX = minX + $dragbar.width();
+            //width could change (based on loading state) during drag
+
+            if (x < minX) x = minX;
+            if (x > maxX) x = maxX;
+
+            let pct = ((x - minX) / (maxX - minX)) * 100;
+
+            //if (typeof $JP !== 'undefined') $JP.jPlayer('playHead', pct);
+            $('.bar-play').css({width: pct + '%'});
+
+            e.preventDefault();
+          }).one('mouseup touchend touchcancel', function() {
+            $(this).off('mousemove.playhandle touchmove.playhandle click.playhandle');
+            $dragbar.removeClass('handle-dragging');
+            $('.bar-handle').focus();
+          });
+
+          e.preventDefault();
+        }).on('click', function(e) {
+          return false;
+        });
+        return this;
+      };
+
+      $(this.selHandle).playhandle();
+    }, // initHandle()
+  }, // methods{}
 };
-
-// on ready...
-// [adapted from: TimelessTruths.org < https://gist.github.com/Arty2/11199162]
-function attachHandleFn(selector) {
-  // convenience to avoid triggering 'no-undef' compile warnings
-  let $ = window.$;
-
-  $.fn.playhandle = function(o) {
-    o = o || {};
-    o.axis = (typeof o.axis === 'undefined' || o.axis === 'x' ? 'x' : 'y');
-
-    this.on('mousedown touchstart', function(e) {
-      let $dragbar = $(this).parents('.bar-seek').addClass('handle-dragging');
-      let minX = $dragbar.offset().left;
-      //t = undefined;
-
-      $(window).on('mousemove.playhandle touchmove.playhandle', function(e) {
-        let x = e.pageX;
-        let maxX = minX + $dragbar.width();
-        //width could change (based on loading state) during drag
-
-        if (x < minX) x = minX;
-        if (x > maxX) x = maxX;
-
-        let pct = ((x - minX) / (maxX - minX)) * 100;
-
-        //if (typeof $JP !== 'undefined') $JP.jPlayer('playHead', pct);
-        $('.bar-play').css({width: pct + '%'});
-
-        e.preventDefault();
-      }).one('mouseup touchend touchcancel', function() {
-        $(this).off('mousemove.playhandle touchmove.playhandle click.playhandle');
-        $dragbar.removeClass('handle-dragging');
-        $('.bar-handle').focus();
-      });
-
-      e.preventDefault();
-    }).on('click', function(e) {
-      return false;
-    });
-    return this;
-  };
-
-  $(selector).playhandle();
-}
 </script>
 
 <style lang="scss" scoped>
