@@ -20,6 +20,8 @@
 <script>
 import { mapGetters } from 'vuex';
 
+import axios from 'axios';
+
 export default {
   components: {
   },
@@ -45,10 +47,19 @@ export default {
     this.init();
   },
 
+  watch: {
+    $route: 'update',
+  },
+
   methods: {
     init() {
       this.initHandle();
+      this.initAudioData();
     }, // init()
+
+    update() {
+      console.log('update', this.$route.params);
+    }, // update()
 
     // [adapted from: TimelessTruths.org < https://gist.github.com/Arty2/11199162]
     initHandle() {
@@ -86,6 +97,12 @@ export default {
         return false;
       });
     }, // initHandle()
+
+    async initAudioData() {
+      console.log('init item:', this.$route);
+      let res = await axios.get(`https://samples.milestonebooks.com/audio/${this.$route.params.item}/${this.$route.params.item}.json`);
+      this.store.commit('player/loadData', res.data);
+    } // initAudioData()
   }, // methods{}
 };
 </script>

@@ -2,6 +2,13 @@ export const state = () => ({
   init:       false,
   is_playing: true,
   is_loading: false,
+
+  list: [],
+  track: {
+    track:    null,
+    title:    null,
+    filepath: null,
+  },
 }); // state{}
 
 export const getters = {
@@ -17,6 +24,11 @@ export const mutations = {
   init (state) {
     state.init = true;
   },
+
+  loadData (state, data) {
+    state.data = data;
+  },
+
   play (state) {
     state.is_playing = true;
   },
