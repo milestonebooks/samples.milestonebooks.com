@@ -26,6 +26,7 @@ export const mutations = {
   },
 
   loadData (state, data) {
+    console.log('loadData() state{}', state);
     state.data = data;
   },
 

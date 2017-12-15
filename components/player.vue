@@ -93,7 +93,7 @@ export default {
         });
 
         e.preventDefault();
-      }).on('click', function(e) {
+      }).on('click', function() {
         return false;
       });
     }, // initHandle()
@@ -101,7 +101,8 @@ export default {
     async initAudioData() {
       console.log('init item:', this.$route);
       let res = await axios.get(`https://samples.milestonebooks.com/audio/${this.$route.params.item}/${this.$route.params.item}.json`);
-      this.store.commit('player/loadData', res.data);
+      this.$store.commit('setTitle', res.data.title);
+      this.$store.commit('player/loadData', res.data);
     } // initAudioData()
   }, // methods{}
 };

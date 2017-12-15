@@ -1,9 +1,9 @@
 export const state = () => ({
-  counter: 0
+  title: '',
 });
 
 export const mutations = {
-  increment (state) {
-    state.counter++
+  setTitle (state, title) {
+    state.title = title;
   }
-}
+};
