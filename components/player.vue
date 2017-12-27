@@ -38,7 +38,7 @@ export default {
       ui_class: 'player/ui_class'
     }),
     btn_play_path() {
-      return this.$store.state.player.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : 'M6,2 l 21,12 -21,12';
+      return (this.$store.state.player.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : 'M6,2 l 21,12 -21,12');
     }
   }, // computed {}
 
@@ -103,6 +103,7 @@ export default {
       let res = await axios.get(`https://samples.milestonebooks.com/audio/${this.$route.params.item}/${this.$route.params.item}.json`);
       this.$store.commit('setTitle', res.data.title);
       this.$store.commit('player/loadData', res.data);
+      this.$store.commit('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
     } // initAudioData()
   }, // methods{}
 };
