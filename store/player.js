@@ -3,14 +3,15 @@ export const state = () => ({
   is_playing: true,
   is_loading: false,
 
+  url_base: 'https://samples.milestonebooks.com/',
+  item: '',
   list: {},
   current: {
     track:    null,
     title:    null,
-    filepath: null,
   },
-  min_track: 0,
-  max_track: 99,
+  min_track: null,
+  max_track: null,
 }); // state{}
 
 export const getters = {
@@ -21,14 +22,12 @@ export const getters = {
     }
   }, // ui_class()
 
-  validateTrack: (state) => (track, inc = 1) => {
-    console.log('validate', track);
-    if (track < state.min_track) track = null;
-    if (track > state.max_track) track = null;
+  getValidTrack: (state) => (track, inc = 1) => {
+    if (track < state.min_track) track = state.min_track;
+    if (track > state.max_track) track = state.max_track;
     while (track && !state.list[track]) track += inc;
-    console.log('...',track);
     return track;
-  }, // validateTrack()
+  }, // getValidTrack()
 }; // getters{}
 
 export const mutations = {
@@ -36,17 +35,42 @@ export const mutations = {
     state.init = true;
   },
 
+  setItem (state, item) {
+    state.item = item;
+  },
+
   loadData (state, data) {
     state.list = data.index;
-    state.data = data;
+
+    for (let i of Object.keys(data.index)) {
+      if (state.min_track === null) state.min_track = +i;
+      if (+i > state.max_track) state.max_track = +i;
+    }
+    state._data = data;
   },
 
   loadTrack (state, track) {
     console.log('loadTrack',track);
-    //state.current.track = state.getters.validateTrack(track);
+
+    state.current = state.list[track];
+
+    if (!state.current.howl && state.list[track].file) {
+      state.current.howl = new Howl({
+        src: [state.url_base + state.list[track].file],
+        onload: function(id) {
+          console.log('onload');
+        },
+      });
+    }
   }, // loadTrack()
 
   play (state) {
     state.is_playing = true;
   },
 }; // mutations{}
+
+export const actions = {
+  loadTrack (store, track) {
+    store.commit('loadTrack', store.getters.getValidTrack(track));
+  }, // loadTrack()
+}; // actions{}

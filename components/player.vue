@@ -100,10 +100,11 @@ export default {
 
     async initAudioData() {
       console.log('init item:', this.$route);
-      let res = await axios.get(`https://samples.milestonebooks.com/audio/${this.$route.params.item}/${this.$route.params.item}.json`);
+      let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
       this.$store.commit('setTitle', res.data.title);
+      this.$store.commit('player/setItem', this.$route.params.item);
       this.$store.commit('player/loadData', res.data);
-      this.$store.commit('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
+      this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
     } // initAudioData()
   }, // methods{}
 };
