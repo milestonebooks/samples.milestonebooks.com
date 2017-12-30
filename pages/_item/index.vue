@@ -1,8 +1,8 @@
 <template>
   <div>
-    <h1>Above Player</h1>
+    <h1>Album: {{$store.state.title}}</h1>
     <player/>
-    <h2>Below Player</h2>
+    <h2>Track: {{$store.state.player.item}}</h2>
   </div>
 </template>
 
@@ -14,17 +14,11 @@ export default {
     Player,
   },
 
-  asyncData ({store}) {
-    return {
-      title: store.state.title,
-    }
-  },
-
   head () {
     return {
-      title: this.title,
+      title: this.$store.state.title,
     }
-  }
+  },
 };
 </script>
 

@@ -1,15 +1,15 @@
 <template>
   <aside :class="['audio-player', ui_class]">
     <div class="controls">
-      <button class="btn-play" tabindex="2">
+      <button class="btn-play" tabindex="2" @click="$store.commit('player/onPlayClick')">
         <svg class="icon-play" width="28" viewBox="0 0 28 28"><path :d="btn_play_path"></path></svg>
       </button>
       <a class="prev" href="#">Prev</a>
       <a class="next" href="#">Next</a>
     </div>
     <div class="bar-progress">
-      <div class="bar-seek">
-        <div class="bar-play">
+      <div class="bar-seek" :style="bar_seek_style">
+        <div class="bar-play" :style="bar_play_style">
           <a href="#handle" class="bar-handle" tabindex="1"></a>
         </div>
       </div>
@@ -35,10 +35,13 @@ export default {
 
   computed: {
     ...mapGetters({
-      ui_class: 'player/ui_class'
+      ui_class: 'player/ui_class',
+      bar_seek_style: 'player/bar_seek_style',
+      bar_play_style: 'player/bar_play_style',
     }),
     btn_play_path() {
-      return (this.$store.state.player.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : 'M6,2 l 21,12 -21,12');
+      let p = this.$store.state.player;
+      return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading ? '' : 'M6,2 l 21,12 -21,12'));
     }
   }, // computed {}
 
@@ -105,7 +108,16 @@ export default {
       this.$store.commit('player/setItem', this.$route.params.item);
       this.$store.commit('player/loadData', res.data);
       this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
-    } // initAudioData()
+    }, // initAudioData()
+
+    onPlay() {
+      let p = this.$store.state.player;
+      if (!p.is_playing) {
+        this.$store.commit('player/play', window.howls[p.current.track].play(p.current.howlID));
+      } else {
+        //this.$store.commit('')
+      }
+    }, // onPlay()
   }, // methods{}
 };
 </script>
@@ -198,7 +210,7 @@ $progress_height: 4px;
 
 .bar-seek {
   height: 100%;
-  width: 50%;
+  width: 0%;
   box-sizing: content-box;
   cursor: pointer;
   background-color: lighten($color, 50%);
@@ -214,7 +226,7 @@ $progress_height: 4px;
 
 .bar-play {
   height: 100%;
-  width: 50%;
+  width: 0%;
   box-sizing: content-box;
   border-right: 1px solid $player-bg-color;
   cursor: pointer;

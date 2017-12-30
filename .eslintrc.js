@@ -25,6 +25,7 @@ module.exports = {
     'no-constant-condition': ['warn'],
     'no-undef':              ['warn'],
     'no-extra-boolean-cast': ['warn'],
+    'no-extra-parens':       ['warn'],
     'no-unused-vars':        ['warn'],
     'no-unreachable':        ['warn'],
   },
