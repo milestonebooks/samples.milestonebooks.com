@@ -8,9 +8,11 @@
       <a class="next" href="#">Next</a>
     </div>
     <div class="bar-progress">
-      <div class="bar-seek" :style="bar_seek_style">
+      <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="bar_seek_style" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="bar_play_style">
-          <a href="#handle" class="bar-handle" tabindex="1"></a>
+          <a href="#handle" class="bar-handle" :style="bar_handle_style" tabindex="1">
+            <span class="bar-tip" :title="$store.state.player.tip"></span>
+          </a>
         </div>
       </div>
     </div>
@@ -28,16 +30,20 @@ export default {
 
   data () {
     return {
-      selDragbar: '.bar-seek',
-      selHandle:  '.bar-handle',
+      selSlider: '.bar-seek',
+      $slider: null,
+      selHandle: '.bar-handle',
+      moveCaptured: false,
+      minX: 0,
     }
   }, // data()
 
   computed: {
     ...mapGetters({
       ui_class: 'player/ui_class',
-      bar_seek_style: 'player/bar_seek_style',
-      bar_play_style: 'player/bar_play_style',
+      bar_seek_style:   'player/bar_seek_style',
+      bar_play_style:   'player/bar_play_style',
+      bar_handle_style: 'player/bar_handle_style',
     }),
     btn_play_path() {
       let p = this.$store.state.player;
@@ -47,59 +53,59 @@ export default {
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
+    this.bindEvents();
     this.init();
-  },
+  }, // mounted ()
+
+  beforeDestroy() {
+    this.unbindEvents();
+  }, // beforeDestroy ()
 
   watch: {
     $route: 'update',
   },
 
+  //====================================================================================================================
+
   methods: {
+
+    //------------------------------------------------------------------------------------------------------------------
+
     init() {
-      this.initHandle();
       this.initAudioData();
+      this.$slider = window.$(this.selSlider);
+      this.refresh();
     }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    bindEvents() {
+      document.addEventListener('touchmove',   this.moving, {passive: false});
+      document.addEventListener('mousemove',   this.moving);
+      document.addEventListener('touchend',    this.moveEnd, {passive: false});
+      document.addEventListener('touchcancel', this.moveEnd, {passive: false});
+      document.addEventListener('mouseup',     this.moveEnd);
+      window.addEventListener('resize',        this.refresh);
+    }, // bindEvents()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    unbindEvents() {
+      document.removeEventListener('touchmove',   this.moving);
+      document.removeEventListener('mousemove',   this.moving);
+      document.removeEventListener('touchend',    this.moveEnd);
+      document.removeEventListener('touchcancel', this.moveEnd);
+      document.removeEventListener('mouseup',     this.moveEnd);
+      window.removeEventListener('resize',        this.refresh)
+    }, // unbindEvents()
+
+    //------------------------------------------------------------------------------------------------------------------
 
     update() {
       console.log('update', this.$route.params);
     }, // update()
 
-    // [adapted from: TimelessTruths.org < https://gist.github.com/Arty2/11199162]
-    initHandle() {
-      // convenience to avoid triggering 'no-undef' compile warnings
-      let $ = window.$;
-
-      $(this.selHandle).on('mousedown touchstart', {this:this}, function(e) {
-
-        let dragClass = 'handle-dragging';
-        let $dragbar = $(this).parents(e.data.this.selDragbar).addClass(dragClass);
-        let minX = $dragbar.offset().left;
-
-        $(window).on('mousemove touchmove', {this:e.data.this}, function(e) {
-          let x = e.pageX;
-          let maxX = minX + $dragbar.width();
-          // width could change (based on loading state) during drag
-
-          if (x < minX) x = minX;
-          if (x > maxX) x = maxX;
-
-          let pct = ((x - minX) / (maxX - minX)) * 100;
-
-          //if (typeof $JP !== 'undefined') $JP.jPlayer('playHead', pct);
-          $('.bar-play').css({width: pct + '%'});
-
-          e.preventDefault();
-        }).one('mouseup touchend touchcancel', function() {
-          $(this).off('mousemove touchmove click');
-          $dragbar.removeClass(dragClass);
-          $('.bar-handle').focus();
-        });
-
-        e.preventDefault();
-      }).on('click', function() {
-        return false;
-      });
-    }, // initHandle()
+    //------------------------------------------------------------------------------------------------------------------
 
     async initAudioData() {
       console.log('init item:', this.$route);
@@ -110,15 +116,69 @@ export default {
       this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
     }, // initAudioData()
 
+    //------------------------------------------------------------------------------------------------------------------
+
     onPlay() {
       let p = this.$store.state.player;
       if (!p.is_playing) {
         this.$store.commit('player/play', window.howls[p.current.track].play(p.current.howlID));
-      } else {
-        //this.$store.commit('')
       }
     }, // onPlay()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    // adapted from <https://github.com/NightCatSama/vue-slider-component/blob/master/src/vue2-slider.vue>
+    moveStart(e) {
+      e.preventDefault();
+      this.minX = this.$slider.offset().left;
+      this.moveCaptured = true;
+      this.$store.commit('player/setCaptured', this.moveCaptured);
+      this.moving(e);
+    }, // moveStart()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    moving(e) {
+      if (!this.moveCaptured) return false;
+      e.preventDefault();
+
+      if (e.targetTouches && e.targetTouches[0]) e = e.targetTouches[0];
+
+      let x = e.pageX;
+      let minX = this.minX;
+      let maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
+
+      if (x < minX) x = minX;
+      if (x > maxX) x = maxX;
+
+      let pct = ((x - minX) / (maxX - minX)) * 100;
+
+      this.$store.dispatch('player/setPctHandle', pct);
+    }, // moving()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    moveEnd(e) {
+      if (!this.moveCaptured) return false;
+
+      this.moveCaptured = false;
+      this.$store.commit('player/setCaptured', this.moveCaptured);
+
+      if (this.$store.state.player.interrupted) this.$store.commit('player/sync', {from:'handle'});
+    }, // moveEnd()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    refresh() {
+      this.$store.commit('player/setCurrent', {pctPixel: 100 / this.$slider.width()});
+    }, // refresh()
+
+    //------------------------------------------------------------------------------------------------------------------
+
   }, // methods{}
+
+  //====================================================================================================================
+
 };
 </script>
 
@@ -238,18 +298,19 @@ $progress_height: 4px;
   top: 50%;
   height: 0;
   background-color: inherit;
+  cursor: ew-resize;
 }
 
 .bar-handle::before,
 .bar-handle::after {
   background-color: inherit;
   border-radius: 50%;
-  cursor: ew-resize;
   opacity: 0;
   left: 0;
   top: 0;
   width: 0;
   height: 0;
+  transform: translate(-50%, -50%);
   transition: all .2s ease;
 }
 
@@ -260,21 +321,44 @@ $progress_height: 4px;
   position: inherit;
 }
 
+.bar-seek.captured .bar-handle::before,
 .bar-handle:hover::before,
 .bar-handle:focus::before {
   opacity: .5;
-  left: -1.5em;
-  top: -1.5em;
   width: 3em;
   height: 3em;
+  transform: translate(-50%, -50%);
 }
 
+.bar-seek.captured .bar-handle::after,
 .bar-seek:hover .bar-handle::after,
 .bar-handle:focus::after {
   opacity: 1;
-  left: -.8em;
-  top: -.8em;
   width: 1.6em;
   height: 1.6em;
+  transform: translate(-50%, -50%);
+}
+
+.bar-tip {
+  font-family: Arial, serif;
+  font-size: 0px;
+  position: absolute;
+  bottom: 0;
+  transform: translate(-50%, -1.5em);
+  color: black;
+  background-color: transparentize($focus-color, .5);
+  border-radius: .5em;
+  transition: all .2s ease;
+}
+
+.bar-seek.captured .bar-tip,
+.bar-handle:hover .bar-tip,
+.bar-handle:focus .bar-tip {
+  font-size: 11px;
+  padding: .2em;
+}
+
+.bar-tip::after {
+  content: attr(title);
 }
 </style>
