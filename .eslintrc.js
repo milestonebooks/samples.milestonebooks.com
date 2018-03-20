@@ -18,6 +18,8 @@ module.exports = {
     'semi':           ['off'],
     'padded-blocks':  ['off'],
     'spaced-comment': ['off'],
+    'no-multi-spaces':['off'],
+    'camelcase':      ['off'],
     'space-before-function-paren': ['off'],
     'space-before-blocks':         ['off'],
 

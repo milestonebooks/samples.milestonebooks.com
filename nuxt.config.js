@@ -14,9 +14,8 @@ module.exports = {
       { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css' },
     ],
     script: [
-      // zepto (9.9KB)  -- jquery substitute used by player <http://zeptojs.com/>
-      // howler (8.6KB) -- audio library used by player <https://howlerjs.com/>
-      { src:'https://cdn.jsdelivr.net/combine/npm/zepto@1.2.0,npm/howler@2.0.5' },
+      // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
+      { src:'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
     ],
   },
   /*
@@ -39,6 +38,8 @@ module.exports = {
           exclude: /(node_modules)/
         })
       }
-    }
+    },
+
+    vendor: ['axios'],
   }
 };

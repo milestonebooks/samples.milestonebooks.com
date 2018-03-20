@@ -17,13 +17,14 @@
   },
   "dependencies": {
     "axios": "^0.17.1",
+    "howler": "^2.0.9",
     "nuxt": "^1.4.0",
     "vue-no-ssr": "^0.2.2",
-    "vue-slider-component": "^2.5.9"
+    "vue-slider-component": "^2.6.1"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",
-    "eslint": "^4.18.2",
+    "eslint": "^4.19.0",
     "eslint-config-standard": "^10.2.1",
     "eslint-loader": "^1.9.0",
     "eslint-plugin-html": "^3.1.1",
@@ -31,7 +32,7 @@
     "eslint-plugin-node": "^5.1.1",
     "eslint-plugin-promise": "^3.7.0",
     "eslint-plugin-standard": "^3.0.1",
-    "node-sass": "^4.8.2",
+    "node-sass": "^4.8.3",
     "sass-loader": "^6.0.7"
   }
 }
