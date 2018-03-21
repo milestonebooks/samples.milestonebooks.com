@@ -22,6 +22,7 @@ module.exports = {
     'camelcase':      ['off'],
     'space-before-function-paren': ['off'],
     'space-before-blocks':         ['off'],
+    'no-trailing-spaces':          ['off'],
 
     'indent':                ['warn'],
     'no-constant-condition': ['warn'],

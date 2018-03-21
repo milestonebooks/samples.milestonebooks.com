@@ -10,7 +10,7 @@
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="bar_seek_style" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="bar_play_style">
-          <a href="#handle" class="bar-handle" :style="bar_handle_style" tabindex="1">
+          <a href="#handle" class="bar-handle" ref="handle" :style="bar_handle_style" tabindex="1" @keydown="onKeyHandle">
             <span class="bar-tip" :title="$store.state.player.tip"></span>
           </a>
         </div>
@@ -34,6 +34,7 @@ export default {
       $slider: null,
       selHandle: '.bar-handle',
       moveCaptured: false,
+      keyActive: false,
       minX: 0,
     }
   }, // data()
@@ -127,31 +128,73 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    onKeyHandle(e) {
+      e.preventDefault();
+
+      // throttle
+      if (this.keyActive) return;
+
+      this.keyActive = true;
+
+      setTimeout(() => {
+        this.keyActive = false;
+      }, 100);
+
+      let pct = this.$store.state.player.current.pct;
+      let newPct = pct;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          newPct -= 5; break;
+        case 'ArrowRight':
+        case ' ':
+          newPct += 5; break;
+        case 'Home':
+          newPct = 0; break;
+        case 'End':
+          newPct = 100; break;
+        case 'Enter':
+          this.$store.commit('player/onPlayClick',false); break;
+      }
+
+      console.log('onKeyHandle()',e.key,'pct',pct,'newPct',newPct);
+      if (newPct !== pct) {
+        this.moveStart(e, newPct);
+        this.moveEnd(e);
+      }
+
+    }, // onKeyHandle()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     // adapted from <https://github.com/NightCatSama/vue-slider-component/blob/master/src/vue2-slider.vue>
-    moveStart(e) {
+    moveStart(e, pct) {
       e.preventDefault();
       this.minX = this.$slider.offset().left;
       this.moveCaptured = true;
       this.$store.commit('player/setCaptured', this.moveCaptured);
-      this.moving(e);
+      this.moving(e, pct);
     }, // moveStart()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    moving(e) {
+    moving(e, pct) {
       if (!this.moveCaptured) return false;
       e.preventDefault();
 
-      if (e.targetTouches && e.targetTouches[0]) e = e.targetTouches[0];
+      if (pct === undefined) {
 
-      let x = e.pageX;
-      let minX = this.minX;
-      let maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
+        if (e.targetTouches && e.targetTouches[0]) e = e.targetTouches[0];
 
-      if (x < minX) x = minX;
-      if (x > maxX) x = maxX;
+        let x = e.pageX;
+        let minX = this.minX;
+        let maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
 
-      let pct = ((x - minX) / (maxX - minX)) * 100;
+        if (x < minX) x = minX;
+        if (x > maxX) x = maxX;
+
+        pct = ((x - minX) / (maxX - minX)) * 100;
+      }
 
       this.$store.dispatch('player/setPctHandle', pct);
     }, // moving()
@@ -164,7 +207,11 @@ export default {
       this.moveCaptured = false;
       this.$store.commit('player/setCaptured', this.moveCaptured);
 
-      if (this.$store.state.player.interrupted) this.$store.commit('player/sync', {from:'handle'});
+      let p = this.$store.state.player;
+
+      if (!p.is_playing || p.interrupted) this.$store.commit('player/sync', {from:'handle'});
+
+      this.$refs.handle.focus();
     }, // moveEnd()
 
     //------------------------------------------------------------------------------------------------------------------

@@ -73,6 +73,12 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  isPctPixelMove: (state) => (pct, pctArg = 'pct') => {
+    return Math.abs(pct - state.current[pctArg]) > state.current.pctPixel;
+  }, // isPctPixelMove()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
 }; // getters{}
 
 //======================================================================================================================
@@ -117,12 +123,13 @@ export const mutations = {
   onLoad(state) {
     state.is_loading = false;
     state.current.duration = window.howls[state.current.track].duration();
+    console.log('onLoad()',state.current.duration);
   },
 
   //--------------------------------------------------------------------------------------------------------------------
 
   onPlayClick(state) {
-    if (state.is_loading) return false;
+    //if (state.is_loading) return false;
 
     let sound = window.howls[state.current.track];
 
@@ -139,6 +146,7 @@ export const mutations = {
 
   onEnd(state) {
 
+    state.is_playing = false;
     console.log('onEnd()'); // TODO
 
   }, // onEnd()
@@ -189,15 +197,16 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   sync(state, {from}) {
-    if (!state.interrupted) return;
+
+    if (state.is_playing && !state.interrupted) return;
 
     let sound = window.howls[state.current.track];
 
-    console.log('sync() from', from,' Interrupted?', state.interrupted, 'vol:', sound.volume(), state.current);
+    console.log('sync() from', from,' Interrupted?', state.interrupted, 'vol:', sound.volume(), ...state.current);
 
     if (from === 'handle') {
       sound.seek(state.current.duration * state.current.pctHandle / 100);
-      sound.fade(sound.volume() < 1 ? sound.volume() : 0, 1, 400);
+      if (state.is_playing) sound.fade(sound.volume() < 1 ? sound.volume() : 0, 1, 400);
     }
 
     state.interrupted = false;
@@ -215,6 +224,7 @@ export const actions = {
   //--------------------------------------------------------------------------------------------------------------------
 
   loadTrack({dispatch, commit, getters, state}, track) {
+
     track = getters.getValidTrack(track);
 
     commit('loadTrack', track);
@@ -225,20 +235,24 @@ export const actions = {
 
       window.howls[track] = new Howl({
         src: [state.url_base + state.list[track].file],
+        html5: true, // enable playing before loading is complete
         onload: () => { commit('onLoad') },
         onplay: () => { dispatch('setPct') },
+        onend:  () => { commit('onEnd') },
       });
     }
+
   }, // loadTrack()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setPct({dispatch, commit, state}) {
+  setPct({dispatch, commit, getters, state}) {
 
     let pct = (window.howls[state.current.track].seek() / state.current.duration) * 100;
 
-    if (Math.abs(pct - state.current.pct) > state.current.pctPixel) {
+    if (getters.isPctPixelMove(pct)) {
       commit('setCurrent', {pct});
+      if (!state.moveCaptured) commit('setCurrent', {pctHandle:pct});
     }
 
     if (state.is_playing) {
@@ -251,21 +265,24 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setPctHandle({dispatch, commit, state}, pct) {
+  setPctHandle({dispatch, commit, getters, state}, pct) {
+
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+
+    if (!getters.isPctPixelMove(pct, 'pctHandle')) return;
+
+    console.log('onPctHandle()',pct);
     commit('setCurrent', {pctHandle:pct});
 
-    if (state.is_playing) {
-      if (state.interrupted) commit('interrupt', null);
+    if (state.is_playing && state.interrupted) commit('interrupt', null);
 
-      let t = setTimeout(() => {
-        commit('sync', {from:'handle'});
-      }, 600);
-
-      commit('interrupt', t);
-
-    } else {
+    let t = setTimeout(() => {
       commit('sync', {from:'handle'});
-    }
+      if (!state.is_playing) dispatch('setPct');
+    }, state.is_playing ? 600 : 0);
+
+    if (state.is_playing) commit('interrupt', t);
 
   }, // setPctHandle()
 
