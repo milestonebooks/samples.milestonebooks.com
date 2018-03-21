@@ -11,7 +11,7 @@
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="bar_seek_style" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="bar_play_style">
           <a href="#handle" class="bar-handle" ref="handle" :style="bar_handle_style" tabindex="1" @keydown="onKeyHandle">
-            <span class="bar-tip" :title="$store.state.player.tip"></span>
+            <span class="bar-tip" :title="getHandleTip"></span>
           </a>
         </div>
       </div>
@@ -41,14 +41,15 @@ export default {
 
   computed: {
     ...mapGetters({
-      ui_class: 'player/ui_class',
+      ui_class:         'player/ui_class',
       bar_seek_style:   'player/bar_seek_style',
       bar_play_style:   'player/bar_play_style',
       bar_handle_style: 'player/bar_handle_style',
+      getHandleTip:     'player/getHandleTip',
     }),
     btn_play_path() {
       let p = this.$store.state.player;
-      return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading ? '' : 'M6,2 l 21,12 -21,12'));
+      return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading || !p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
     }
   }, // computed {}
 
@@ -76,6 +77,7 @@ export default {
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
       this.refresh();
+      this.$store.commit('player/init');
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -103,7 +105,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log('update', this.$route.params);
+      console.log('update() route!', this.$route.params);
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -157,7 +159,6 @@ export default {
           this.$store.commit('player/onPlayClick',false); break;
       }
 
-      console.log('onKeyHandle()',e.key,'pct',pct,'newPct',newPct);
       if (newPct !== pct) {
         this.moveStart(e, newPct);
         this.moveEnd(e);
@@ -259,6 +260,13 @@ button {
   padding: 0;
 }
 
+.audio-player:not(.is-init) .btn-play {
+  opacity: 0;
+}
+.audio-player:not(.is-init) .btn-play,
+.audio-player.is-loading .btn-play {
+  cursor: wait;
+}
 .btn-play {
   left: 0;
   top: 0;
@@ -317,7 +325,7 @@ $progress_height: 4px;
 
 .bar-seek {
   height: 100%;
-  width: 0%;
+  width: 0;
   box-sizing: content-box;
   cursor: pointer;
   background-color: lighten($color, 50%);
@@ -333,7 +341,7 @@ $progress_height: 4px;
 
 .bar-play {
   height: 100%;
-  width: 0%;
+  width: 0;
   box-sizing: content-box;
   border-right: 1px solid $player-bg-color;
   cursor: pointer;
@@ -388,7 +396,7 @@ $progress_height: 4px;
 
 .bar-tip {
   font-family: Arial, serif;
-  font-size: 0px;
+  font-size: 0;
   position: absolute;
   bottom: 0;
   transform: translate(-50%, -1.5em);

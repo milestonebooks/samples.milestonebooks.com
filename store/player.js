@@ -11,7 +11,6 @@ export const state = () => ({
   url_base: 'https://samples.milestonebooks.com/',
   item: '',
   list: {},
-  tip: '',
   current: {
     track: null,
     title: null,
@@ -32,6 +31,7 @@ export const getters = {
 
   ui_class (state) {
     return {
+      'is-init':    state.init,
       'is-playing': state.is_playing,
       'is-loading': state.is_loading,
     }
@@ -76,6 +76,16 @@ export const getters = {
   isPctPixelMove: (state) => (pct, pctArg = 'pct') => {
     return Math.abs(pct - state.current[pctArg]) > state.current.pctPixel;
   }, // isPctPixelMove()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  getHandleTip (state) {
+    let sec = Math.floor(state.current.duration * state.current.pctHandle / 100);
+    let min = Math.floor(sec / 60);
+    sec -= min * 60;
+
+    return (min + '').padStart(2, '0') + ':' + (sec + '').padStart(2, '0');
+  }, // getHandleTip()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -129,7 +139,7 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   onPlayClick(state) {
-    //if (state.is_loading) return false;
+    if (state.is_loading) return false;
 
     let sound = window.howls[state.current.track];
 
@@ -153,17 +163,6 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  updateTip(state) {
-    let sound = window.howls[state.current.track];
-    let sec = Math.floor(sound.seek());
-    let min = Math.floor(sec / 60);
-    sec -= min * 60;
-
-    state.tip = (min + '').padStart(2, '0') + ':' + (sec + '').padStart(2, '0');
-  }, // updateTip()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   setCaptured(state, is_captured) {
     state.is_captured = is_captured;
   }, // setCaptured()
@@ -181,7 +180,6 @@ export const mutations = {
     if (t) {
       if (!state.interrupted) {
         let sound = window.howls[state.current.track];
-        console.log('interrupt() vol:', sound.volume());
         sound.fade(sound.volume(), 0, 400);
       }
       state.interrupt_t = t;
@@ -201,8 +199,6 @@ export const mutations = {
     if (state.is_playing && !state.interrupted) return;
 
     let sound = window.howls[state.current.track];
-
-    console.log('sync() from', from,' Interrupted?', state.interrupted, 'vol:', sound.volume(), ...state.current);
 
     if (from === 'handle') {
       sound.seek(state.current.duration * state.current.pctHandle / 100);
@@ -248,11 +244,12 @@ export const actions = {
 
   setPct({dispatch, commit, getters, state}) {
 
-    let pct = (window.howls[state.current.track].seek() / state.current.duration) * 100;
+    let sec = window.howls[state.current.track].seek();
+    let pct = (sec / state.current.duration) * 100;
 
     if (getters.isPctPixelMove(pct)) {
       commit('setCurrent', {pct});
-      if (!state.moveCaptured) commit('setCurrent', {pctHandle:pct});
+      if (!state.is_captured) commit('setCurrent', {pctHandle:pct});
     }
 
     if (state.is_playing) {
@@ -272,7 +269,6 @@ export const actions = {
 
     if (!getters.isPctPixelMove(pct, 'pctHandle')) return;
 
-    console.log('onPctHandle()',pct);
     commit('setCurrent', {pctHandle:pct});
 
     if (state.is_playing && state.interrupted) commit('interrupt', null);
