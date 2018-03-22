@@ -87,13 +87,17 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   prevTitle (state) {
-    return 'Prev ()';
+    let list = Object.keys(state.list).map(i => +i);
+    let i = list.indexOf(state.current.track);
+    return (i === -1 || i === 0 ? '' : `Prev: ${state.list[list[--i]].title}`);
   }, // prevTitle()
 
   //--------------------------------------------------------------------------------------------------------------------
 
   nextTitle (state) {
-    return 'Next ()';
+    let list = Object.keys(state.list).map(i => +i);
+    let i = list.indexOf(state.current.track);
+    return (i === -1 || i === list.length - 1 ? '' : `Next: ${state.list[list[++i]].title}`);
   }, // nextTitle()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -103,7 +107,7 @@ export const getters = {
     let min = Math.floor(sec / 60);
     sec -= min * 60;
 
-    return (min + '').padStart(2, '0') + ':' + (sec + '').padStart(2, '0');
+    return `${min > 9 ? '' : '0'}${min}:${sec > 9 ? '' : '0'}${sec}`;
   }, // handleTip()
 
   //--------------------------------------------------------------------------------------------------------------------

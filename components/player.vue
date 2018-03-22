@@ -1,16 +1,16 @@
 <template>
   <aside :class="['audio-player', uiClass]">
     <div class="controls">
-      <button class="btn-play" tabindex="2" :title="playTitle" @click="$store.commit('player/onPlayClick')">
+      <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/onPlayClick')">
         <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
-      <button class="btn-prev" :title="prevTitle">Prev</button>
-      <button class="btn-next" :title="nextTitle">Next</button>
+      <button class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled"><svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon></button>
+      <button class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled"><svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon></button>
     </div>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a href="#handle" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="1" @keydown="onKeyHandle">
+          <a href="#handle" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onKeyHandle">
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -33,6 +33,7 @@ export default {
 
   data () {
     return {
+      baseSize: '10px',
       selSlider: '.bar-seek',
       $slider: null,
       selHandle: '.bar-handle',
@@ -56,7 +57,21 @@ export default {
     btnPlayPath() {
       let p = this.$store.state.player;
       return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading || !p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
-    }
+    },
+    btnPrevPath() {
+      return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
+    },
+    btnNextPath() {
+      return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
+    },
+    prevDisabled() {
+      let p = this.$store.state.player;
+      return p.current.track === p.min_track;
+    },
+    nextDisabled() {
+      let p = this.$store.state.player;
+      return p.current.track === p.max_track;
+    },
   }, // computed {}
 
   mounted() {
@@ -135,8 +150,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onKeyHandle(e) {
-      e.preventDefault();
-
       // throttle
       if (this.keyActive) return;
 
@@ -153,14 +166,16 @@ export default {
         case 'ArrowLeft':
           newPct -= 5; break;
         case 'ArrowRight':
-        case ' ':
           newPct += 5; break;
         case 'Home':
           newPct = 0; break;
         case 'End':
           newPct = 100; break;
         case 'Enter':
+        case ' ': // duplicate play button behavior
           this.$store.commit('player/onPlayClick',false); break;
+        default:
+          return; // ignore all other keys
       }
 
       if (newPct !== pct) {
@@ -168,6 +183,7 @@ export default {
         this.moveEnd(e);
       }
 
+      e.preventDefault();
     }, // onKeyHandle()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -236,9 +252,10 @@ export default {
 
 <style lang="scss" scoped>
 $base-size: 10px;
-$unit: 4.8em;
+$unit: 4em;
 $player-bg-color: white;
 $color: black;
+$disabled-color: lighten($color, 90%);
 $focus-color: hsla(30,100%,50%,1);
 
 .audio-player {
@@ -247,8 +264,7 @@ $focus-color: hsla(30,100%,50%,1);
   background-color: $player-bg-color;
   box-sizing: border-box;
   font-size: $base-size;
-  height: 4.8em;
-  padding: 0.4em;
+  height: $unit;
 }
 
 .audio-player * {
@@ -258,10 +274,43 @@ $focus-color: hsla(30,100%,50%,1);
   outline: none;
 }
 
+.audio-player:not(.is-multi) .opt-multi {
+  opacity: 0;
+  transition: all .2s ease;
+}
+
+.controls {
+  width: 100%;
+  height: 100%;
+}
+
 button {
   background: none;
   border: none;
+  box-sizing: content-box;
   padding: 0;
+  width: $unit;
+  height: $unit;
+  overflow: hidden;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all .2s ease;
+  color: $disabled-color;
+}
+button:not(:disabled) {
+  cursor: pointer;
+  color: $color;
+}
+button:not(:disabled):focus,
+button:not(:disabled):hover {
+  color: $focus-color;
+}
+
+button svg {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  fill: currentColor;
 }
 
 .audio-player:not(.is-init) .btn-play {
@@ -273,25 +322,7 @@ button {
 }
 .btn-play {
   left: 0;
-  top: 0;
-  box-sizing: content-box;
-  width: 4em;
-  height: 4em;
-  overflow: hidden;
   border-radius: 50%;
-  cursor: pointer;
-  color: $color;
-  transition: all .2s ease;
-}
-.btn-play:focus,
-.btn-play:hover {
-  color: $focus-color;
-}
-.btn-play svg {
-  left: 0;
-  top: 0;
-  fill: currentColor;
-  margin: .6em;
 }
 
 .is-loading .btn-play::before {
@@ -318,17 +349,17 @@ button {
 }
 
 .btn-prev {
-
+  right: 1 * $unit;
 }
 
 .btn-next {
-
+  right: 0;
 }
 
 .bar-progress {
   left: 1.5 * $unit;
   right: .5 * $unit;
-  background-color: lighten($color, 90%);
+  background-color: $disabled-color;
   height: 4px;
   top: 50%;
   transform: translateY(-50%);
