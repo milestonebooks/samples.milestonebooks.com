@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>Album: {{$store.state.player.title}}</h1>
-    <player/>
+    <player />
     <h2>Track: {{$store.state.player.item}}</h2>
   </div>
 </template>
@@ -19,6 +19,9 @@ export default {
       title: this.$store.state.player.title,
     }
   },
+
+  methods: {
+  }
 };
 </script>
 

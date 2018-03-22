@@ -122,9 +122,9 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setItem(state, item) {
-    state.item = item;
-  }, // setItem()
+  setCurrent(state, o) {
+    state.current = {...state.current, ...o};
+  }, // setCurrent()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -182,18 +182,6 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setCaptured(state, is_captured) {
-    state.is_captured = is_captured;
-  }, // setCaptured()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  setCurrent(state, args) {
-    state.current = {...state.current, ...args};
-  }, // setCurrent()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   interrupt(state, t) {
 
     if (t) {
@@ -238,7 +226,7 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  loadTrack({dispatch, commit, getters, state}, track) {
+  async loadTrack({dispatch, commit, getters, state}, track) {
 
     track = getters.getValidTrack(track);
 
@@ -248,12 +236,14 @@ export const actions = {
 
     if (!window.howls[track] && state.list[track].file) {
 
-      window.howls[track] = new Howl({
-        src: [state.url_base + state.list[track].file],
-        html5: true, // enable playing before loading is complete
-        onload: () => { commit('onLoad') },
-        onplay: () => { dispatch('setPct') },
-        onend:  () => { commit('onEnd') },
+      await new Promise((resolve) => {
+        window.howls[track] = new Howl({
+          src: [state.url_base + state.list[track].file],
+          html5: true, // enable playing before loading is complete
+          onload: () => { commit('onLoad'); resolve(); },
+          onplay: () => { dispatch('setPct') },
+          onend:  () => { commit('onEnd') },
+        });
       });
     }
 

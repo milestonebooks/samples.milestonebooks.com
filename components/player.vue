@@ -79,6 +79,7 @@ export default {
 
     ...mapMutations('player',[
       'set',
+      'setCurrent',
     ]),
 
     //------------------------------------------------------------------------------------------------------------------
@@ -86,8 +87,8 @@ export default {
     init() {
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
-      this.refresh();
       this.set({init:true});
+      this.refresh();
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -123,11 +124,12 @@ export default {
     async initAudioData() {
       console.log('init item:', this.$route);
       let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
-      this.set({title:res.data.title});
-      this.$store.commit('setTitle', res.data.title);
-      this.$store.commit('player/setItem', this.$route.params.item);
+      this.set({title: res.data.title});
+      this.set({item: this.$route.params.item});
       this.$store.commit('player/loadData', res.data);
-      this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
+      this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,'')).then(() => {
+        this.refresh();
+      });
     }, // initAudioData()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -175,7 +177,7 @@ export default {
       e.preventDefault();
       this.minX = this.$slider.offset().left;
       this.moveCaptured = true;
-      this.$store.commit('player/setCaptured', this.moveCaptured);
+      this.set({is_captured: this.moveCaptured});
       this.moving(e, pct);
     }, // moveStart()
 
@@ -208,7 +210,7 @@ export default {
       if (!this.moveCaptured) return false;
 
       this.moveCaptured = false;
-      this.$store.commit('player/setCaptured', this.moveCaptured);
+      this.set({is_captured: this.moveCaptured});
 
       let p = this.$store.state.player;
 
@@ -220,7 +222,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     refresh() {
-      this.$store.commit('player/setCurrent', {pctPixel: 100 / this.$slider.width()});
+      this.setCurrent({pctPixel: 100 / this.$slider.width()});
     }, // refresh()
 
     //------------------------------------------------------------------------------------------------------------------
