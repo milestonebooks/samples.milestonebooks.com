@@ -4,8 +4,8 @@
       <button class="btn-play" tabindex="2" :title="playTitle" @click="$store.commit('player/onPlayClick')">
         <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
-      <a class="prev" href="#prev" :title="prevTitle">Prev</a>
-      <a class="next" href="#next" :title="nextTitle">Next</a>
+      <button class="btn-prev" :title="prevTitle">Prev</button>
+      <button class="btn-next" :title="nextTitle">Next</button>
     </div>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
