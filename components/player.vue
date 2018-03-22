@@ -102,7 +102,7 @@ export default {
     init() {
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
-      this.set({init:true});
+      this.set({is_init:true});
       this.refresh();
     }, // init()
 
@@ -137,7 +137,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initAudioData() {
-      console.log('init item:', this.$route);
+      console.log('is_init item:', this.$route);
       let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
       this.set({title: res.data.title});
       this.set({item: this.$route.params.item});
@@ -376,7 +376,7 @@ button svg {
   background-color: lighten($color, 50%);
 }
 
-.bar-seek::before {
+.bar-seek::before { /* enables wider target zone */
   display: inherit;
   width: 100%;
   top: -.8em;

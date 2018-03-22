@@ -1,7 +1,7 @@
 import {Howl} from 'howler';
 
 export const state = () => ({
-  init:        false,
+  is_init:     false,
   is_playing:  false,
   is_loading:  false,
   is_captured: false,
@@ -31,7 +31,7 @@ export const getters = {
 
   uiClass (state) {
     return {
-      'is-init':    state.init,
+      'is-init':    state.is_init,
       'is-playing': state.is_playing,
       'is-loading': state.is_loading,
       'is-multi':   state.min_track !== state.max_track,
@@ -42,7 +42,7 @@ export const getters = {
 
   barSeekStyle (state) {
     return {
-      'width': (state.is_loading ? '0%' : '100%'),
+      'width': (!state.is_init || state.is_loading ? '0%' : '100%'),
     }
   }, // barSeekStyle()
 
@@ -81,7 +81,7 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   playTitle (state) {
-    return (state.is_playing ? 'Pause' : (state.init && !state.is_loading ? 'Play' : ''));
+    return (state.is_playing ? 'Pause' : (state.is_init && !state.is_loading ? 'Play' : ''));
   }, // playTitle()
 
   //--------------------------------------------------------------------------------------------------------------------
