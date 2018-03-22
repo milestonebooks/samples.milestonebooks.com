@@ -79,6 +79,12 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  getPlayTitle (state) {
+    return (state.is_playing ? 'Pause' : (state.init && !state.is_loading ? 'Play' : ''));
+  }, // getPlayTitle()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
   getHandleTip (state) {
     let sec = Math.floor(state.current.duration * state.current.pctHandle / 100);
     let min = Math.floor(sec / 60);

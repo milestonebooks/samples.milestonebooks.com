@@ -1,7 +1,7 @@
 <template>
   <aside :class="['audio-player', ui_class]">
     <div class="controls">
-      <button class="btn-play" tabindex="2" @click="$store.commit('player/onPlayClick')">
+      <button class="btn-play" tabindex="2" :title="getPlayTitle" @click="$store.commit('player/onPlayClick')">
         <svg class="icon-play" width="28" viewBox="0 0 28 28"><path :d="btn_play_path"></path></svg>
       </button>
       <a class="prev" href="#">Prev</a>
@@ -45,6 +45,7 @@ export default {
       bar_seek_style:   'player/bar_seek_style',
       bar_play_style:   'player/bar_play_style',
       bar_handle_style: 'player/bar_handle_style',
+      getPlayTitle:     'player/getPlayTitle',
       getHandleTip:     'player/getHandleTip',
     }),
     btn_play_path() {
