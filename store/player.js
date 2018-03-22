@@ -29,38 +29,39 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  ui_class (state) {
+  uiClass (state) {
     return {
       'is-init':    state.init,
       'is-playing': state.is_playing,
       'is-loading': state.is_loading,
+      'is-multi':   state.min_track !== state.max_track,
     }
-  }, // ui_class()
+  }, // uiClass()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  bar_seek_style (state) {
+  barSeekStyle (state) {
     return {
       'width': (state.is_loading ? '0%' : '100%'),
     }
-  },
+  }, // barSeekStyle()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  bar_play_style (state) {
+  barPlayStyle (state) {
     return {
       'width': `${state.current.pct}%`,
     }
-  },
+  }, // barPlayStyle
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  bar_handle_style (state) {
+  barHandleStyle (state) {
     return {
       'left':  (state.is_captured ? (state.current.pctHandle / state.current.pct) * 100 + '%' : 'unset'),
       'right': (state.is_captured ? 'unset' : '0'),
     }
-  },
+  }, // barHandleStyle()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -79,19 +80,31 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  getPlayTitle (state) {
+  playTitle (state) {
     return (state.is_playing ? 'Pause' : (state.init && !state.is_loading ? 'Play' : ''));
-  }, // getPlayTitle()
+  }, // playTitle()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  getHandleTip (state) {
+  prevTitle (state) {
+    return 'Prev ()';
+  }, // prevTitle()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  nextTitle (state) {
+    return 'Next ()';
+  }, // nextTitle()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  handleTip (state) {
     let sec = Math.floor(state.current.duration * state.current.pctHandle / 100);
     let min = Math.floor(sec / 60);
     sec -= min * 60;
 
     return (min + '').padStart(2, '0') + ':' + (sec + '').padStart(2, '0');
-  }, // getHandleTip()
+  }, // handleTip()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -103,15 +116,15 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  init(state) {
-    state.init = true;
-  },
+  set(state, o) {
+    Object.keys(o).map((key) => { state[key] = o[key] });
+  }, // set()
 
   //--------------------------------------------------------------------------------------------------------------------
 
   setItem(state, item) {
     state.item = item;
-  },
+  }, // setItem()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -123,7 +136,7 @@ export const mutations = {
       if (+i > state.max_track) state.max_track = +i;
     }
     state._data = data;
-  },
+  }, // loadData()
 
   //--------------------------------------------------------------------------------------------------------------------
 

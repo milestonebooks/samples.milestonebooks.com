@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Album: {{$store.state.title}}</h1>
+    <h1>Album: {{$store.state.player.title}}</h1>
     <player/>
     <h2>Track: {{$store.state.player.item}}</h2>
   </div>
@@ -16,7 +16,7 @@ export default {
 
   head () {
     return {
-      title: this.$store.state.title,
+      title: this.$store.state.player.title,
     }
   },
 };

@@ -1,17 +1,17 @@
 <template>
-  <aside :class="['audio-player', ui_class]">
+  <aside :class="['audio-player', uiClass]">
     <div class="controls">
-      <button class="btn-play" tabindex="2" :title="getPlayTitle" @click="$store.commit('player/onPlayClick')">
-        <svg class="icon-play" width="28" viewBox="0 0 28 28"><path :d="btn_play_path"></path></svg>
+      <button class="btn-play" tabindex="2" :title="playTitle" @click="$store.commit('player/onPlayClick')">
+        <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
-      <a class="prev" href="#">Prev</a>
-      <a class="next" href="#">Next</a>
+      <a class="prev" href="#prev" :title="prevTitle">Prev</a>
+      <a class="next" href="#next" :title="nextTitle">Next</a>
     </div>
     <div class="bar-progress">
-      <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="bar_seek_style" @mousedown="moveStart" @touchstart="moveStart">
-        <div class="bar-play" :style="bar_play_style">
-          <a href="#handle" class="bar-handle" ref="handle" :style="bar_handle_style" tabindex="1" @keydown="onKeyHandle">
-            <span class="bar-tip" :title="getHandleTip"></span>
+      <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
+        <div class="bar-play" :style="barPlayStyle">
+          <a href="#handle" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="1" @keydown="onKeyHandle">
+            <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
       </div>
@@ -20,12 +20,15 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import SvgIcon from './svg-icon.vue';
+
+import { mapGetters, mapMutations } from 'vuex';
 
 import axios from 'axios';
 
 export default {
   components: {
+    SvgIcon,
   },
 
   data () {
@@ -40,15 +43,17 @@ export default {
   }, // data()
 
   computed: {
-    ...mapGetters({
-      ui_class:         'player/ui_class',
-      bar_seek_style:   'player/bar_seek_style',
-      bar_play_style:   'player/bar_play_style',
-      bar_handle_style: 'player/bar_handle_style',
-      getPlayTitle:     'player/getPlayTitle',
-      getHandleTip:     'player/getHandleTip',
-    }),
-    btn_play_path() {
+    ...mapGetters('player',[
+      'uiClass',
+      'barSeekStyle',
+      'barPlayStyle',
+      'barHandleStyle',
+      'playTitle',
+      'prevTitle',
+      'nextTitle',
+      'handleTip',
+    ]),
+    btnPlayPath() {
       let p = this.$store.state.player;
       return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading || !p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
     }
@@ -72,13 +77,17 @@ export default {
 
   methods: {
 
+    ...mapMutations('player',[
+      'set',
+    ]),
+
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
       this.refresh();
-      this.$store.commit('player/init');
+      this.set({init:true});
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -114,20 +123,12 @@ export default {
     async initAudioData() {
       console.log('init item:', this.$route);
       let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
+      this.set({title:res.data.title});
       this.$store.commit('setTitle', res.data.title);
       this.$store.commit('player/setItem', this.$route.params.item);
       this.$store.commit('player/loadData', res.data);
       this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,''));
     }, // initAudioData()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onPlay() {
-      let p = this.$store.state.player;
-      if (!p.is_playing) {
-        this.$store.commit('player/play', window.howls[p.current.track].play(p.current.howlID));
-      }
-    }, // onPlay()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -314,14 +315,24 @@ button {
   }
 }
 
-$progress_height: 4px;
+.btn-prev {
+
+}
+
+.btn-next {
+
+}
 
 .bar-progress {
   left: 1.5 * $unit;
   right: .5 * $unit;
   background-color: lighten($color, 90%);
-  height: $progress_height;
-  top: calc(50% - #{$progress_height}/2);
+  height: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.is-multi .bar-progress {
+  right: 2.5 * $unit;
 }
 
 .bar-seek {
