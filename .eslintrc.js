@@ -31,6 +31,7 @@ module.exports = {
     'no-extra-parens':       ['warn'],
     'no-unused-vars':        ['warn'],
     'no-unreachable':        ['warn'],
+    'space-infix-ops':       ['warn'],
   },
   globals: {}
 };

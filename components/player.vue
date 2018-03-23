@@ -4,8 +4,12 @@
       <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/onPlayClick')">
         <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
-      <button class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled"><svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon></button>
-      <button class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled"><svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon></button>
+      <button class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" @click="changeTrack(-1)">
+        <svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon>
+      </button>
+      <button class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled" @click="changeTrack(+1)">
+        <svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon>
+      </button>
     </div>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
@@ -66,11 +70,11 @@ export default {
     },
     prevDisabled() {
       let p = this.$store.state.player;
-      return p.current.track === p.min_track;
+      return !p.current.track || p.current.track === p.min_track;
     },
     nextDisabled() {
       let p = this.$store.state.player;
-      return p.current.track === p.max_track;
+      return !p.current.track || p.current.track === p.max_track;
     },
   }, // computed {}
 
@@ -132,6 +136,7 @@ export default {
 
     update() {
       console.log('update() route!', this.$route.params);
+      this.loadTrack(this.$route.hash.replace(/\D/g,''));
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -142,10 +147,22 @@ export default {
       this.set({title: res.data.title});
       this.set({item: this.$route.params.item});
       this.$store.commit('player/loadData', res.data);
-      this.$store.dispatch('player/loadTrack', +this.$route.hash.replace(/\D/g,'')).then(() => {
+      this.update();
+    }, // initAudioData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async loadTrack(track) {
+      await this.$store.dispatch('player/loadTrack', track).then(() => {
         this.refresh();
       });
-    }, // initAudioData()
+    }, // loadTrack()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    changeTrack(dir = 1) {
+      this.$router.push('#' + (this.$store.state.player.current.track + dir));
+    }, // changeTrack()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -163,6 +180,7 @@ export default {
       let newPct = pct;
 
       switch (e.key) {
+        case 'Backspace':
         case 'ArrowLeft':
           newPct -= 5; break;
         case 'ArrowRight':
@@ -238,6 +256,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     refresh() {
+      console.log('refresh() width', this.$slider.width());
       this.setCurrent({pctPixel: 100 / this.$slider.width()});
     }, // refresh()
 
@@ -369,11 +388,18 @@ button svg {
 }
 
 .bar-seek {
-  height: 100%;
-  width: 0;
+  height: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
   box-sizing: content-box;
   cursor: pointer;
   background-color: lighten($color, 50%);
+  transition: height .5s ease, background-color .5s ease;
+}
+
+.is-loading .bar-seek {
+  background-color: $disabled-color;
 }
 
 .bar-seek::before { /* enables wider target zone */

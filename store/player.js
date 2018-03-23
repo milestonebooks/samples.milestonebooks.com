@@ -42,7 +42,7 @@ export const getters = {
 
   barSeekStyle (state) {
     return {
-      'width': (!state.is_init || state.is_loading ? '0%' : '100%'),
+      'height': (!state.is_init || !state.current.track || state.is_loading ? '0' : '100%'),
     }
   }, // barSeekStyle()
 
@@ -66,7 +66,7 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   getValidTrack: (state) => (track, inc = 1) => {
-    if (track < state.min_track) track = state.min_track;
+    if (isNaN(track) || track < state.min_track) track = state.min_track;
     if (track > state.max_track) track = state.max_track;
     while (track && !state.list[track]) track += inc;
     return track;
@@ -135,13 +135,18 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   loadData(state, data) {
-    state.list = data.index;
+    let min = null;
+    let max = null;
 
     for (let i of Object.keys(data.index)) {
-      if (state.min_track === null) state.min_track = +i;
-      if (+i > state.max_track) state.max_track = +i;
+      if (min === null) min = +i;
+      if (+i > max) max = +i;
     }
-    state._data = data;
+
+    state.list = data.index;
+    state.min_track = min;
+    state.max_track = max;
+    state._data = data; // for debugging only
   }, // loadData()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -234,7 +239,10 @@ export const actions = {
 
   async loadTrack({dispatch, commit, getters, state}, track) {
 
-    track = getters.getValidTrack(track);
+    track = getters.getValidTrack(+track);
+
+    if (state.is_playing) commit('onPlayClick');
+    dispatch('setPct',0);
 
     commit('loadTrack', track);
 
@@ -251,16 +259,20 @@ export const actions = {
           onend:  () => { commit('onEnd') },
         });
       });
+    } else {
+      commit('onLoad');
     }
 
   }, // loadTrack()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setPct({dispatch, commit, getters, state}) {
+  setPct({dispatch, commit, getters, state}, pct) {
 
-    let sec = window.howls[state.current.track].seek();
-    let pct = (sec / state.current.duration) * 100;
+    if (pct === undefined) {
+      let sec = window.howls[state.current.track].seek();
+      pct = (sec / state.current.duration) * 100;
+    }
 
     if (getters.isPctPixelMove(pct)) {
       commit('setCurrent', {pct});
