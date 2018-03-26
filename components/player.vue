@@ -1,7 +1,7 @@
 <template>
   <aside :class="['audio-player', uiClass]">
     <div class="controls">
-      <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/onPlayClick')">
+      <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
         <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
       <button class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" @click="changeTrack(-1)">
@@ -191,7 +191,7 @@ export default {
           newPct = 100; break;
         case 'Enter':
         case ' ': // duplicate play button behavior
-          this.$store.commit('player/onPlayClick',false); break;
+          this.$store.commit('player/togglePlay',false); break;
         default:
           return; // ignore all other keys
       }

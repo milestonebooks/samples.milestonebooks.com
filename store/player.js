@@ -168,8 +168,9 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  onPlayClick(state) {
+  togglePlay(state) {
     if (state.is_loading) return false;
+    console.log('togglePlay()',`current: ${state.current.track} [${state.current.howlID}]`);
 
     let sound = window.howls[state.current.track];
 
@@ -180,7 +181,7 @@ export const mutations = {
       sound.pause(state.current.howlID);
       state.is_playing = false;
     }
-  }, // onPlayClick()
+  }, // togglePlay()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -238,10 +239,11 @@ export const actions = {
   //--------------------------------------------------------------------------------------------------------------------
 
   async loadTrack({dispatch, commit, getters, state}, track) {
+    console.log('loadTrack()',track,`current: ${state.current.track} [${state.current.howlID}]`);
 
     track = getters.getValidTrack(+track);
 
-    if (state.is_playing) commit('onPlayClick');
+    if (state.is_playing) commit('togglePlay');
     dispatch('setPct',0);
 
     commit('loadTrack', track);
