@@ -163,22 +163,20 @@ export const mutations = {
   onLoad(state) {
     state.is_loading = false;
     state.current.duration = window.howls[state.current.track].duration();
-    console.log('onLoad()',state.current.duration);
   },
 
   //--------------------------------------------------------------------------------------------------------------------
 
   togglePlay(state) {
     if (state.is_loading) return false;
-    console.log('togglePlay()',`current: ${state.current.track} [${state.current.howlID}]`);
 
     let sound = window.howls[state.current.track];
 
     if (!state.is_playing) {
-      state.current.howlID = sound.play(state.current.howlID);
+      sound.play();
       state.is_playing = true;
     } else {
-      sound.pause(state.current.howlID);
+      sound.pause();
       state.is_playing = false;
     }
   }, // togglePlay()
@@ -188,7 +186,7 @@ export const mutations = {
   onEnd(state) {
 
     state.is_playing = false;
-    console.log('onEnd()'); // TODO
+    console.log('onEnd() TODO: if auto_next'); // TODO
 
   }, // onEnd()
 
@@ -215,7 +213,7 @@ export const mutations = {
 
   sync(state, {from}) {
 
-    if (state.is_playing && !state.interrupted) return;
+    if (!state.current.track || (state.is_playing && !state.interrupted)) return;
 
     let sound = window.howls[state.current.track];
 
@@ -239,12 +237,10 @@ export const actions = {
   //--------------------------------------------------------------------------------------------------------------------
 
   async loadTrack({dispatch, commit, getters, state}, track) {
-    console.log('loadTrack()',track,`current: ${state.current.track} [${state.current.howlID}]`);
 
     track = getters.getValidTrack(+track);
 
-    if (state.is_playing) commit('togglePlay');
-    dispatch('setPct',0);
+    await dispatch('reset');
 
     commit('loadTrack', track);
 
@@ -269,7 +265,7 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setPct({dispatch, commit, getters, state}, pct) {
+  async setPct({dispatch, commit, getters, state}, pct) {
 
     if (pct === undefined) {
       let sec = window.howls[state.current.track].seek();
@@ -291,7 +287,7 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setPctHandle({dispatch, commit, getters, state}, pct) {
+  async setPctHandle({dispatch, commit, getters, state}, pct) {
 
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
@@ -310,6 +306,18 @@ export const actions = {
     if (state.is_playing) commit('interrupt', t);
 
   }, // setPctHandle()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async reset({dispatch, commit, state}) {
+    // pause audio to avoid fades
+    if (state.is_playing) commit('togglePlay');
+
+    // resets state, then handle, then audio
+    await dispatch('setPct',0);
+    commit('sync', {from:'handle'});
+
+  }, // reset()
 
   //--------------------------------------------------------------------------------------------------------------------
 

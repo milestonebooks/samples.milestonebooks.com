@@ -135,7 +135,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log('update() route!', this.$route.params);
       this.loadTrack(this.$route.hash.replace(/\D/g,''));
     }, // update()
 
@@ -256,7 +255,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     refresh() {
-      console.log('refresh() width', this.$slider.width());
       this.setCurrent({pctPixel: 100 / this.$slider.width()});
     }, // refresh()
 
