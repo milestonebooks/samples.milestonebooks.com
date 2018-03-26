@@ -12,6 +12,7 @@ module.exports = {
   ],
   // add your custom rules here
   rules: {
+    'one-var':        ['off'],
     'key-spacing':    ['off'],
     'comma-dangle':   ['off'],
     'comma-spacing':  ['off'],
@@ -24,7 +25,9 @@ module.exports = {
     'space-before-blocks':         ['off'],
     'no-trailing-spaces':          ['off'],
 
+    'eqeqeq':                ['warn'],
     'indent':                ['warn'],
+    'new-parens':            ['warn'],
     'no-constant-condition': ['warn'],
     'no-undef':              ['warn'],
     'no-extra-boolean-cast': ['warn'],

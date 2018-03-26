@@ -1,12 +1,28 @@
 import {Howl} from 'howler';
 
+// [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
+let storage = (function() {
+  let uid = new Date,
+    storage,
+    result;
+  try {
+    (storage = window.localStorage).setItem(uid, uid);
+    result = storage.getItem(uid) === '' + uid;
+    storage.removeItem(uid);
+    return result && storage;
+  } catch (exception) {}
+}());
+
 export const state = () => ({
-  is_init:     false,
-  is_playing:  false,
-  is_loading:  false,
-  is_captured: false,
-  interrupted: false,
-  interrupt_t: null,
+  is_init:      false,
+  is_playing:   false,
+  is_loading:   false,
+  is_captured:  false,
+  interrupted:  false,
+  interrupt_t:  null,
+
+  is_auto_play: true,
+  is_auto_next: true,
 
   url_base: 'https://samples.milestonebooks.com/',
   item: '',
@@ -151,19 +167,19 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  loadTrack(state, track) {
-    console.log('loadTrack',track);
+  setTrack(state, track) {
+    console.log('setTrack',track);
 
     state.current = {...state.current, ...state.list[track]};
     state.is_loading = true;
-  }, // loadTrack()
+  }, // setTrack()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  onLoad(state) {
+  setLoaded(state) {
     state.is_loading = false;
     state.current.duration = window.howls[state.current.track].duration();
-  },
+  }, // setLoaded()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -180,15 +196,6 @@ export const mutations = {
       state.is_playing = false;
     }
   }, // togglePlay()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  onEnd(state) {
-
-    state.is_playing = false;
-    console.log('onEnd() TODO: if auto_next'); // TODO
-
-  }, // onEnd()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -242,7 +249,7 @@ export const actions = {
 
     await dispatch('reset');
 
-    commit('loadTrack', track);
+    commit('setTrack', track);
 
     window.howls = window.howls || {};
 
@@ -252,16 +259,23 @@ export const actions = {
         window.howls[track] = new Howl({
           src: [state.url_base + state.list[track].file],
           html5: true, // enable playing before loading is complete
-          onload: () => { commit('onLoad'); resolve(); },
+          onload: async () => { await dispatch('onLoad'); resolve(); },
           onplay: () => { dispatch('setPct') },
-          onend:  () => { commit('onEnd') },
+          onend:  () => { dispatch('onEnd') },
         });
       });
     } else {
-      commit('onLoad');
+      dispatch('onLoad');
     }
 
   }, // loadTrack()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async onLoad({commit, state}) {
+    commit('setLoaded');
+    if (state.is_auto_play) commit('togglePlay');
+  }, // onLoad()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -306,6 +320,14 @@ export const actions = {
     if (state.is_playing) commit('interrupt', t);
 
   }, // setPctHandle()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async onEnd({dispatch, state}) {
+
+    if (!state.is_auto_next || state.current.track === state.max_track) await dispatch('reset');
+
+  }, // onEnd()
 
   //--------------------------------------------------------------------------------------------------------------------
 

@@ -81,6 +81,9 @@ export default {
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
+    this.$store.subscribeAction((action, state) => {
+      if (action.type === 'player/onEnd' && state.player.is_auto_next && state.player.current.track !== state.player.max_track) this.changeTrack(+1);
+    });
     this.init();
   }, // mounted ()
 
