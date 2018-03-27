@@ -37,6 +37,8 @@ export const state = () => ({
   },
   min_track: null,
   max_track: null,
+
+  error: '',
 }); // state{}
 
 //======================================================================================================================
@@ -183,6 +185,12 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  setError(state, error) {
+    state.error = error;
+  }, // setError()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
   togglePlay(state) {
     if (state.is_loading) return false;
 
@@ -260,11 +268,10 @@ export const actions = {
           src: [state.url_base + state.list[track].file],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
-          onloaderror: async (id, error) => { await dispatch('onLoadError', {id, error}); reject(new Error({id, error})); },
+          onloaderror: async (id, error) => { await dispatch('onLoadError', error); reject(error); },
           onplay: () => { dispatch('setPct') },
           onend:  () => { dispatch('onEnd') },
         });
-        window.howls[track].on('loaderror')
       });
     } else {
       dispatch('onLoad');
@@ -282,9 +289,7 @@ export const actions = {
   //--------------------------------------------------------------------------------------------------------------------
 
   async onLoadError({commit, state}, error) {
-
-    console.log('onLoadError()...', error);
-
+    commit('setError', 'Unable to load audio.');
   }, // onLoadError()
 
   //--------------------------------------------------------------------------------------------------------------------

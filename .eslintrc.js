@@ -35,6 +35,7 @@ module.exports = {
     'no-unused-vars':        ['warn'],
     'no-unreachable':        ['warn'],
     'space-infix-ops':       ['warn'],
+    'handle-callback-err':   ['warn'],
   },
   globals: {}
 };

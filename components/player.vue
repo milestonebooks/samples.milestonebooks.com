@@ -155,10 +155,10 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async loadTrack(track) {
-      await this.$store.dispatch('player/loadTrack', track).catch((err) => {
-        console.log('loadTrack() error',err);
+      await this.$store.dispatch('player/loadTrack', track).catch((err_code) => {
+        // TODO: show error message
+        console.log('loadTrack() error:',err_code, this.$store.state.player.error);
       });
-      console.log('refresh()->');
       this.refresh();
     }, // loadTrack()
 
