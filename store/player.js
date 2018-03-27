@@ -255,14 +255,16 @@ export const actions = {
 
     if (!window.howls[track] && state.list[track].file) {
 
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
         window.howls[track] = new Howl({
           src: [state.url_base + state.list[track].file],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
+          onloaderror: async (id, error) => { await dispatch('onLoadError', {id, error}); reject(new Error({id, error})); },
           onplay: () => { dispatch('setPct') },
           onend:  () => { dispatch('onEnd') },
         });
+        window.howls[track].on('loaderror')
       });
     } else {
       dispatch('onLoad');
@@ -276,6 +278,14 @@ export const actions = {
     commit('setLoaded');
     if (state.is_auto_play) commit('togglePlay');
   }, // onLoad()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async onLoadError({commit, state}, error) {
+
+    console.log('onLoadError()...', error);
+
+  }, // onLoadError()
 
   //--------------------------------------------------------------------------------------------------------------------
 

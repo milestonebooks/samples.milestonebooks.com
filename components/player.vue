@@ -155,9 +155,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async loadTrack(track) {
-      await this.$store.dispatch('player/loadTrack', track).then(() => {
-        this.refresh();
+      await this.$store.dispatch('player/loadTrack', track).catch((err) => {
+        console.log('loadTrack() error',err);
       });
+      console.log('refresh()->');
+      this.refresh();
     }, // loadTrack()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -271,12 +273,29 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+
+// adapted from <https://gist.github.com/tqc/2564280>
+@function colorConvertAlpha($colorA, $colorB:white) {
+  $hA: hue($colorA);
+  $sA: saturation($colorA);
+  $lA: lightness($colorA);
+  $a: alpha($colorA);
+  $hB: hue($colorB);
+  $sB: saturation($colorB);
+  $lB: lightness($colorB);
+  $h: round(((1 - $a) * $hB) + ($a * $hA));
+  $s: round(((1 - $a) * $sB) + ($a * $sA));
+  $l: round(((1 - $a) * $lB) + ($a * $lA));
+  @return hsl($h, $s, $l);
+}
+
 $base-size: 10px;
 $unit: 4em;
 $player-bg-color: white;
 $color: black;
 $disabled-color: lighten($color, 90%);
 $focus-color: hsla(30,100%,50%,1);
+$focus-color: hsla(22, 85%,43%,1);
 
 .audio-player {
   position: relative;
@@ -395,7 +414,7 @@ button svg {
   width: 100%;
   box-sizing: content-box;
   cursor: pointer;
-  background-color: lighten($color, 50%);
+  background-color: lighten($color, 75%);
   transition: height .5s ease, background-color .5s ease;
 }
 
@@ -473,7 +492,8 @@ button svg {
   bottom: 0;
   transform: translate(-50%, -1.5em);
   color: black;
-  background-color: transparentize($focus-color, .5);
+  background-color: colorConvertAlpha(transparentize($focus-color, .5));
+  border: 0.2em solid white;
   border-radius: .5em;
   transition: all .2s ease;
 }
@@ -482,7 +502,7 @@ button svg {
 .bar-handle:hover .bar-tip,
 .bar-handle:focus .bar-tip {
   font-size: 11px;
-  padding: .2em;
+  padding: 0 .2em .2em;
 }
 
 .bar-tip::after {
