@@ -1,5 +1,5 @@
 export const state = () => ({
-  title: '',
+  title: 'Audio Player',
 });
 
 export const mutations = {
