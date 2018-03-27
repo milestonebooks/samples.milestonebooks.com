@@ -2,7 +2,7 @@
   <div>
     <h1>Album: {{$store.state.player.title}}</h1>
     <player />
-    <h2>Track: {{$store.state.player.item}}</h2>
+    <h2>Track: {{$store.state.player.current.title}}</h2>
   </div>
 </template>
 
@@ -15,8 +15,9 @@ export default {
   },
 
   head () {
+    let p = this.$store.state.player;
     return {
-      title: this.$store.state.player.title,
+      title: (!p.current.track ? this.$store.state.title : `(${p.current.track})${p.current.title ? ' ' + p.current.title : ''} • ${p.title}`)
     }
   },
 
