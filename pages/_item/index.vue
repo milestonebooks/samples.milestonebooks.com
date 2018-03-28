@@ -1,19 +1,17 @@
 <template>
-  <main>
+  <main :class="mainClass">
     <header>
       <h1 class="album-title">{{headerTitle}}</h1>
       <player />
     </header>
 
     <div class="info">
-      <section v-if="$store.state.player.current.score" :class="['score', {'is-loaded': $store.state.player.current.scoreIsLoaded}]" v-images-loaded:on.progress="imageProgress">
-        <a title="Click for printable PDF..." :href="$store.state.player.current.print">
-          <img :src="$store.state.player.current.score" />
-          <div class="print-note">
-            <span class="glue">Click the sheet music to open a printable PDF,</span>
-            <span class="glue"> and then press Ctrl+P to print</span>
-          </div>
-        </a>
+      <section v-if="$store.state.player.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
+        <img :src="$store.state.player.current.score" />
+        <div class="print-note">
+          <span class="glue">Click the sheet music to open a printable PDF,</span>
+          <span class="glue"> and then press Ctrl+P to print</span>
+        </div>
       </section>
     </div>
   </main>
@@ -50,9 +48,31 @@ export default {
   },
 
   computed: {
+    mainClass() {
+      return {
+        'is-loaded': this.$store.state.player.title,
+      }
+    },
+
     headerTitle() {
       let p = this.$store.state.player;
-      return !p.current.track ? 'Loading album...' : `${p.title} (${p.current.track})`;
+      return !p.current.track ? 'loading album...' : `${p.title} (${p.current.track})`;
+    },
+
+    scoreClass() {
+      let p = this.$store.state.player;
+      return {
+        'is-loaded': p.current.scoreIsLoaded,
+        'is-printable': this.isPrintable,
+      }
+    },
+
+    isPrintable() {
+      return !!this.$store.state.player.current.print;
+    },
+
+    scoreTip() {
+      return this.isPrintable ? 'Click for printable PDF...' : '';
     },
   }, // computed{}
 
@@ -74,6 +94,12 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    print() {
+      window.location = this.$store.state.player.current.print;
+    }, // print()
+
+    //------------------------------------------------------------------------------------------------------------------
+
   }, // methods{}
 
   //====================================================================================================================
@@ -83,6 +109,7 @@ export default {
 <style lang="scss">
 $backgroundColor: #def;
 $themeColor: #c51;
+$radius: .5em;
 
 @mixin drop-shadow() {
   box-shadow: 0 0 1em transparentize(darken($backgroundColor, 75%), .75);
@@ -102,7 +129,7 @@ main {
 
 header {
   background-color: white;
-  border-radius: 0 0 .5em .5em;
+  border-radius: 0 0 $radius $radius;
   @include drop-shadow();
 }
 
@@ -118,7 +145,7 @@ header {
   color: $themeColor;
 }
 .audio-player {
-  border-radius: .5em;
+  border-radius: $radius;
 }
 
 .info {
@@ -128,6 +155,7 @@ header {
 }
 
 .score {
+  position:relative;
   margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above score while playing
   background-color: white;
   @include drop-shadow();
@@ -137,20 +165,14 @@ header {
 .score.is-loaded {
   opacity: 1;
 }
-.score a {
-  display:inline-block;
-  position:relative;
-  background-color:white;
-  text-decoration:none;
-  /* preserves location of .print-note, even when img is not loaded */
-  width: 600px;
-  vertical-align:top;
+.score.is-printable {
+  cursor: pointer;
 }
 .score img {
   position: relative;
-  outline: 25px solid white;
-  margin-top: 25px;
+  margin: 25px 0;
 }
+
 .print-note {
   position:absolute;
   top:50px;
@@ -166,12 +188,15 @@ header {
   overflow:hidden;
   background-color:white;
   opacity:1;
+  left: 50%;
+  transform: translateX(-50%);
   transition: opacity 1s;
 }
 .print-note.highlight {
   background-color:white;
   animation: highlight-fade 3s;
 }
+
 @keyframes highlight-fade {
   0%, 70% {
     background-color:yellow;
@@ -180,7 +205,7 @@ header {
     background-color:white;
   }
 }
-.score a:hover .print-note {
+.score:hover .print-note {
   opacity:0;
   transition: opacity 1s;
 }

@@ -1,6 +1,7 @@
 import {Howl} from 'howler';
 
 // [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
+/*
 let storage = (function() {
   let uid = new Date,
     storage,
@@ -12,6 +13,7 @@ let storage = (function() {
     return result && storage;
   } catch (exception) {}
 }());
+//*/
 
 export const state = () => ({
   is_init:      false,
