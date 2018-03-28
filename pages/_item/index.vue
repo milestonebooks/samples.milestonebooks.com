@@ -1,12 +1,12 @@
 <template>
   <main>
     <header>
-      <h1 class="album-title">Album: {{$store.state.player.title}}</h1>
+      <h1 class="album-title">{{headerTitle}}</h1>
       <player />
     </header>
 
     <div class="info">
-      <section class="score" v-if="$store.state.player.current.score">
+      <section v-if="$store.state.player.current.score" :class="['score', {'is-loaded': $store.state.player.current.scoreIsLoaded}]" v-images-loaded:on.progress="imageProgress">
         <a title="Click for printable PDF..." :href="$store.state.player.current.print">
           <img :src="$store.state.player.current.score" />
           <div class="print-note">
@@ -22,9 +22,15 @@
 <script>
 import Player from '~/components/player.vue';
 
+let imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
+
 export default {
   components: {
     Player,
+  },
+
+  directives: {
+    imagesLoaded
   },
 
   head () {
@@ -39,16 +45,46 @@ export default {
     }
   },
 
+  watch: {
+    $route: 'update',
+  },
+
+  computed: {
+    headerTitle() {
+      let p = this.$store.state.player;
+      return !p.current.track ? 'Loading album...' : `${p.title} (${p.current.track})`;
+    },
+  }, // computed{}
+
+  //====================================================================================================================
+
   methods: {
-  }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    update() {
+      console.log('update() route...', this.$route.hash);
+    }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    imageProgress(instance, image) {
+      this.$store.commit('player/setCurrent', {scoreIsLoaded: image.isLoaded});
+    }, // imageProgress()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+  }, // methods{}
+
+  //====================================================================================================================
 };
 </script>
 
 <style lang="scss">
 $backgroundColor: #def;
+$themeColor: #c51;
 
 @mixin drop-shadow() {
-  box-shadow: 0 0 1em hsla(210, 100%, 25%, .25);
   box-shadow: 0 0 1em transparentize(darken($backgroundColor, 75%), .75);
 }
 
@@ -79,7 +115,7 @@ header {
   margin: 0;
   padding: 0.5em;
   text-align: center;
-  color: #c51;
+  color: $themeColor;
 }
 .audio-player {
   border-radius: .5em;
@@ -92,8 +128,14 @@ header {
 }
 
 .score {
-  margin-top: 1em;
+  margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above score while playing
+  background-color: white;
   @include drop-shadow();
+  opacity: 0;
+  transition: all .5s ease;
+}
+.score.is-loaded {
+  opacity: 1;
 }
 .score a {
   display:inline-block;

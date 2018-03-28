@@ -21,7 +21,8 @@ module.exports = {
   /*
   ** Customize the progress bar color
   */
-  loading: { color: '#3B8070' },
+  loading: { color: '#c51' },
+
   /*
   ** Build configuration
   */
@@ -40,6 +41,9 @@ module.exports = {
       }
     },
 
-    vendor: ['axios'],
+    vendor: [
+      'axios',
+      'vue-images-loaded',
+    ],
   }
 };

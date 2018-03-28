@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -19,8 +19,8 @@
     "axios": "^0.17.1",
     "howler": "^2.0.9",
     "nuxt": "^1.4.0",
-    "vue-no-ssr": "^0.2.2",
-    "vue-slider-component": "^2.6.1"
+    "vue-images-loaded": "^1.1.2",
+    "vue-no-ssr": "^0.2.2"
   },
   "devDependencies": {
     "babel-eslint": "^7.2.3",

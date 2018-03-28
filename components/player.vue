@@ -4,17 +4,17 @@
       <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
         <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
       </button>
-      <button class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" @click="changeTrack(-1)">
+      <nuxt-link class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" :to="prevTrack" tag="button">
         <svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon>
-      </button>
-      <button class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled" @click="changeTrack(+1)">
+      </nuxt-link>
+      <nuxt-link class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled" :to="nextTrack" tag="button">
         <svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon>
-      </button>
+      </nuxt-link>
     </div>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a href="#handle" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onKeyHandle">
+          <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onKeyHandle" @click.prevent="">
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -29,9 +29,11 @@ import SvgIcon from './svg-icon.vue';
 import { mapGetters, mapMutations } from 'vuex';
 
 import axios from 'axios';
+import NuxtLink from '../.nuxt/components/nuxt-link'
 
 export default {
   components: {
+    NuxtLink,
     SvgIcon,
   },
 
@@ -76,13 +78,19 @@ export default {
       let p = this.$store.state.player;
       return !p.current.track || p.current.track === p.max_track;
     },
+    prevTrack() {
+      return '#' + (this.$store.state.player.current.track - 1);
+    },
+    nextTrack() {
+      return '#' + (this.$store.state.player.current.track + 1);
+    },
   }, // computed {}
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action, state) => {
-      if (action.type === 'player/onEnd' && state.player.is_auto_next && state.player.current.track !== state.player.max_track) this.changeTrack(+1);
+      if (action.type === 'player/onEnd' && state.player.is_auto_next) this.changeTrack(+1);
     });
     this.init();
   }, // mounted ()
@@ -165,7 +173,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     changeTrack(dir = 1) {
-      this.$router.push('#' + (this.$store.state.player.current.track + dir));
+      let p = this.$store.state.player;
+      let track = p.current.track + dir;
+      if (p.list[track]) this.$router.push('#' + track);
     }, // changeTrack()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -502,7 +512,8 @@ button svg {
 .bar-handle:hover .bar-tip,
 .bar-handle:focus .bar-tip {
   font-size: 11px;
-  padding: 0 .2em .2em;
+  line-height: 11px;
+  padding: .2em;
 }
 
 .bar-tip::after {
