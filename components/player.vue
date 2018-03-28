@@ -7,14 +7,24 @@
       <nuxt-link class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" :to="prevTrack" tag="button">
         <svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon>
       </nuxt-link>
+      <button class="btn-list opt-multi" :title="listTitle" @click="onListClick">
+        <svg-icon :width="28" :scale=".5" :d="btnListPath"></svg-icon>
+      </button>
       <nuxt-link class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled" :to="nextTrack" tag="button">
         <svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon>
       </nuxt-link>
     </div>
+    <div class="list">
+      <ul>
+        <li v-for="item in this.p.list">
+          <span class="track">{{ item.track }}</span><span class="title">{{ item.title }}</span>
+        </li>
+      </ul>
+    </div>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onKeyHandle" @click.prevent="">
+          <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onHandleKey" @click.prevent="">
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -26,7 +36,7 @@
 <script>
 import SvgIcon from './svg-icon.vue';
 
-import { mapGetters, mapMutations } from 'vuex';
+import { mapState, mapGetters, mapMutations } from 'vuex';
 
 import axios from 'axios';
 import NuxtLink from '../.nuxt/components/nuxt-link'
@@ -60,9 +70,11 @@ export default {
       'nextTitle',
       'handleTip',
     ]),
+    p() {
+      return this.$store.state.player;
+    },
     btnPlayPath() {
-      let p = this.$store.state.player;
-      return (p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (p.is_loading || !p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
+      return (this.p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (this.p.is_loading || !this.p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
     },
     btnPrevPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
@@ -70,19 +82,23 @@ export default {
     btnNextPath() {
       return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
     },
+    btnListPath() {
+      return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
+    },
     prevDisabled() {
-      let p = this.$store.state.player;
-      return !p.current.track || p.current.track === p.min_track;
+      return !this.p.current.track || this.p.current.track === this.p.min_track;
     },
     nextDisabled() {
-      let p = this.$store.state.player;
-      return !p.current.track || p.current.track === p.max_track;
+      return !this.p.current.track || this.p.current.track === this.p.max_track;
     },
     prevTrack() {
-      return '#' + (this.$store.state.player.current.track - 1);
+      return '#' + (this.p.current.track - 1);
     },
     nextTrack() {
-      return '#' + (this.$store.state.player.current.track + 1);
+      return '#' + (this.p.current.track + 1);
+    },
+    listTitle() {
+      return 'Toggle List';
     },
   }, // computed {}
 
@@ -173,14 +189,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     changeTrack(dir = 1) {
-      let p = this.$store.state.player;
-      let track = p.current.track + dir;
-      if (p.list[track]) this.$router.push('#' + track);
+      let track = this.p.current.track + dir;
+      if (this.p.list[track]) this.$router.push('#' + track);
     }, // changeTrack()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onKeyHandle(e) {
+    onHandleKey(e) {
       // throttle
       if (this.keyActive) return;
 
@@ -216,7 +231,7 @@ export default {
       }
 
       e.preventDefault();
-    }, // onKeyHandle()
+    }, // onHandleKey()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -260,12 +275,18 @@ export default {
       this.moveCaptured = false;
       this.set({is_captured: this.moveCaptured});
 
-      let p = this.$store.state.player;
-
-      if (!p.is_playing || p.interrupted) this.$store.commit('player/sync', {from:'handle'});
+      if (!this.p.is_playing || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
 
       this.$refs.handle.focus();
     }, // moveEnd()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListClick() {
+
+      console.log('onListClick()...');
+
+    }, // onListClick()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -299,6 +320,10 @@ export default {
   @return hsl($h, $s, $l);
 }
 
+@function shortTransition() {
+  @return all .2s ease;
+}
+
 $base-size: 10px;
 $unit: 4em;
 $player-bg-color: white;
@@ -325,7 +350,7 @@ $focus-color: hsla(22, 85%,43%,1);
 
 .audio-player:not(.is-multi) .opt-multi {
   opacity: 0;
-  transition: all .2s ease;
+  transition: shortTransition();
 }
 
 .controls {
@@ -343,7 +368,7 @@ button {
   overflow: hidden;
   top: 50%;
   transform: translateY(-50%);
-  transition: all .2s ease;
+  transition: shortTransition();
   color: $disabled-color;
 }
 button:not(:disabled) {
@@ -397,12 +422,46 @@ button svg {
   }
 }
 
-.btn-prev {
+.opt-multi {
+  opacity: 0;
+  right: 0;
+  transition: shortTransition();
+}
+.is-multi .opt-multi {
+  opacity: 1;
+}
+
+.is-multi .btn-prev {
+  right: 2 * $unit;
+}
+
+.is-multi .btn-list {
   right: 1 * $unit;
 }
 
-.btn-next {
+.is-multi .btn-next {
   right: 0;
+}
+
+.list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: white;
+  z-index: 1;
+  font-size: 1.8em;
+  outline: 1px solid pink;
+}
+
+.list * {
+  position: relative;
+}
+
+.list ul, .list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .bar-progress {
@@ -412,9 +471,10 @@ button svg {
   height: 4px;
   top: 50%;
   transform: translateY(-50%);
+  transition: shortTransition();
 }
 .is-multi .bar-progress {
-  right: 2.5 * $unit;
+  right: 3.5 * $unit;
 }
 
 .bar-seek {
@@ -437,7 +497,7 @@ button svg {
   width: 100%;
   top: -.8em;
   height: 2em;
-  transition: all .2s ease;
+  transition: shortTransition();
 }
 
 .bar-play {
@@ -467,7 +527,7 @@ button svg {
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  transition: all .2s ease;
+  transition: shortTransition();
 }
 
 .bar-seek::before,
@@ -505,7 +565,7 @@ button svg {
   background-color: colorConvertAlpha(transparentize($focus-color, .5));
   border: 0.2em solid white;
   border-radius: .5em;
-  transition: all .2s ease;
+  transition: shortTransition();
 }
 
 .bar-seek.captured .bar-tip,
