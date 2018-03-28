@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <main>
     <header>
       <h1 class="album-title">Album: {{$store.state.player.title}}</h1>
+      <player />
     </header>
-    <player />
 
     <div class="info">
       <section class="score" v-if="$store.state.player.current.score">
@@ -16,8 +16,7 @@
         </a>
       </section>
     </div>
-
-  </div>
+  </main>
 </template>
 
 <script>
@@ -31,7 +30,12 @@ export default {
   head () {
     let p = this.$store.state.player;
     return {
-      title: (!p.current.track ? this.$store.state.title : `(${p.current.track})${p.current.title ? ' ' + p.current.title : ''} • ${p.title}`)
+      title: (!p.current.track ? this.$store.state.title : `(${p.current.track})${p.current.title ? ' ' + p.current.title : ''} • ${p.title}`),
+
+      link: [
+        // audio speaker favicon
+        {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
+      ],
     }
   },
 
@@ -41,10 +45,29 @@ export default {
 </script>
 
 <style lang="scss">
+$backgroundColor: #def;
+
+@mixin drop-shadow() {
+  box-shadow: 0 0 1em hsla(210, 100%, 25%, .25);
+  box-shadow: 0 0 1em transparentize(darken($backgroundColor, 75%), .75);
+}
+
 html {
+  font-size: 10px;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   min-height: 100%;
-  background: #def;
+  background: $backgroundColor;
+}
+
+main {
+  max-width: 650px; // based on sheet music size: 25 + 600 + 25
+  margin: auto;
+}
+
+header {
+  background-color: white;
+  border-radius: 0 0 .5em .5em;
+  @include drop-shadow();
 }
 
 .glue {
@@ -52,26 +75,25 @@ html {
 }
 
 .album-title {
-  font-size: 1em;
+  font-size: 1.8em;
   margin: 0;
   padding: 0.5em;
   text-align: center;
-//  background-color: white;
   color: #c51;
 }
 .audio-player {
-  //outline: 50px solid hsla(0,0%,0%,0.05); /* TODO: dev-only */
+  border-radius: .5em;
 }
 
 .info {
   min-width: 600px;
-  max-width: 650px;
   margin: auto;
   text-align: center;
 }
 
 .score {
   margin-top: 1em;
+  @include drop-shadow();
 }
 .score a {
   display:inline-block;
