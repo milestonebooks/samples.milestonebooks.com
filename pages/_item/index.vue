@@ -121,6 +121,7 @@ html {
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   min-height: 100%;
   background: $backgroundColor;
+  overflow-y: scroll; // always on to avoid possible jank when toggling playlist
 }
 
 main {

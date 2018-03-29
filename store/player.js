@@ -24,7 +24,7 @@ export const state = () => ({
   interrupt_t:  null,
   isListShown:  false,
 
-  //TODO:is_auto_play: true,
+  is_auto_play: true,
   //TODO:is_auto_next: true,
 
   url_base: 'https://samples.milestonebooks.com/',

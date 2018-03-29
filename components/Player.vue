@@ -169,7 +169,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initAudioData() {
-      console.log('is_init item:', this.$route);
       let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
       this.set({title: res.data.title});
       this.set({item: this.$route.params.item});
@@ -181,7 +180,7 @@ export default {
 
     async loadTrack(track) {
       await this.$store.dispatch('player/loadTrack', track).catch((err_code) => {
-        // TODO: show error message
+        //TODO: show error message
         console.log('loadTrack() error:',err_code, this.$store.state.player.error);
       });
       this.refresh();
@@ -293,7 +292,7 @@ export default {
 
     onListClick(track) {
       this.toggleListShown();
-      if (this.p.current.track !== track) loadTrack(track);
+      if (this.p.current.track !== track) this.$router.push('#' + track);
     }, // onListClick()
 
     //------------------------------------------------------------------------------------------------------------------
