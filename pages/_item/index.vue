@@ -173,6 +173,11 @@ header {
 .score.is-printable {
   cursor: pointer;
 }
+
+.score:not(.is-loaded) > * {
+  display: none;
+}
+
 .score img {
   position: relative;
   margin: 25px 0;

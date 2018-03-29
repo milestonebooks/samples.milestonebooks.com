@@ -173,8 +173,6 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   setTrack(state, track) {
-    console.log('setTrack',track);
-
     state.current = {...state.current, ...state.list[track]};
     state.current.scoreIsLoaded = false;
     state.is_loading = true;

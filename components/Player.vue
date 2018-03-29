@@ -461,6 +461,7 @@ button svg {
   box-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
   border-radius: .5em;
   opacity: 0;
+  overflow: hidden;
   transition: shortTransition();
 }
 
@@ -490,7 +491,7 @@ button svg {
   height: 1 * $unit;
 }
 
-.list .item:not(:last-child) {
+.list.show .item:not(:last-child) {
   border-bottom: 1px solid $disabled-color;
 }
 
