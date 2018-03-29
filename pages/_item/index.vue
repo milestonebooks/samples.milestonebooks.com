@@ -2,7 +2,7 @@
   <main :class="mainClass">
     <header>
       <h1 class="album-title">{{headerTitle}}</h1>
-      <player />
+      <Player />
     </header>
 
     <div class="info">
@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import Player from '~/components/player.vue';
+import Player from '~/components/Player.vue';
 
 let imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
 
@@ -50,7 +50,8 @@ export default {
   computed: {
     mainClass() {
       return {
-        'is-loaded': this.$store.state.player.title,
+        'is-loaded':     this.$store.state.player.title,
+        'is-list-shown': this.$store.state.player.isListShown,
       }
     },
 
@@ -152,13 +153,17 @@ header {
   min-width: 600px;
   margin: auto;
   text-align: center;
+  transition: all .2s ease;
+}
+
+.is-list-shown .info {
+  opacity: .5;
 }
 
 .score {
   position:relative;
   margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above score while playing
   background-color: white;
-  @include drop-shadow();
   opacity: 0;
   transition: all .5s ease;
 }

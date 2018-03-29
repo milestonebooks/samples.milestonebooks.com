@@ -2,22 +2,23 @@
   <aside :class="['audio-player', uiClass]">
     <div class="controls">
       <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
-        <svg-icon :width="28" :d="btnPlayPath"></svg-icon>
+        <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
       </button>
       <nuxt-link class="btn-prev opt-multi" :title="prevTitle" :disabled="prevDisabled" :to="prevTrack" tag="button">
-        <svg-icon :width="28" :scale=".5" :d="btnPrevPath"></svg-icon>
+        <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button class="btn-list opt-multi" :title="listTitle" @click="onListClick">
-        <svg-icon :width="28" :scale=".5" :d="btnListPath"></svg-icon>
+      <button class="btn-list opt-multi" :title="listTitle" @click="toggleListShown">
+        <SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon>
       </button>
       <nuxt-link class="btn-next opt-multi" :title="nextTitle" :disabled="nextDisabled" :to="nextTrack" tag="button">
-        <svg-icon :width="28" :scale=".5" :d="btnNextPath"></svg-icon>
+        <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
-    <div class="list">
+    <div :class="{list: true, show: p.isListShown}">
       <ul>
-        <li v-for="item in this.p.list">
-          <span class="track">{{ item.track }}</span><span class="title">{{ item.title }}</span>
+        <li v-for="item in p.list" :class="{item: true, current: item.track === p.current.track}" @click="onListClick(item.track)">
+          <div class="track"><span>{{ item.track }}</span></div>
+          <div class="title"><span>{{ item.title }}</span></div>
         </li>
       </ul>
     </div>
@@ -34,7 +35,7 @@
 </template>
 
 <script>
-import SvgIcon from './svg-icon.vue';
+import SvgIcon from './SvgIcon.vue';
 
 import { mapState, mapGetters, mapMutations } from 'vuex';
 
@@ -282,10 +283,17 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onListClick() {
+    toggleListShown() {
 
-      console.log('onListClick()...');
+      this.set({isListShown: !this.p.isListShown});
 
+    }, // toggleListShown()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListClick(track) {
+      this.toggleListShown();
+      if (this.p.current.track !== track) loadTrack(track);
     }, // onListClick()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -447,11 +455,17 @@ button svg {
   position: absolute;
   left: 0;
   right: 0;
-  top: 100%;
+  top: calc(100% + .5em);
   background: white;
   z-index: 1;
-  font-size: 1.8em;
-  outline: 1px solid pink;
+  box-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
+  border-radius: .5em;
+  opacity: 0;
+  transition: shortTransition();
+}
+
+.list.show {
+  opacity: 1;
 }
 
 .list * {
@@ -462,6 +476,51 @@ button svg {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.list .item {
+  display: flex;
+  align-items: center;
+  height: 0;
+  cursor: pointer;
+  transition: shortTransition();
+}
+
+.list.show .item {
+  height: 1 * $unit;
+}
+
+.list .item:not(:last-child) {
+  border-bottom: 1px solid $disabled-color;
+}
+
+.list .item:hover {
+  background-color: lighten($disabled-color, 5%);
+}
+
+.list .item.current {
+  background-color: lighten($disabled-color, 5%);
+  cursor: default;
+}
+
+.list .item > * {
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.list .item span {
+  font-size: 1.8em;
+}
+
+.list .track {
+  width: 1 * $unit;
+  text-align: right;
+  padding-right: .5em;
+}
+
+.list .title {
+  margin-left: .5 * $unit;
+  flex: 1;
 }
 
 .bar-progress {

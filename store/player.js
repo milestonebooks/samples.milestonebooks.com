@@ -22,9 +22,10 @@ export const state = () => ({
   is_captured:  false,
   interrupted:  false,
   interrupt_t:  null,
+  isListShown:  false,
 
-//TODO:  is_auto_play: true,
-//TODO:  is_auto_next: true,
+  //TODO:is_auto_play: true,
+  //TODO:is_auto_next: true,
 
   url_base: 'https://samples.milestonebooks.com/',
   item: '',
@@ -51,10 +52,10 @@ export const getters = {
 
   uiClass (state) {
     return {
-      'is-init':    state.is_init,
-      'is-playing': state.is_playing,
-      'is-loading': state.is_loading,
-      'is-multi':   state.min_track !== state.max_track,
+      'is-init':       state.is_init,
+      'is-playing':    state.is_playing,
+      'is-loading':    state.is_loading,
+      'is-multi':      state.min_track !== state.max_track,
     }
   }, // uiClass()
 
