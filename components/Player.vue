@@ -23,7 +23,7 @@
       </ul>
     </div>
     <div class="bar-progress">
-      <div class="bar-seek" :class="{captured: $store.state.player.is_captured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
+      <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
           <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onHandleKey" @click.prevent="">
             <span class="bar-tip" :title="handleTip"></span>
@@ -37,7 +37,7 @@
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapState, mapGetters, mapMutations } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 import axios from 'axios';
 import NuxtLink from '../.nuxt/components/nuxt-link'
@@ -75,7 +75,7 @@ export default {
       return this.$store.state.player;
     },
     btnPlayPath() {
-      return (this.p.is_playing ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (this.p.is_loading || !this.p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
+      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (this.p.isLoading || !this.p.current.track ? '' : 'M6,2 l 21,12 -21,12'));
     },
     btnPrevPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
@@ -87,10 +87,10 @@ export default {
       return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
     },
     prevDisabled() {
-      return !this.p.current.track || this.p.current.track === this.p.min_track;
+      return !this.p.current.track || this.p.current.track === this.p.minTrack;
     },
     nextDisabled() {
-      return !this.p.current.track || this.p.current.track === this.p.max_track;
+      return !this.p.current.track || this.p.current.track === this.p.maxTrack;
     },
     prevTrack() {
       return '#' + (this.p.current.track - 1);
@@ -107,7 +107,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action, state) => {
-      if (action.type === 'player/onEnd' && state.player.is_auto_next) this.changeTrack(+1);
+      if (action.type === 'player/onEnd' && this.p.isAutoNext) this.changeTrack(+1);
     });
     this.init();
   }, // mounted ()
@@ -134,7 +134,7 @@ export default {
     init() {
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
-      this.set({is_init:true});
+      this.set({isInit:true});
       this.refresh();
     }, // init()
 
@@ -169,7 +169,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initAudioData() {
-      let res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
+      const res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
       this.set({title: res.data.title});
       this.set({item: this.$route.params.item});
       this.$store.commit('player/loadData', res.data);
@@ -181,7 +181,7 @@ export default {
     async loadTrack(track) {
       await this.$store.dispatch('player/loadTrack', track).catch((err_code) => {
         //TODO: show error message
-        console.log('loadTrack() error:',err_code, this.$store.state.player.error);
+        console.log('loadTrack() error:',err_code, this.p.error);
       });
       this.refresh();
     }, // loadTrack()
@@ -189,7 +189,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     changeTrack(dir = 1) {
-      let track = this.p.current.track + dir;
+      const track = this.p.current.track + dir;
       if (this.p.list[track]) this.$router.push('#' + track);
     }, // changeTrack()
 
@@ -205,17 +205,32 @@ export default {
         this.keyActive = false;
       }, 100);
 
-      let pct = this.$store.state.player.current.pct;
+      // see <https://stackoverflow.com/questions/8584902/get-closest-number-out-of-array>
+      const getClosest = (num, arr) => {
+        let closest = arr[0];
+        for (const val of arr) {
+          if (Math.abs(val - num) < Math.abs(num - closest)) closest = val;
+        }
+        return closest;
+      }
+
+      // adjust to the interval nearest 20th (5%) rounded to an interval:
+      // 10s; 20s (len > 5m); 30s (>~8m); 1m (>15m); 5m (>1h); 10m (>2.5h)
+      const len = this.p.current.duration;
+      const intv = 20;
+      const secIntv = getClosest(len / intv, [10, 20, 30, 60, 300, 600]);
+      const pct = this.p.current.pct;
+
       let newPct = pct;
 
       switch (e.key) {
         case 'Backspace':
         case 'ArrowLeft':
-          newPct -= 5; break;
+          newPct = (Math.ceil( Math.round(len * pct / 100) / secIntv) - 1) * secIntv / len * 100; break;
         case 'ArrowRight':
-          newPct += 5; break;
+          newPct = (Math.floor(Math.round(len * pct / 100) / secIntv) + 1) * secIntv / len * 100; break;
         case 'Home':
-          newPct = 0; break;
+          newPct =   0; break;
         case 'End':
           newPct = 100; break;
         case 'Enter':
@@ -240,7 +255,7 @@ export default {
       e.preventDefault();
       this.minX = this.$slider.offset().left;
       this.moveCaptured = true;
-      this.set({is_captured: this.moveCaptured});
+      this.set({isCaptured: this.moveCaptured});
       this.moving(e, pct);
     }, // moveStart()
 
@@ -255,8 +270,8 @@ export default {
         if (e.targetTouches && e.targetTouches[0]) e = e.targetTouches[0];
 
         let x = e.pageX;
-        let minX = this.minX;
-        let maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
+        const minX = this.minX;
+        const maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
 
         if (x < minX) x = minX;
         if (x > maxX) x = maxX;
@@ -273,9 +288,9 @@ export default {
       if (!this.moveCaptured) return false;
 
       this.moveCaptured = false;
-      this.set({is_captured: this.moveCaptured});
+      this.set({isCaptured: this.moveCaptured});
 
-      if (!this.p.is_playing || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
+      if (!this.p.isPlaying || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
 
       this.$refs.handle.focus();
     }, // moveEnd()
@@ -411,15 +426,15 @@ button svg {
   content: '';
   left: 50%;
   top: 50%;
-  margin: -2em;
+  margin: -.5 * $unit;
   width: 100%;
   height: 100%;
   border-radius: 50%;
   background-color: $color;
-  animation: sk-scaleout 1.0s infinite ease-in-out;
+  animation: a-scaleout 1.0s infinite ease-in-out;
 }
 
-@keyframes sk-scaleout {
+@keyframes a-scaleout {
   from {
     transform: scale(0);
   }
@@ -444,6 +459,24 @@ button svg {
 
 .is-multi .btn-list {
   right: 1 * $unit;
+}
+
+.btn-list::before {
+  position: absolute;
+  content: '';
+  left: 50%;
+  top: 50%;
+  margin: -.5 * $unit;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border-radius: 50%;
+  background-color: $disabled-color;
+  transition: shortTransition();
+}
+
+.is-list-shown .btn-list::before {
+  opacity: 1;
 }
 
 .is-multi .btn-next {

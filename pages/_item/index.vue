@@ -6,8 +6,8 @@
     </header>
 
     <div class="info">
-      <section v-if="$store.state.player.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
-        <img :src="$store.state.player.current.score" />
+      <section v-if="p.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
+        <img :src="p.current.score" />
         <div class="print-note">
           <span class="glue">Click the sheet music to open a printable PDF,</span>
           <span class="glue"> and then press Ctrl+P to print</span>
@@ -20,7 +20,7 @@
 <script>
 import Player from '~/components/Player.vue';
 
-let imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
+const imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
 
 export default {
   components: {
@@ -32,9 +32,8 @@ export default {
   },
 
   head () {
-    let p = this.$store.state.player;
     return {
-      title: (!p.current.track ? this.$store.state.title : `(${p.current.track})${p.current.title ? ' ' + p.current.title : ''} • ${p.title}`),
+      title: (!this.p.current.track ? this.$store.state.title : `(${this.p.current.track})${this.p.current.title ? ' ' + this.p.current.title : ''} • ${this.p.title}`),
 
       link: [
         // audio speaker favicon
@@ -48,28 +47,30 @@ export default {
   },
 
   computed: {
+    p() {
+      return this.$store.state.player;
+    },
+
     mainClass() {
       return {
-        'is-loaded':     this.$store.state.player.title,
-        'is-list-shown': this.$store.state.player.isListShown,
+        'is-loaded':     this.p.title,
+        'is-list-shown': this.p.isListShown,
       }
     },
 
     headerTitle() {
-      let p = this.$store.state.player;
-      return !p.current.track ? 'loading album...' : `${p.title} (${p.current.track})`;
+      return !this.p.current.track ? 'loading album...' : `${this.p.title} (${this.p.current.track})`;
     },
 
     scoreClass() {
-      let p = this.$store.state.player;
       return {
-        'is-loaded': p.current.scoreIsLoaded,
+        'is-loaded': this.p.current.scoreIsLoaded,
         'is-printable': this.isPrintable,
       }
     },
 
     isPrintable() {
-      return !!this.$store.state.player.current.print;
+      return !!this.p.current.print;
     },
 
     scoreTip() {
@@ -96,7 +97,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     print() {
-      window.location = this.$store.state.player.current.print;
+      window.location = this.p.current.print;
     }, // print()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -108,19 +109,19 @@ export default {
 </script>
 
 <style lang="scss">
-$backgroundColor: #def;
-$themeColor: #c51;
+$background-color: #def;
+$theme-color: #c51;
 $radius: .5em;
 
 @mixin drop-shadow() {
-  box-shadow: 0 0 1em transparentize(darken($backgroundColor, 75%), .75);
+  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
 }
 
 html {
   font-size: 10px;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   min-height: 100%;
-  background: $backgroundColor;
+  background: $background-color;
   overflow-y: scroll; // always on to avoid possible jank when toggling playlist
 }
 
@@ -144,7 +145,7 @@ header {
   margin: 0;
   padding: 0.5em;
   text-align: center;
-  color: $themeColor;
+  color: $theme-color;
 }
 .audio-player {
   border-radius: $radius;
