@@ -16,13 +16,13 @@ let storage = (function() {
 //*/
 
 export const state = () => ({
-  isInit:       false,
-  isPlaying:    false,
-  isLoading:    false,
-  isCaptured:   false,
-  interrupted:  false,
-  interrupt_t:  null,
-  isListShown:  false,
+  isInit:      false,
+  isPlaying:   false,
+  isLoading:   false,
+  isCaptured:  false,
+  interrupted: false,
+  interrupt_t: null,
+  isListShown: false,
 
   isAutoPlay: false, //TODO:true,
   isAutoNext: false, //TODO:true,
