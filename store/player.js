@@ -1,5 +1,7 @@
 import {Howl} from 'howler';
 
+import sleep from 'await-sleep';
+
 // [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
 /*
 let storage = (function() {
@@ -174,7 +176,6 @@ export const mutations = {
 
   setTrack(state, track) {
     state.current = {...state.current, ...state.list[track]};
-    state.current.scoreIsLoaded = false;
     state.isLoading = true;
   }, // setTrack()
 
@@ -258,6 +259,19 @@ export const actions = {
     track = getters.getValidTrack(+track);
 
     await dispatch('reset');
+
+    if (state.current.track) {
+      const isNext = track > state.current.track;
+      commit('setCurrent', {
+        scoreLoadingClass: `transition-${isNext ? 'left' : 'right'}`,
+        scoreIsLoaded: false,
+      });
+      await sleep(250);
+      commit('setCurrent', {
+        scoreLoadingClass: `transition-${isNext ? 'right' : 'left'}`,
+      });
+      await sleep(250); // allow time for the element to invisibly transition to the opposite side
+    }
 
     commit('setTrack', track);
 

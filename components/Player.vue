@@ -489,7 +489,6 @@ button svg {
   right: 0;
   top: calc(100% + .5em);
   background: white;
-  z-index: 1;
   box-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
   border-radius: .5em;
   opacity: 0;

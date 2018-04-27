@@ -6,7 +6,7 @@
     </header>
 
     <div class="info">
-      <section v-if="p.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
+      <section v-if="p.current.score" :class="['score', scoreClass, p.current.scoreLoadingClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
         <img :src="p.current.score" />
         <div class="print-note">
           <span class="glue">Click the sheet music to open a printable PDF,</span>
@@ -91,7 +91,10 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     imageProgress(instance, image) {
-      this.$store.commit('player/setCurrent', {scoreIsLoaded: image.isLoaded});
+      this.$store.commit('player/setCurrent', {
+        scoreLoadingClass: '',
+        scoreIsLoaded: image.isLoaded
+      });
     }, // imageProgress()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -126,11 +129,14 @@ html {
 }
 
 main {
+  display: flex;
+  flex-direction: column;
   max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
 }
 
 header {
+  z-index: 1;
   background-color: white;
   border-radius: 0 0 $radius $radius;
   @include drop-shadow();
@@ -153,7 +159,6 @@ header {
 
 .info {
   min-width: 600px;
-  margin: auto;
   text-align: center;
   transition: all .2s ease;
 }
@@ -167,7 +172,13 @@ header {
   margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above score while playing
   background-color: white;
   opacity: 0;
-  transition: all .5s ease;
+  transition: all .25s ease-in-out;
+}
+.score.transition-left {
+  transform: translateX(-50%);
+}
+.score.transition-right {
+  transform: translateX(50%);
 }
 .score.is-loaded {
   opacity: 1;
@@ -176,13 +187,14 @@ header {
   cursor: pointer;
 }
 
-.score:not(.is-loaded) > * {
+.score:not(.is-loaded) .print-note {
   display: none;
 }
 
 .score img {
   position: relative;
   margin: 25px 0;
+  max-width: 100%;
 }
 
 .print-note {
@@ -197,6 +209,7 @@ header {
   box-shadow:0 0 5px #ccc;
   max-height:2.5em;
   width: 588px;
+  max-width: calc(100% - 12px);
   overflow:hidden;
   background-color:white;
   opacity:1;
@@ -217,6 +230,7 @@ header {
     background-color:white;
   }
 }
+
 .score:hover .print-note {
   opacity:0;
   transition: opacity 1s;
