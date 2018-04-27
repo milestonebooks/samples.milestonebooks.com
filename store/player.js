@@ -2,6 +2,7 @@ import {Howl} from 'howler';
 
 import sleep from 'await-sleep';
 
+// TODO: implement storage for isAutoPlay/isAutoNext settings
 // [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
 /*
 let storage = (function() {

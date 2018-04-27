@@ -14,14 +14,18 @@
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
-    <div :class="{list: true, show: p.isListShown}">
+    <nav :class="{list: true, show: p.isListShown}">
       <ul>
         <li v-for="item in p.list" :class="{item: true, current: item.track === p.current.track}" @click="onListClick(item.track)">
           <div class="track"><span>{{ item.track }}</span></div>
           <div class="title"><span>{{ item.title }}</span></div>
         </li>
       </ul>
-    </div>
+      <ul class="settings">
+        <li><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+      </ul>
+    </nav>
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
@@ -100,6 +104,22 @@ export default {
     },
     listTitle() {
       return 'Toggle List';
+    },
+    autoPlay: {
+      get () {
+        return this.p.isAutoPlay;
+      },
+      set (isAutoPlay) {
+        this.$store.commit('player/set',{isAutoPlay})
+      },
+    },
+    autoNext: {
+      get () {
+        return this.p.isAutoNext;
+      },
+      set (isAutoNext) {
+        this.$store.commit('player/set',{isAutoNext})
+      },
     },
   }, // computed {}
 
@@ -553,6 +573,28 @@ button svg {
 .list .title {
   margin-left: .5 * $unit;
   flex: 1;
+}
+
+.list .settings {
+  border-top: 1px solid darken($disabled-color, 50%);
+  padding: .5em 1.5em;
+}
+
+.list .settings li {
+  display: inline-block;
+}
+
+.list .settings label {
+  display: inline-block;
+  font-size: 1.5em;
+  padding: .5em 0;
+  margin-right: 2em;
+  cursor: pointer;
+}
+
+.list .settings input {
+  vertical-align: middle;
+  margin-right: .25em;
 }
 
 .bar-progress {
