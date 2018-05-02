@@ -1,5 +1,9 @@
 <template>
   <main :class="mainClass">
+    <aside class="alerts" :data-length="alerts.length">
+      <div v-for="alert in alerts" class="alert">{{alert}}</div>
+    </aside>
+
     <header>
       <h1 class="album-title">{{headerTitle}}</h1>
       <Player />
@@ -76,6 +80,10 @@ export default {
     scoreTip() {
       return this.isPrintable ? 'Click for printable PDF...' : '';
     },
+
+    alerts() {
+      return (this.p.alert ? [this.p.alert] : []);
+    },
   }, // computed{}
 
   //====================================================================================================================
@@ -112,6 +120,7 @@ export default {
 </script>
 
 <style lang="scss">
+$alert-color: #f00;
 $background-color: #def;
 $theme-color: #c51;
 $radius: .5em;
@@ -124,15 +133,48 @@ html {
   font-size: 10px;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   min-height: 100%;
-  background: $background-color;
+  background-color: $background-color;
   overflow-y: scroll; // always on to avoid possible jank when toggling playlist
 }
 
 main {
+  position: relative;
   display: flex;
   flex-direction: column;
   max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
+}
+
+.alerts {
+  z-index: 9;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: all .2s ease-in-out;
+}
+.alerts:not([data-length="0"]) {
+  height: auto;
+}
+
+.alert {
+  position: relative;
+  align-self: center;
+  box-sizing: border-box;
+  margin: .5em;
+  border: 1px solid $alert-color;
+  box-shadow: 0 .25em 1em #999;
+  background-color: lighten($alert-color, 40%);
+  font-size: 2rem;
+  padding: .5em;
+  min-width: 10em;
+  max-width: 30em;
+  transition: all .2s ease;
 }
 
 header {

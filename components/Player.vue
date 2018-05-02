@@ -190,6 +190,9 @@ export default {
 
     async initAudioData() {
       const res = await axios.get(`https://samples.milestonebooks.com/${this.$route.params.item}/?output=json`);
+      if (!res.data.response.success) {
+        return this.$store.commit('player/setAlert', res.data.response.message);
+      }
       this.set({title: res.data.title});
       this.set({item: this.$route.params.item});
       this.$store.commit('player/loadData', res.data);
