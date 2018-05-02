@@ -2,21 +2,19 @@ import {Howl} from 'howler';
 
 import sleep from 'await-sleep';
 
-// TODO: implement storage for isAutoPlay/isAutoNext settings
 // [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
-/*
-let storage = (function() {
-  let uid = new Date,
-    storage,
-    result;
+const storage = (function() {
+  const uid = new Date();
+  let storage;
+  let result;
+
   try {
     (storage = window.localStorage).setItem(uid, uid);
     result = storage.getItem(uid) === '' + uid;
     storage.removeItem(uid);
     return result && storage;
   } catch (exception) {}
-}());
-//*/
+}()); // storage()
 
 export const state = () => ({
   isInit:      false,
@@ -27,8 +25,8 @@ export const state = () => ({
   interrupt_t: null,
   isListShown: false,
 
-  isAutoPlay: false, //TODO:true,
-  isAutoNext: false, //TODO:true,
+  isAutoPlay: true,
+  isAutoNext: true,
 
   urlBase: 'https://samples.milestonebooks.com/',
   item: '',
@@ -147,6 +145,8 @@ export const mutations = {
   set(state, o) {
     Object.keys(o).map((key) => {
       state[key] = typeof o[key] === 'object' ? {...state[key], ...o[key]} : o[key];
+
+      if (key === 'isAutoPlay' || key === 'isAutoNext') storage.setItem(key, o[key]);
     });
   }, // set()
 
@@ -255,6 +255,18 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  async initSettings({commit}) {
+
+    let v;
+
+    for (const key of ['isAutoPlay', 'isAutoNext']) {
+      if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
+    }
+
+  }, // initSettings()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
   async loadTrack({dispatch, commit, getters, state}, track) {
 
     track = getters.getValidTrack(+track);
@@ -262,14 +274,14 @@ export const actions = {
     await dispatch('reset');
 
     if (state.current.track) {
-      const isNext = track > state.current.track;
+      const isAfter = track > state.current.track;
       commit('setCurrent', {
-        scoreLoadingClass: `transition-${isNext ? 'left' : 'right'}`,
+        scoreLoadingClass: `transition-${isAfter ? 'left' : 'right'}`,
         scoreIsLoaded: false,
       });
       await sleep(250);
       commit('setCurrent', {
-        scoreLoadingClass: `transition-${isNext ? 'right' : 'left'}`,
+        scoreLoadingClass: `transition-${isAfter ? 'right' : 'left'}`,
       });
       await sleep(250); // allow time for the element to invisibly transition to the opposite side
     }

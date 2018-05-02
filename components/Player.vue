@@ -152,6 +152,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      this.$store.dispatch('player/initSettings');
       this.initAudioData();
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
@@ -203,8 +204,7 @@ export default {
 
     async loadTrack(track) {
       await this.$store.dispatch('player/loadTrack', track).catch((err_code) => {
-        //TODO: show error message
-        console.log('loadTrack() error:',err_code, this.p.error);
+        this.$store.commit('player/setAlert', `Error loading track [${err_code}]`);
       });
       this.refresh();
     }, // loadTrack()
