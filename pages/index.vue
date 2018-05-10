@@ -5,7 +5,7 @@
         samples
       </h1>
       <div class="links">
-        <a href="/ITEM/">Test Item Page</a>
+        <a href="https://www.milestonebooks.com">Return to Shopping</a>
       </div>
     </div>
   </section>
@@ -26,10 +26,10 @@ export default {
   justify-content: center;
   align-items: center;
   text-align: center;
+  font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
 .title {
-  font-family: "Quicksand", "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* 1 */
   display: block;
   font-weight: 300;
   font-size: 100px;

@@ -26,6 +26,15 @@ module.exports = {
   */
   loading: { color: '#c51' },
 
+  plugins: [
+    '~plugins/gtm.js',
+    { src: '~plugins/swiper.js', ssr: false },
+  ],
+
+  css: [
+    'swiper/dist/css/swiper.css',
+  ],
+
   /*
   ** Build configuration
   */
