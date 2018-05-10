@@ -16,7 +16,7 @@
     </div>
     <nav :class="{list: true, show: p.isListShown}">
       <ul>
-        <li v-for="sample in $store.state.samples" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.index)">
+        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.index)">
           <div class="track"><span>{{ sample.id }}</span></div>
           <div class="title"><span>{{ sample.title }}</span></div>
         </li>
@@ -43,7 +43,6 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters, mapMutations } from 'vuex';
 
-//import axios from 'axios';
 import NuxtLink from '../.nuxt/components/nuxt-link'
 
 export default {
@@ -331,35 +330,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
-// adapted from <https://gist.github.com/tqc/2564280>
-@function colorConvertAlpha($colorA, $colorB:white) {
-  $hA: hue($colorA);
-  $sA: saturation($colorA);
-  $lA: lightness($colorA);
-  $a: alpha($colorA);
-  $hB: hue($colorB);
-  $sB: saturation($colorB);
-  $lB: lightness($colorB);
-  $h: round(((1 - $a) * $hB) + ($a * $hA));
-  $s: round(((1 - $a) * $sB) + ($a * $sA));
-  $l: round(((1 - $a) * $lB) + ($a * $lA));
-  @return hsl($h, $s, $l);
-}
-
-@function shortTransition() {
-  @return all .2s ease;
-}
-
-$base-size: 10px;
-$unit: 4em;
-$player-bg-color: white;
-$color: black;
-$disabled-color: lighten($color, 90%);
-$focus-color: hsla(22, 85%, 43%, 1);
-$list-background-color: lighten($disabled-color, 5%);
-$list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
-$list-radius: .5em;
+@import "../assets/settings.scss";
 
 .audio-player {
   position: relative;
@@ -368,6 +339,7 @@ $list-radius: .5em;
   box-sizing: border-box;
   font-size: $base-size;
   height: $unit;
+  border-radius: $radius;
 }
 
 .audio-player * {
@@ -402,7 +374,7 @@ button {
 }
 button:not(:disabled) {
   cursor: pointer;
-  color: $color;
+  color: $player-color;
 }
 button:not(:disabled):focus,
 button:not(:disabled):hover {
@@ -437,7 +409,7 @@ button svg {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: $color;
+  background-color: $player-color;
   animation: a-scaleout 1.0s infinite ease-in-out;
 }
 
@@ -638,7 +610,7 @@ button svg {
   width: 100%;
   box-sizing: content-box;
   cursor: pointer;
-  background-color: lighten($color, 75%);
+  background-color: lighten($player-color, 75%);
   transition: height .5s ease, background-color .5s ease;
 }
 

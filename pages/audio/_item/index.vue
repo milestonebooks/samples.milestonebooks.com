@@ -11,7 +11,7 @@
 
     <article v-swiper:swiper="swiperOption">
       <div class="swiper-wrapper">
-        <section class="swiper-slide" v-for="sample in $store.state.samples" :data-hash="sample.id">
+        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <img v-if="sample.image" :src="sample.image['@']" />
           <h1 v-else class="sample-title">{{sample.title}}</h1>
         </section>
@@ -22,16 +22,6 @@
       <div class="copyright">COPYRIGHTED MATERIAL</div>
     </article>
 
-    <!--section :class="['info']">
-      <div v-if="p.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
-        <img :src="p.current.score" />
-        <div class="print-note">
-          <span class="glue">Click the sheet music to open a printable PDF,</span>
-          <span class="glue"> and then press Ctrl+P to print</span>
-        </div>
-      </div>
-      <h1 v-else class="track-title">{{trackTitle}}</h1>
-    </section-->
   </main>
 </template>
 
@@ -42,15 +32,11 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-const imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
+// TODO: add print option
 
 export default {
   components: {
     Player,
-  },
-
-  directives: {
-    imagesLoaded
   },
 
   head () {
@@ -82,6 +68,7 @@ export default {
           firstSlideMessage: 'This is the first sample',
           lastSlideMessage:  'This is the last sample',
         },
+        // TODO: pagination
         /*
         pagination: {
           el: '.swiper-pagination',
@@ -121,25 +108,6 @@ export default {
     headerTitle() {
       const s = this.$store.state;
       return !s.samples[s.currentIndex] ? 'loading...' : s.title;
-    },
-
-    trackTitle() {
-      return !this.p.current.track ? '' : `(${this.p.current.track}) ` + (this.p.current.title ? this.p.current.title : '[untitled]');
-    },
-
-    scoreClass() {
-      return {
-        'is-loaded': this.p.current.scoreIsLoaded,
-        'is-printable': this.isPrintable,
-      }
-    },
-
-    isPrintable() {
-      return !!this.p.current.print;
-    },
-
-    scoreTip() {
-      return this.isPrintable ? 'Click for printable PDF...' : '';
     },
 
     alerts() {
@@ -223,15 +191,6 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imageProgress(instance, image) {
-      this.$store.commit('player/setCurrent', {
-        //loadingClass: '',
-        scoreIsLoaded: image.isLoaded
-      });
-    }, // imageProgress()
-
-    //------------------------------------------------------------------------------------------------------------------
-
     print() {
       window.location = this.p.current.print;
     }, // print()
@@ -245,21 +204,10 @@ export default {
 </script>
 
 <style lang="scss">
-@function shortTransition() {
-  @return all .2s ease;
-}
-
-$alert-color: #f00;
-$background-color: hsl(0, 0%, 95%);
-$theme-color: #c51;
-$radius: .5em;
-
-@mixin drop-shadow() {
-  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
-}
+@import "../../../assets/settings.scss";
 
 html {
-  font-size: 10px;
+  font-size: $base-size;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   min-height: 100%;
   background-color: $background-color;
@@ -341,17 +289,14 @@ header {
   text-align: center;
   color: $theme-color;
 }
-.audio-player {
-  border-radius: $radius;
-}
 
 .swiper-container {
-  margin-top: 1.5em;
+  margin-top: $unit/4;
   width: 100%;
-  margin-left: -4em;
-  padding-left: 4em;
-  margin-right: -4em;
-  padding-right: 4em;
+  margin-left: -$unit;
+  padding-left: $unit;
+  margin-right: -$unit;
+  padding-right: $unit;
 }
 .swiper-container::before {
   content: '';
@@ -416,84 +361,6 @@ header {
   text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
   left: 50%;
   transform: translateX(-50%);
-}
-
-
-
-/* obsolete...*/
-
-.info {
-  margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above while playing audio
-  min-width: 600px;
-  text-align: center;
-  transition: all .25s ease-in-out;
-}
-.info.transition-left {
-  transform: translateX(-50%);
-}
-.info.transition-right {
-  transform: translateX(50%);
-}
-
-.score {
-  position:relative;
-  background-color: white;
-  opacity: 0;
-}
-.score.is-loaded {
-  opacity: 1;
-}
-.score.is-printable {
-  cursor: pointer;
-}
-
-.score:not(.is-loaded) .print-note {
-  display: none;
-}
-
-.score img {
-  position: relative;
-  margin: 25px 0;
-  max-width: 100%;
-}
-
-.print-note {
-  position:absolute;
-  top:50px;
-  padding:5px;
-  font-size:16px;
-  line-height:1.25em;
-  border-radius:10px;
-  color:gray;
-  border:1px solid gray;
-  box-shadow:0 0 5px #ccc;
-  max-height:2.5em;
-  width: 588px;
-  max-width: calc(100% - 12px);
-  overflow:hidden;
-  background-color:white;
-  opacity:1;
-  left: 50%;
-  transform: translateX(-50%);
-  transition: opacity 1s;
-}
-.print-note.highlight {
-  background-color:white;
-  animation: highlight-fade 3s;
-}
-
-@keyframes highlight-fade {
-  0%, 70% {
-    background-color:yellow;
-  }
-  to {
-    background-color:white;
-  }
-}
-
-.score:hover .print-note {
-  opacity:0;
-  transition: opacity 1s;
 }
 
 </style>

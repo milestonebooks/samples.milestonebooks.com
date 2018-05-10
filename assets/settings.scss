@@ -1,0 +1,36 @@
+// adapted from <https://gist.github.com/tqc/2564280>
+@function colorConvertAlpha($colorA, $colorB:white) {
+  $hA: hue($colorA);
+  $sA: saturation($colorA);
+  $lA: lightness($colorA);
+  $a: alpha($colorA);
+  $hB: hue($colorB);
+  $sB: saturation($colorB);
+  $lB: lightness($colorB);
+  $h: round(((1 - $a) * $hB) + ($a * $hA));
+  $s: round(((1 - $a) * $sB) + ($a * $sA));
+  $l: round(((1 - $a) * $lB) + ($a * $lA));
+  @return hsl($h, $s, $l);
+}
+
+@function shortTransition() {
+  @return all .2s ease;
+}
+
+$alert-color: #f00;
+$background-color: hsl(0, 0%, 95%);
+$theme-color: #c51;
+$radius: .5em;
+$base-size: 10px;
+$unit: 4em;
+$player-bg-color: white;
+$player-color: black;
+$disabled-color: lighten($player-color, 90%);
+$focus-color: hsla(22, 85%, 43%, 1);
+$list-background-color: lighten($disabled-color, 5%);
+$list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
+$list-radius: .5em;
+
+@mixin drop-shadow() {
+  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
+}

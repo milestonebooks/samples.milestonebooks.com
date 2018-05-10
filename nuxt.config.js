@@ -59,7 +59,6 @@ module.exports = {
 
     vendor: [
       'axios',
-      'vue-images-loaded',
     ],
   },
 
