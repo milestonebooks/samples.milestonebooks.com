@@ -33,8 +33,6 @@ export const state = () => ({
     pctPixel: 0,
     pctHandle: 0,
   },
-  minTrack: null, // obsolete ('firstId' in root)
-  maxTrack: null, // obsolete ('lastId' in root)
 
   persist: ['isAutoPlay','isAutoNext'],
 }); // state{}

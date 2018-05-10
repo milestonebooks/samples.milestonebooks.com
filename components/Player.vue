@@ -4,19 +4,19 @@
       <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
         <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
       </button>
-      <nuxt-link class="btn-prev opt-multi" :title="getTrack(-1,'title')" :disabled="prevDisabled" :to="prevTrack" tag="button">
+      <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
       <button class="btn-list opt-multi" :title="listTitle" @click="toggleListShown">
         <SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon>
       </button>
-      <nuxt-link class="btn-next opt-multi" :title="getTrack(1,'title')" :disabled="nextDisabled" :to="nextTrack" tag="button">
+      <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
     <nav :class="{list: true, show: p.isListShown}">
       <ul>
-        <li v-for="sample in $store.state.samples" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.id)">
+        <li v-for="sample in $store.state.samples" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.index)">
           <div class="track"><span>{{ sample.id }}</span></div>
           <div class="title"><span>{{ sample.title }}</span></div>
         </li>
@@ -78,6 +78,9 @@ export default {
       'playTitle',
       'handleTip',
     ]),
+    s() {
+      return this.$store.state;
+    },
     p() {
       return this.$store.state.player;
     },
@@ -92,18 +95,6 @@ export default {
     },
     btnListPath() {
       return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
-    },
-    prevDisabled() {
-      return !this.p.current.track || this.p.current.track === this.p.minTrack;
-    },
-    nextDisabled() {
-      return !this.p.current.track || this.p.current.track === this.p.maxTrack;
-    },
-    prevTrack() {
-      return '#' + this.getTrack(-1);
-    },
-    nextTrack() {
-      return '#' + this.getTrack(+1);
     },
     listTitle() {
       return 'Toggle List';
@@ -130,7 +121,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.p.isAutoNext && !this.nextDisabled) this.$router.push(this.nextTrack);
+      if (action.type === 'player/onEnd' && this.p.isAutoNext && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
     });
     this.init();
   }, // mounted ()
@@ -186,9 +177,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log('update() currentIndex:', this.currentIndex, this.$store.state.samples[this.currentIndex]);
+      //console.log('update() currentIndex:', this.currentIndex, this.$store.state.samples[this.currentIndex]);
       this.load(this.currentIndex);
-      // TODO: load
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -202,15 +192,11 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getTrack(dir = 1, key = 'track') {
-      return '1';
-      /*
-      const tracks = Object.keys(this.p.list).map(i => +i);
-      const i = tracks.indexOf(this.p.current.track);
-      const track = (i === -1 || !tracks[i + dir] ? '' : this.p.list[tracks[i + dir]]);
-      return (track && key ? track[key] : track);
-      //*/
-    }, // getTrack()
+    getSample(dir = 0, key) {
+      const i = this.s.currentIndex + dir;
+      const sample = (this.s.samples[i] ? this.s.samples[i] : null);
+      return sample && key ? sample[key] : sample;
+    }, // getSample()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -324,9 +310,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onListClick(track) {
+    onListClick(index) {
       this.toggleListShown();
-      if (this.p.current.track !== track) this.$router.push('#' + track);
+      this.$router.replace('#' + this.s.samples[index].id);
     }, // onListClick()
 
     //------------------------------------------------------------------------------------------------------------------

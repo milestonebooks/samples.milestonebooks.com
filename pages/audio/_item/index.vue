@@ -82,10 +82,12 @@ export default {
           firstSlideMessage: 'This is the first sample',
           lastSlideMessage:  'This is the last sample',
         },
+        /*
         pagination: {
           el: '.swiper-pagination',
           dynamicBullets: true,
         },
+        //*/
         navigation: {
           nextEl: '.swiper-button-next',
           prevEl: '.swiper-button-prev',
@@ -198,7 +200,7 @@ export default {
       const index = this.$store.state.samples.findIndex(i => i.id === id);
 
       if (index === -1) {
-        return this.$router.push('./'); // TODO: use .replace() instead?
+        return this.$router.replace('./');
       }
 
       this.set({currentIndex: index});
