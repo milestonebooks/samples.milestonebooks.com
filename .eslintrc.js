@@ -3,9 +3,10 @@ module.exports = {
   parser: 'babel-eslint',
   env: {
     browser: true,
-    node: true
+    node: true,
+    es6: true
   },
-  extends: 'standard',
+  extends: 'eslint:recommended',
   // required to lint *.vue files
   plugins: [
     'html'
@@ -25,20 +26,23 @@ module.exports = {
     'space-before-function-paren': ['off'],
     'space-before-blocks':         ['off'],
     'no-trailing-spaces':          ['off'],
+    'no-extra-parens':             ['off'],
 
     'prefer-const':            ['warn'],
     'eqeqeq':                  ['warn'],
-    'indent':                  ['warn'],
     'new-parens':              ['warn'],
     'no-constant-condition':   ['warn'],
-    'no-undef':                ['warn'],
-    'no-extra-boolean-cast':   ['warn'],
-    'no-extra-parens':         ['warn'],
-    'no-unused-vars':          ['warn'],
-    'no-unreachable':          ['warn'],
     'space-infix-ops':         ['warn'],
     'no-multiple-empty-lines': ['warn'],
     'handle-callback-err':     ['warn'],
+    'indent':                  ['warn', 2],
+
+    'no-undef':                ['warn'],
+    'no-extra-boolean-cast':   ['warn'],
+    'no-unused-vars':          ['warn'],
+    'no-unreachable':          ['warn'],
+    "no-console": (process.env.NODE_ENV === 'production' ? ["warn"] : ['off']),
+    "no-empty":   (process.env.NODE_ENV === 'production' ? ["warn"] : ['off']),
   },
   globals: {}
 };

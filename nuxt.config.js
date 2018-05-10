@@ -1,9 +1,12 @@
 module.exports = {
+  env: {
+    gtm: false, // process.env.NODE_ENV === 'production'
+  },
   /*
   ** Headers of the page
   */
   head: {
-    title: 'samples2',
+    title: 'samples.milestonebooks.com',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -11,7 +14,7 @@ module.exports = {
     ],
     link: [
       { hid: 'favicon', rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css' },
+      { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' },
     ],
     script: [
       // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
@@ -27,6 +30,10 @@ module.exports = {
   ** Build configuration
   */
   build: {
+    analyze: {
+      analyzerMode: (process.env.NODE_ENV === 'production' ? 'disabled' : 'server')
+    },
+
     /*
     ** Run ESLint on save
     */
@@ -45,5 +52,18 @@ module.exports = {
       'axios',
       'vue-images-loaded',
     ],
-  }
+  },
+
+  generate: {
+    dir:        '_dist',
+    subFolders: false,
+    fallback:   true,
+
+    routes () {
+      const routes = [];
+      routes.push('/audio/0-SONG');
+      //let books = require('./static/api/books.json'); // `import` triggers "SyntaxError: Unexpected token import" as of 2017-05
+      return routes;
+    }
+  },
 };
