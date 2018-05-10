@@ -1,28 +1,46 @@
 <template>
-  <main :class="mainClass">
+  <main :class="mainClass" @click="toggleListShown">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
     <header>
-      <h1 class="album-title">{{headerTitle}}</h1>
-      <Player />
+      <h1 class="item-title">{{headerTitle}}</h1>
+      <Player ref="player" :currentIndex="$store.state.currentIndex" />
     </header>
 
-    <div class="info">
-      <section v-if="p.current.score" :class="['score', scoreClass, p.current.scoreLoadingClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
+    <article v-swiper:swiper="swiperOption">
+      <div class="swiper-wrapper">
+        <section class="swiper-slide" v-for="sample in $store.state.samples" :data-hash="sample.id">
+          <img v-if="sample.image" :src="sample.image['@']" />
+          <h1 v-else class="sample-title">{{sample.title}}</h1>
+        </section>
+      </div>
+      <div class="swiper-pagination" slot="pagination"></div>
+      <div class="swiper-button-prev swiper-button" slot="button-prev"></div>
+      <div class="swiper-button-next swiper-button" slot="button-next"></div>
+      <div class="copyright">COPYRIGHTED MATERIAL</div>
+    </article>
+
+    <!--section :class="['info']">
+      <div v-if="p.current.score" :class="['score', scoreClass]" :title="scoreTip" v-images-loaded:on.progress="imageProgress" @click="print">
         <img :src="p.current.score" />
         <div class="print-note">
           <span class="glue">Click the sheet music to open a printable PDF,</span>
           <span class="glue"> and then press Ctrl+P to print</span>
         </div>
-      </section>
-    </div>
+      </div>
+      <h1 v-else class="track-title">{{trackTitle}}</h1>
+    </section-->
   </main>
 </template>
 
 <script>
 import Player from '~/components/Player.vue';
+
+import { mapMutations } from 'vuex';
+
+import axios from 'axios';
 
 const imagesLoaded = !process.browser ? {} : require('vue-images-loaded');
 
@@ -36,8 +54,11 @@ export default {
   },
 
   head () {
+    const s = this.$store.state;
+    const i = s.samples[s.currentIndex];
+
     return {
-      title: (!this.p.current.track ? this.$store.state.title : `(${this.p.current.track})${this.p.current.title ? ' ' + this.p.current.title : ''} • ${this.p.title}`),
+      title: (!i ? s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${s.title}`),
 
       link: [
         // audio speaker favicon
@@ -50,6 +71,38 @@ export default {
     $route: 'update',
   },
 
+  data () {
+    return {
+      swiperOption: {
+        autoHeight: true,
+        spaceBetween: 15, /*pixels*/
+        a11y: {
+          prevSlideMessage:  'Previous sample',
+          nextSlideMessage:  'Next sample',
+          firstSlideMessage: 'This is the first sample',
+          lastSlideMessage:  'This is the last sample',
+        },
+        pagination: {
+          el: '.swiper-pagination',
+          dynamicBullets: true,
+        },
+        navigation: {
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev',
+        },
+        hashNavigation: {
+          watchState: true,
+          replaceState: true,
+        },
+        on: {
+          slideChange() {
+            window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[this.activeIndex].id}`);
+          },
+        }
+      }, // swiperOption {}
+    };
+  }, // data()
+
   computed: {
     p() {
       return this.$store.state.player;
@@ -57,13 +110,19 @@ export default {
 
     mainClass() {
       return {
+        'is-init':       this.$store.state.isInit,
         'is-loaded':     this.p.title,
         'is-list-shown': this.p.isListShown,
       }
     },
 
     headerTitle() {
-      return !this.p.current.track ? 'loading album...' : `${this.p.title} (${this.p.current.track})`;
+      const s = this.$store.state;
+      return !s.samples[s.currentIndex] ? 'loading...' : s.title;
+    },
+
+    trackTitle() {
+      return !this.p.current.track ? '' : `(${this.p.current.track}) ` + (this.p.current.title ? this.p.current.title : '[untitled]');
     },
 
     scoreClass() {
@@ -82,25 +141,89 @@ export default {
     },
 
     alerts() {
-      return (this.p.alert ? [this.p.alert] : []);
+      return this.$store.state.alert ? [this.$store.state.alert] : [];
     },
   }, // computed{}
 
   //====================================================================================================================
 
+  mounted() {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
+    this.init();
+  }, // mounted()
+
+  //====================================================================================================================
+
   methods: {
+
+    ...mapMutations([
+      'set',
+    ]),
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    init() {
+      this.initSamples();
+      this.set({isInit:true});
+    }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async initSamples() {
+      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?output=json`);
+      if (!res.data.response.success) {
+        return this.set({alert: res.data.response.message});
+      }
+
+      const samples = res.data.samples;
+
+      this.set({
+        title:   res.data.title,
+        item:    this.$route.params.item,
+        samples: samples,
+        firstId: samples[0].id,
+        lastId:  samples[samples.length - 1].id,
+      });
+
+      this.update();
+    }, // initSamples()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log('update() route...', this.$route.hash);
+      //console.log('update() route...', this.$route.hash);
+
+      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$store.state.firstId])[0];
+
+      const index = this.$store.state.samples.findIndex(i => i.id === id);
+
+      if (index === -1) {
+        return this.$router.push('./'); // TODO: use .replace() instead?
+      }
+
+      this.set({currentIndex: index});
+
+      if (this.swiper.activeIndex !== index) {
+        this.swiper.slideTo(index);
+      }
+
     }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    toggleListShown(e) {
+
+      if (e.target === window.$('.is-list-shown')[0]) {
+        this.$store.commit('player/set', {isListShown: false});
+      }
+
+    }, // toggleListShown()
 
     //------------------------------------------------------------------------------------------------------------------
 
     imageProgress(instance, image) {
       this.$store.commit('player/setCurrent', {
-        scoreLoadingClass: '',
+        //loadingClass: '',
         scoreIsLoaded: image.isLoaded
       });
     }, // imageProgress()
@@ -120,8 +243,12 @@ export default {
 </script>
 
 <style lang="scss">
+@function shortTransition() {
+  @return all .2s ease;
+}
+
 $alert-color: #f00;
-$background-color: #def;
+$background-color: hsl(0, 0%, 95%);
 $theme-color: #c51;
 $radius: .5em;
 
@@ -145,9 +272,30 @@ main {
   margin: auto;
 }
 
+main::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  z-index: 9; /* below header, above swiper */
+  opacity: 0;
+  transition: all .2s ease;
+  pointer-events: none;
+}
+main.is-list-shown::before {
+  opacity: .5;
+  pointer-events: auto;
+}
+
+.glue {
+  white-space: nowrap;
+}
+
 .alerts {
-  z-index: 9;
-  position: absolute;
+  z-index: 99; /* above all */
+  position: fixed;
   left: 0;
   top: 0;
   height: 0;
@@ -159,7 +307,7 @@ main {
   transition: all .2s ease-in-out;
 }
 .alerts:not([data-length="0"]) {
-  height: auto;
+  height: 100%;
 }
 
 .alert {
@@ -178,17 +326,13 @@ main {
 }
 
 header {
-  z-index: 1;
+  z-index: 10; /* above swiper */
   background-color: white;
   border-radius: 0 0 $radius $radius;
   @include drop-shadow();
 }
 
-.glue {
-  white-space: nowrap;
-}
-
-.album-title {
+.item-title {
   font-size: 1.8em;
   margin: 0;
   padding: 0.5em;
@@ -199,28 +343,100 @@ header {
   border-radius: $radius;
 }
 
-.info {
-  min-width: 600px;
-  text-align: center;
-  transition: all .2s ease;
+.swiper-container {
+  margin-top: 1.5em;
+  width: 100%;
+  margin-left: -4em;
+  padding-left: 4em;
+  margin-right: -4em;
+  padding-right: 4em;
+}
+.swiper-container::before {
+  content: '';
+  background: linear-gradient(to right, $background-color, transparent 4em, transparent calc(100% - 4em), $background-color);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 
-.is-list-shown .info {
-  opacity: .5;
+.swiper-slide {
+  user-select: none;
+  cursor: default;
+  background-color: white;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  border: 1px solid hsl(0, 0%, 60%);
+  box-sizing: border-box;
+  min-height: 25vh;
+}
+
+.swiper-button {
+  margin-top: 0;
+  transform: translateY(-50%);
+  height: 7em;
+  width: 3.5em;
+  background-color: hsla(0, 100%, 100%, .9);
+  transition: shortTransition();
+}
+.swiper-button:hover {
+  background-color: hsla(0, 100%, 100%, .9);
+}
+
+.swiper-button-prev, .swiper-container-rtl .swiper-button-next {
+  left: .5em;
+  border-radius: 1em 0 0 1em;
+}
+.swiper-button-next, .swiper-container-rtl .swiper-button-prev {
+  right: .5em;
+  border-radius: 0 1em 1em 0;
+}
+
+.swiper-button-disabled {
+  opacity: .1 !important;
+}
+
+.sample-title {
+  font-size: 2.5em;
+}
+
+.copyright {
+  position: absolute;
+  z-index: 9;
+  bottom: .5em;
+  color: darken($alert-color, 25%);
+  text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+
+
+/* obsolete...*/
+
+.info {
+  margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above while playing audio
+  min-width: 600px;
+  text-align: center;
+  transition: all .25s ease-in-out;
+}
+.info.transition-left {
+  transform: translateX(-50%);
+}
+.info.transition-right {
+  transform: translateX(50%);
 }
 
 .score {
   position:relative;
-  margin-top: 1.5em; // [2018-03-28] Edge bug: 1em (10px) causes white line above score while playing
   background-color: white;
   opacity: 0;
-  transition: all .25s ease-in-out;
-}
-.score.transition-left {
-  transform: translateX(-50%);
-}
-.score.transition-right {
-  transform: translateX(50%);
 }
 .score.is-loaded {
   opacity: 1;

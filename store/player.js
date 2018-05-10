@@ -1,7 +1,5 @@
 import {Howl} from 'howler';
 
-import sleep from 'await-sleep';
-
 // [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
 const storage = (function() {
   const uid = new Date();
@@ -28,21 +26,17 @@ export const state = () => ({
   isAutoPlay: true,
   isAutoNext: true,
 
-  urlBase: 'https://samples.milestonebooks.com/',
-  item: '',
-  list: {},
   current: {
-    track: null,
-    title: null,
+    index: null, // = rootState.currentIndex
     duration: 0,
     pct: 0,
     pctPixel: 0,
     pctHandle: 0,
   },
-  minTrack: null,
-  maxTrack: null,
+  minTrack: null, // obsolete ('firstId' in root)
+  maxTrack: null, // obsolete ('lastId' in root)
 
-  alert: '',
+  persist: ['isAutoPlay','isAutoNext'],
 }); // state{}
 
 //======================================================================================================================
@@ -51,20 +45,27 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  uiClass (state) {
+  isPlayable (state, getters, rootState) {
+    return rootState.currentIndex !== null && !state.isLoading;
+  }, // isPlayable()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  uiClass (state, getters, rootState) {
     return {
       'is-init':       state.isInit,
+      'is-playable':   getters.isPlayable,
       'is-playing':    state.isPlaying,
       'is-loading':    state.isLoading,
-      'is-multi':      state.minTrack !== state.maxTrack,
+      'is-multi':      rootState.samples.length > 1,
     }
   }, // uiClass()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  barSeekStyle (state) {
+  barSeekStyle (state, getters) {
     return {
-      'height': (!state.isInit || !state.current.track || state.isLoading ? '0' : '100%'),
+      'height': (!getters.isPlayable ? '0' : '100%'),
     }
   }, // barSeekStyle()
 
@@ -87,40 +88,15 @@ export const getters = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  getValidTrack: (state) => (track, inc = 1) => {
-    if (isNaN(track) || track < state.minTrack) track = state.minTrack;
-    if (track > state.maxTrack) track = state.maxTrack;
-    while (track && !state.list[track]) track += inc;
-    return track;
-  }, // getValidTrack()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   isPctPixelMove: (state) => (pct, pctArg = 'pct') => {
     return Math.abs(pct - state.current[pctArg]) > state.current.pctPixel;
   }, // isPctPixelMove()
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  playTitle (state) {
-    return (state.isPlaying ? 'Pause' : (state.isInit && !state.isLoading ? 'Play' : ''));
+  playTitle (state, getters) {
+    return (state.isPlaying ? 'Pause' : (getters.isPlayable ? 'Play' : ''));
   }, // playTitle()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  prevTitle (state) {
-    const list = Object.keys(state.list).map(i => +i);
-    let i = list.indexOf(state.current.track);
-    return (i === -1 || i === 0 ? '' : `Prev: ${state.list[list[--i]].title}`);
-  }, // prevTitle()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  nextTitle (state) {
-    const list = Object.keys(state.list).map(i => +i);
-    let i = list.indexOf(state.current.track);
-    return (i === -1 || i === list.length - 1 ? '' : `Next: ${state.list[list[++i]].title}`);
-  }, // nextTitle()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -146,7 +122,7 @@ export const mutations = {
     Object.keys(o).map((key) => {
       state[key] = typeof o[key] === 'object' ? {...state[key], ...o[key]} : o[key];
 
-      if (key === 'isAutoPlay' || key === 'isAutoNext') storage.setItem(key, o[key]);
+      if (state.persist && state.persist.includes(key)) storage.setItem(key, o[key]);
     });
   }, // set()
 
@@ -158,33 +134,9 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  loadData(state, data) {
-    let min = null;
-    let max = null;
-
-    for (const i of Object.keys(data.index)) {
-      if (min === null) min = +i;
-      if (+i > max) max = +i;
-    }
-
-    state.list = data.index;
-    state.minTrack = min;
-    state.maxTrack = max;
-    state._data = data; // for debugging only
-  }, // loadData()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  setTrack(state, track) {
-    state.current = {...state.current, ...state.list[track]};
-    state.isLoading = true;
-  }, // setTrack()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   setLoaded(state) {
     state.isLoading = false;
-    state.current.duration = window.howls[state.current.track].duration();
+    state.current.duration = window.howls[state.current.index].duration();
   }, // setLoaded()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -198,7 +150,7 @@ export const mutations = {
   togglePlay(state) {
     if (state.isLoading) return false;
 
-    const sound = window.howls[state.current.track];
+    const sound = window.howls[state.current.index];
 
     if (!state.isPlaying) {
       sound.play();
@@ -215,7 +167,7 @@ export const mutations = {
 
     if (t) {
       if (!state.interrupted) {
-        const sound = window.howls[state.current.track];
+        const sound = window.howls[state.current.index];
         sound.fade(sound.volume(), 0, 400);
       }
       state.interrupt_t = t;
@@ -232,9 +184,9 @@ export const mutations = {
 
   sync(state, {from}) {
 
-    if (!state.current.track || (state.isPlaying && !state.interrupted)) return;
+    if (state.current.index === null || (state.isPlaying && !state.interrupted)) return;
 
-    const sound = window.howls[state.current.track];
+    const sound = window.howls[state.current.index];
 
     if (from === 'handle') {
       sound.seek(state.current.duration * state.current.pctHandle / 100);
@@ -267,46 +219,33 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async loadTrack({dispatch, commit, getters, state}, track) {
-
-    track = getters.getValidTrack(+track);
+  async loadAudio({dispatch, commit, rootState}, index) {
 
     await dispatch('reset');
 
-    if (state.current.track) {
-      const isAfter = track > state.current.track;
-      commit('setCurrent', {
-        scoreLoadingClass: `transition-${isAfter ? 'left' : 'right'}`,
-        scoreIsLoaded: false,
-      });
-      await sleep(250);
-      commit('setCurrent', {
-        scoreLoadingClass: `transition-${isAfter ? 'right' : 'left'}`,
-      });
-      await sleep(250); // allow time for the element to invisibly transition to the opposite side
-    }
-
-    commit('setTrack', track);
+    commit('setCurrent', {index});
+    commit('set', {isLoading:true});
 
     window.howls = window.howls || {};
 
-    if (!window.howls[track] && state.list[track].file) {
+    if (!window.howls[index] && rootState.samples[index].audio) {
 
       await new Promise((resolve, reject) => {
-        window.howls[track] = new Howl({
-          src: [state.urlBase + state.list[track].file],
+        window.howls[index] = new Howl({
+          src: [rootState.urlBase + rootState.samples[index].audio],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
-          onloaderror: async (id, error) => { await dispatch('onLoadError', error); reject(error); },
+          onloaderror: async (id, error) => { reject(error); },
           onplay: () => { dispatch('setPct') },
           onend:  () => { dispatch('onEnd') },
         });
       });
+
     } else {
       dispatch('onLoad');
     }
 
-  }, // loadTrack()
+  }, // loadAudio()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -317,16 +256,10 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async onLoadError({commit, state}, error) {
-    commit('setAlert', 'Unable to load audio.');
-  }, // onLoadError()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   async setPct({dispatch, commit, getters, state}, pct) {
 
     if (pct === undefined) {
-      const sec = window.howls[state.current.track].seek();
+      const sec = window.howls[state.current.index].seek();
       pct = (sec / state.current.duration) * 100;
     }
 
@@ -367,9 +300,9 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async onEnd({dispatch, state}) {
+  async onEnd({dispatch, state, rootState}) {
 
-    if (!state.isAutoNext || state.current.track === state.maxTrack) await dispatch('reset');
+    if (!state.isAutoNext || state.current.index === rootState.samples.length - 1) await dispatch('reset');
 
   }, // onEnd()
 
