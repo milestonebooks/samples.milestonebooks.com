@@ -46,6 +46,12 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
   box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
 }
 
+@mixin one-line-ellipsis() {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @mixin absolute-center($axis:xy) {
   position: absolute;
   @if ($axis == xy) {

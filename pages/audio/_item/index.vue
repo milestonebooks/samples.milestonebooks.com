@@ -11,15 +11,16 @@
 
     <article v-swiper:swiper="swiperOption">
       <div class="swiper-wrapper">
-        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id" style="min-height:400px;">
-          <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px`" />
-          <h1 v-else class="sample-title">{{sample.title}}</h1>
+        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
+          <div class="swiper-zoom-container">
+            <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" />
+            <h1 v-else class="sample-title">{{sample.title}}</h1>
+          </div>
         </section>
       </div>
       <div class="swiper-pagination" slot="pagination"></div>
       <div class="swiper-button-prev swiper-button" slot="button-prev"></div>
       <div class="swiper-button-next swiper-button" slot="button-next"></div>
-      <div class="copyright">COPYRIGHTED MATERIAL</div>
     </article>
 
   </main>
@@ -32,7 +33,8 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-// TODO: add print option
+// TODO: print option
+// TODO: pagination
 
 export default {
   components: {
@@ -62,19 +64,13 @@ export default {
       swiperOption: {
         autoHeight: true,
         spaceBetween: 15, /*pixels*/
+        zoom: true,
         a11y: {
           prevSlideMessage:  'Previous sample',
           nextSlideMessage:  'Next sample',
           firstSlideMessage: 'This is the first sample',
           lastSlideMessage:  'This is the last sample',
         },
-        // TODO: pagination
-        /*
-        pagination: {
-          el: '.swiper-pagination',
-          dynamicBullets: true,
-        },
-        //*/
         navigation: {
           nextEl: '.swiper-button-next',
           prevEl: '.swiper-button-prev',
@@ -202,13 +198,6 @@ export default {
     }, // toggleListShown()
 
     //------------------------------------------------------------------------------------------------------------------
-    // TODO: obsolete
-
-    print() {
-      window.location = this.p.current.print;
-    }, // print()
-
-    //------------------------------------------------------------------------------------------------------------------
 
   }, // methods{}
 
@@ -242,7 +231,7 @@ main::before {
   width: 100%;
   height: 100%;
   background: white;
-  z-index: 9; /* below header, above swiper */
+  z-index: $layer-header - 1; /* below header, above swiper */
   opacity: 0;
   transition: all .2s ease;
   pointer-events: none;
@@ -292,7 +281,7 @@ header {
   z-index: $layer-header;
   background-color: white;
   border-radius: 0 0 $radius $radius;
-  @include drop-shadow();
+  @include drop-shadow;
 }
 
 .item-title {
@@ -301,6 +290,7 @@ header {
   padding: 0.5em;
   text-align: center;
   color: $theme-color;
+  @include one-line-ellipsis;
 }
 
 .swiper-container {
@@ -311,14 +301,15 @@ header {
   margin-right: -$unit;
   padding-right: $unit;
 }
-.swiper-container::before {
+
+.swiper-container::before { // mask for prev/next slide fades
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
-  z-index: 2;
+  z-index: 2; // raise above prev/next slides
   pointer-events: none;
   background: linear-gradient(to right, $background-color, transparent $unit, transparent calc(100% - #{$unit}), $background-color);
   html[data-browser*="Edge"] & { // [2018-05-11] Edge cannot handle calc()
@@ -348,8 +339,21 @@ header {
 }
 
 .swiper-slide img {
-  min-width: 200px;
-  background: white url('https://samples.milestonebooks.com/_img/loading.gif') no-repeat center;
+  //min-width: 200px; // to display background loading message
+  //background: white url('https://samples.milestonebooks.com/_img/loading.gif') no-repeat center;
+  object-position: top;
+}
+
+.swiper-slide-active {
+  overflow: hidden;
+}
+
+.swiper-zoom-container::after {
+  position: absolute;
+  content: 'COPYRIGHTED MATERIAL';
+  bottom: .5em;
+  color: darken($alert-color, 25%);
+  text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
 }
 
 .swiper-button {
@@ -358,7 +362,7 @@ header {
   height: 7em;
   width: 3.5em;
   background-color: hsla(0, 100%, 100%, .9);
-  @include short-transition();
+  @include short-transition;
 }
 .swiper-button:hover {
   background-color: hsla(0, 100%, 100%, .9);
@@ -379,14 +383,6 @@ header {
 
 .sample-title {
   font-size: 2.5em;
-}
-
-.copyright {
-  @include absolute-center(x);
-  z-index: 9;
-  bottom: .5em;
-  color: darken($alert-color, 25%);
-  text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
 }
 
 </style>
