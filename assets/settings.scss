@@ -1,3 +1,26 @@
+// layers
+$layer-alerts: 90;
+$layer-header: 10;
+
+// sizes
+$base-size: 10px;
+$unit: 4em;
+$radius: .5em;
+
+// colors
+$alert-color: #f00;
+$background-color: hsl(0, 0%, 95%);
+$theme-color: #c51;
+$player-bg-color: white;
+$player-color: black;
+$disabled-color: lighten($player-color, 90%);
+$focus-color: hsla(22, 85%, 43%, 1);
+$list-background-color: lighten($disabled-color, 5%);
+
+$list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
+
+// functions
+
 // adapted from <https://gist.github.com/tqc/2564280>
 @function colorConvertAlpha($colorA, $colorB:white) {
   $hA: hue($colorA);
@@ -13,24 +36,29 @@
   @return hsl($h, $s, $l);
 }
 
-@function shortTransition() {
-  @return all .2s ease;
-}
+// mixins
 
-$alert-color: #f00;
-$background-color: hsl(0, 0%, 95%);
-$theme-color: #c51;
-$radius: .5em;
-$base-size: 10px;
-$unit: 4em;
-$player-bg-color: white;
-$player-color: black;
-$disabled-color: lighten($player-color, 90%);
-$focus-color: hsla(22, 85%, 43%, 1);
-$list-background-color: lighten($disabled-color, 5%);
-$list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
-$list-radius: .5em;
+@mixin short-transition() {
+  transition: all .2s ease;
+}
 
 @mixin drop-shadow() {
   box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
+}
+
+@mixin absolute-center($axis:xy) {
+  position: absolute;
+  @if ($axis == xy) {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @if ($axis == x) {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  @if ($axis == y) {
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }

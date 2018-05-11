@@ -21,6 +21,7 @@ export const state = () => ({
   urlBase: 'https://samples.milestonebooks.com/',
 
   item: '',
+  type: 'audio',
   samples: [],
   currentIndex: null,
   firstId: '',

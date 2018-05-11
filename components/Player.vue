@@ -176,7 +176,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      //console.log('update() currentIndex:', this.currentIndex, this.$store.state.samples[this.currentIndex]);
       this.load(this.currentIndex);
     }, // update()
 
@@ -351,7 +350,7 @@ export default {
 
 .audio-player:not(.is-multi) .opt-multi {
   opacity: 0;
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .controls {
@@ -367,9 +366,8 @@ button {
   width: $unit;
   height: $unit;
   overflow: hidden;
-  top: 50%;
-  transform: translateY(-50%);
-  transition: shortTransition();
+  @include absolute-center(y);
+  @include short-transition();
   color: $disabled-color;
 }
 button:not(:disabled) {
@@ -426,7 +424,7 @@ button svg {
 .opt-multi {
   opacity: 0;
   right: 0;
-  transition: shortTransition();
+  @include short-transition();
 }
 .is-multi .opt-multi {
   opacity: 1;
@@ -460,9 +458,9 @@ button svg {
   width: $unit;
   height: $unit;
   opacity: 0;
-  border-radius: $list-radius $list-radius 0 0;
+  border-radius: $radius $radius 0 0;
   background-color: $list-background-color;
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .btn-list svg {
@@ -487,10 +485,10 @@ button svg {
   padding: .5em;
   background-color: $list-background-color;
   box-shadow: $list-shadow;
-  border-radius: $list-radius;
+  border-radius: $radius;
   opacity: 0;
   overflow: hidden;
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .list.show {
@@ -514,7 +512,7 @@ button svg {
   height: 0;
   cursor: pointer;
   background-color: change-color($disabled-color, $lightness: 100%);
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .list.show .item {
@@ -597,7 +595,7 @@ button svg {
   height: 4px;
   top: 50%;
   transform: translateY(-50%);
-  transition: shortTransition();
+  @include short-transition();
 }
 .is-multi .bar-progress {
   right: 3.5 * $unit;
@@ -626,8 +624,8 @@ button svg {
   display: inherit;
   width: 100%;
   top: -.8em;
-  height: 2em;
-  transition: shortTransition();
+  height: $unit / 2;
+  @include short-transition();
 }
 
 .bar-play {
@@ -657,7 +655,7 @@ button svg {
   width: 0;
   height: 0;
   transform: translate(-50%, -50%);
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .bar-seek::before,
@@ -695,7 +693,7 @@ button svg {
   background-color: colorConvertAlpha(transparentize($focus-color, .5));
   border: 0.2em solid white;
   border-radius: .5em;
-  transition: shortTransition();
+  @include short-transition();
 }
 
 .bar-seek.captured .bar-tip,

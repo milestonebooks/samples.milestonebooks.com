@@ -11,8 +11,8 @@
 
     <article v-swiper:swiper="swiperOption">
       <div class="swiper-wrapper">
-        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
-          <img v-if="sample.image" :src="sample.image['@']" />
+        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id" style="min-height:400px;">
+          <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px`" />
           <h1 v-else class="sample-title">{{sample.title}}</h1>
         </section>
       </div>
@@ -93,6 +93,10 @@ export default {
   }, // data()
 
   computed: {
+    s() {
+      return this.$store.state;
+    },
+
     p() {
       return this.$store.state.player;
     },
@@ -113,6 +117,7 @@ export default {
     alerts() {
       return this.$store.state.alert ? [this.$store.state.alert] : [];
     },
+
   }, // computed{}
 
   //====================================================================================================================
@@ -150,6 +155,7 @@ export default {
       this.set({
         title:   res.data.title,
         item:    this.$route.params.item,
+        type:    res.data.type,
         samples: samples,
         firstId: samples[0].id,
         lastId:  samples[samples.length - 1].id,
@@ -181,6 +187,12 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    imgSrc(sample) {
+      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}.${sample.image.ext}`;
+    }, // imgSrc()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     toggleListShown(e) {
 
       if (e.target === window.$('.is-list-shown')[0]) {
@@ -190,6 +202,7 @@ export default {
     }, // toggleListShown()
 
     //------------------------------------------------------------------------------------------------------------------
+    // TODO: obsolete
 
     print() {
       window.location = this.p.current.print;
@@ -244,7 +257,7 @@ main.is-list-shown::before {
 }
 
 .alerts {
-  z-index: 99; /* above all */
+  z-index: $layer-alerts;
   position: fixed;
   left: 0;
   top: 0;
@@ -276,7 +289,7 @@ main.is-list-shown::before {
 }
 
 header {
-  z-index: 10; /* above swiper */
+  z-index: $layer-header;
   background-color: white;
   border-radius: 0 0 $radius $radius;
   @include drop-shadow();
@@ -300,7 +313,6 @@ header {
 }
 .swiper-container::before {
   content: '';
-  background: linear-gradient(to right, $background-color, transparent 4em, transparent calc(100% - 4em), $background-color);
   position: absolute;
   left: 0;
   right: 0;
@@ -308,20 +320,36 @@ header {
   bottom: 0;
   z-index: 2;
   pointer-events: none;
+  background: linear-gradient(to right, $background-color, transparent $unit, transparent calc(100% - #{$unit}), $background-color);
+  html[data-browser*="Edge"] & { // [2018-05-11] Edge cannot handle calc()
+    background: linear-gradient(to right, $background-color, transparent 5%, transparent 94.5%, $background-color);
+  }
 }
 
 .swiper-slide {
   user-select: none;
   cursor: default;
-  background-color: white;
   text-align: center;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px 0;
-  border: 1px solid hsl(0, 0%, 60%);
-  box-sizing: border-box;
+  background-color: white;
   min-height: 25vh;
+}
+
+.swiper-slide::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border: 1px solid hsl(0, 0%, 60%);
+}
+
+.swiper-slide img {
+  min-width: 200px;
+  background: white url('https://samples.milestonebooks.com/_img/loading.gif') no-repeat center;
 }
 
 .swiper-button {
@@ -330,7 +358,7 @@ header {
   height: 7em;
   width: 3.5em;
   background-color: hsla(0, 100%, 100%, .9);
-  transition: shortTransition();
+  @include short-transition();
 }
 .swiper-button:hover {
   background-color: hsla(0, 100%, 100%, .9);
@@ -354,13 +382,11 @@ header {
 }
 
 .copyright {
-  position: absolute;
+  @include absolute-center(x);
   z-index: 9;
   bottom: .5em;
   color: darken($alert-color, 25%);
   text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 </style>

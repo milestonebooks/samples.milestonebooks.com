@@ -19,7 +19,10 @@ module.exports = {
     script: [
       // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
       { src:'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
+      // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
+      { hid: 'ua', innerHTML: 'document.documentElement.setAttribute("data-browser", navigator.userAgent);', type: 'text/javascript' },
     ],
+    __dangerouslyDisableSanitizers: ["script"],
   },
   /*
   ** Customize the progress bar color
