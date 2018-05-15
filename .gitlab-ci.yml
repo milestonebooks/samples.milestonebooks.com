@@ -7,14 +7,9 @@ cache:
   paths:
     - node_modules/
 
-#test:vulnerabilities:
-#  script:
-#    - npm run vuln-test
-
 publish:
-  stage: deploy
-  only:
-    - tags
-    - triggers
   script:
     - npm run generate
+  artifacts:
+    paths:
+      - _dist
