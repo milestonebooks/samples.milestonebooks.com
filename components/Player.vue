@@ -215,7 +215,7 @@ export default {
           if (Math.abs(val - num) < Math.abs(num - closest)) closest = val;
         }
         return closest;
-      }
+      };
 
       // adjust to the interval nearest 20th (5%) rounded to an interval:
       // 10s; 20s (len > 5m); 30s (>~8m); 1m (>15m); 5m (>1h); 10m (>2.5h)
@@ -386,10 +386,6 @@ button svg {
   fill: currentColor;
 }
 
-.audio-player:not(.is-init) .btn-play {
-  opacity: 0;
-}
-.audio-player:not(.is-init) .btn-play,
 .audio-player.is-loading .btn-play {
   cursor: wait;
 }

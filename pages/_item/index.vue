@@ -9,7 +9,7 @@
       <Player ref="player" :currentIndex="$store.state.currentIndex" />
     </header>
 
-    <article v-swiper:swiper="swiperOption">
+    <article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
         <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <div class="swiper-zoom-container">
@@ -135,7 +135,6 @@ export default {
 
     init() {
       this.initSamples();
-      this.set({isInit:true});
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -158,6 +157,8 @@ export default {
       });
 
       this.update();
+
+      this.set({isInit:true});
     }, // initSamples()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -222,6 +223,12 @@ main {
   flex-direction: column;
   max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
+}
+
+main:not(.is-init) .audio-player,
+main:not(.is-init) .swiper-container {
+  pointer-events: none;
+  opacity: 0;
 }
 
 main::before {
@@ -300,6 +307,7 @@ header {
   padding-left: $unit;
   margin-right: -$unit;
   padding-right: $unit;
+  @include short-transition;
 }
 
 .swiper-container::before { // mask for prev/next slide fades
