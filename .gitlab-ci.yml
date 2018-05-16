@@ -1,3 +1,5 @@
+# adapted from <https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4>
+
 image: node:8
 
 before_script:
@@ -8,10 +10,15 @@ cache:
     - node_modules/
 
 publish:
-  environment: Staging
   only:
     - dev
   script:
     - npm run generate
     - cd _dist/
     - ls
+    - sshpass -V
+    - export SSHPASS=$SSH_PASS
+    - sshpass -e scp -o stricthostkeychecking=no -r . rasbooks@ftp.milestonebooks.com:/var/www/vhosts/milestonebooks.com/subdomains/samples/httpdocs/_dist.dev/
+  artifacts:
+    paths:
+    - _dist
