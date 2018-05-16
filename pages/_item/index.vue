@@ -206,7 +206,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../../../assets/settings.scss";
+@import "../../assets/settings.scss";
 
 html {
   font-size: $base-size;

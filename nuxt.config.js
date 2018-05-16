@@ -1,10 +1,9 @@
 module.exports = {
   env: {
-    gtm: false, // process.env.NODE_ENV === 'production'
+    gtm: process.env.NODE_ENV === 'production'
   },
-  /*
-  ** Headers of the page
-  */
+
+  // headers of the page
   head: {
     title: 'samples.milestonebooks.com',
     meta: [
@@ -24,9 +23,8 @@ module.exports = {
     ],
     __dangerouslyDisableSanitizers: ["script"],
   },
-  /*
-  ** Customize the progress bar color
-  */
+
+  // customize the progress bar color
   loading: { color: '#c51' },
 
   plugins: [
@@ -38,17 +36,13 @@ module.exports = {
     'swiper/dist/css/swiper.css',
   ],
 
-  /*
-  ** Build configuration
-  */
+  // build configuration
   build: {
     analyze: {
       analyzerMode: (process.env.NODE_ENV === 'production' ? 'disabled' : 'server')
     },
 
-    /*
-    ** Run ESLint on save
-    */
+    // run ESLint on save
     extend (config, ctx) {
       if (ctx.dev && ctx.isClient) {
         config.module.rules.push({
@@ -60,9 +54,12 @@ module.exports = {
       }
     },
 
+    // optimizes js and css bundles
     vendor: [
       'axios',
     ],
+
+    extractCSS: true,
   },
 
   generate: {
@@ -72,8 +69,8 @@ module.exports = {
 
     routes () {
       const routes = [];
-      routes.push('/audio/0-SONG');
-      //let books = require('./static/api/books.json'); // `import` triggers "SyntaxError: Unexpected token import" as of 2017-05
+      routes.push('/0-SONG', '/49-CD-HLCF', '/49-CD-JTW');
+      //TODO: get dynamically from API; let routes = require('.json'); // `import` triggers "SyntaxError: Unexpected token import" as of 2017-05
       return routes;
     }
   },
