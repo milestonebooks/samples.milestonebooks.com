@@ -2,12 +2,13 @@
 
 image: node:8
 
-before_script:
-  - npm install
-
 cache:
   paths:
     - node_modules/
+
+before_script:
+  - apt-get update -qq && apt-get install -y -qq sshpass
+  - npm install
 
 publish:
   only:
@@ -19,6 +20,6 @@ publish:
     - sshpass -V
     - export SSHPASS=$SSH_PASS
     - sshpass -e scp -o stricthostkeychecking=no -r . rasbooks@ftp.milestonebooks.com:/var/www/vhosts/milestonebooks.com/subdomains/samples/httpdocs/_dist.dev/
-  artifacts:
-    paths:
-    - _dist
+#  artifacts:
+#    paths:
+#    - _dist

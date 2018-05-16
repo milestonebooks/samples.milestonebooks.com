@@ -39,9 +39,11 @@ module.exports = {
 
   // build configuration
   build: {
+    /*
     analyze: {
       analyzerMode: (process.env.NODE_ENV === 'production' ? 'disabled' : 'server')
     },
+    //*/
 
     // run ESLint on save
     extend (config, ctx) {
