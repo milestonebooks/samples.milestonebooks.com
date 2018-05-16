@@ -7,6 +7,9 @@ cache:
     - node_modules/
 
 before_script:
+  - apt-get update
+  - apt-get --yes --force-yes install git ssh rsync
+  - git submodule update --init --recursive
   - npm install
 
 publish:
