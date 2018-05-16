@@ -1,4 +1,4 @@
-# adapted from <https://codeburst.io/gitlab-build-and-push-to-a-server-via-ssh-6d27ca1bf7b4>
+# adapted from <https://tonyblyler.com/post/ci-rsync-deployment/>
 
 image: node:8
 
@@ -7,7 +7,6 @@ cache:
     - node_modules/
 
 before_script:
-  - apt-get update -qq && apt-get install -y -qq sshpass
   - npm install
 
 publish:
@@ -15,11 +14,8 @@ publish:
     - dev
   script:
     - npm run generate
-    - cd _dist/
-    - ls
-    - sshpass -V
-    - export SSHPASS=$SSH_PASS
-    - sshpass -e scp -o stricthostkeychecking=no -r . rasbooks@ftp.milestonebooks.com:/var/www/vhosts/milestonebooks.com/subdomains/samples/httpdocs/_dist.dev/
-#  artifacts:
-#    paths:
-#    - _dist
+    - echo "${SSH_PRIVATE_KEY}" > id_rsa
+    - chmod 700 id_rsa
+    - mkdir "${HOME}/.ssh"
+    - echo "${SSH_HOST_KEY}" > "${HOME}/.ssh/known_hosts"
+    - rsync -hrvz --delete --exclude=_ -e 'ssh -i id_rsa' _dist/ rasbooks@ftp.milestonebooks.com:/var/www/vhosts/milestonebooks.com/subdomains/samples/httpdocs/_dist.dev/
