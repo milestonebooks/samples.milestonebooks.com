@@ -1,18 +1,6 @@
 import {Howl} from 'howler';
 
-// [2018-03-26] from https://mathiasbynens.be/notes/localstorage-pattern (written 2011-07-29)
-const storage = (function() {
-  const uid = new Date();
-  let storage;
-  let result;
-
-  try {
-    (storage = window.localStorage).setItem(uid, uid);
-    result = storage.getItem(uid) === '' + uid;
-    storage.removeItem(uid);
-    return result && storage;
-  } catch (exception) {}
-}()); // storage()
+import storage from '../plugins/storage';
 
 export const state = () => ({
   isInit:      false,

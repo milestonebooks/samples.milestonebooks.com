@@ -29,6 +29,7 @@ module.exports = {
 
   plugins: [
     '~plugins/gtm.js',
+    { src: '~plugins/storage.js', ssr: false },
     { src: '~plugins/swiper.js', ssr: false },
   ],
 
