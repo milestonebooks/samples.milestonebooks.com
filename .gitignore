@@ -12,6 +12,3 @@ dist
 _dist
 
 .idea
-
-# secret stuff
-_credentials
