@@ -9,7 +9,7 @@
       <Player ref="player" :currentIndex="$store.state.currentIndex" />
     </header>
 
-    <article v-swiper:swiper="swiperOption">
+    <article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
         <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <div class="swiper-zoom-container">
@@ -135,13 +135,12 @@ export default {
 
     init() {
       this.initSamples();
-      this.set({isInit:true});
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
     async initSamples() {
-      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?output=json`);
+      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?action=Samples`);
       if (!res.data.response.success) {
         return this.set({alert: res.data.response.message});
       }
@@ -158,6 +157,8 @@ export default {
       });
 
       this.update();
+
+      this.set({isInit:true});
     }, // initSamples()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -206,7 +207,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../../../assets/settings.scss";
+@import "../../assets/settings.scss";
 
 html {
   font-size: $base-size;
@@ -222,6 +223,12 @@ main {
   flex-direction: column;
   max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
+}
+
+main:not(.is-init) .audio-player,
+main:not(.is-init) .swiper-container {
+  pointer-events: none;
+  opacity: 0;
 }
 
 main::before {
@@ -300,6 +307,7 @@ header {
   padding-left: $unit;
   margin-right: -$unit;
   padding-right: $unit;
+  @include short-transition;
 }
 
 .swiper-container::before { // mask for prev/next slide fades
