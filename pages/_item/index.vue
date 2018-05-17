@@ -140,7 +140,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initSamples() {
-      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?output=json`);
+      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?action=Samples`);
       if (!res.data.response.success) {
         return this.set({alert: res.data.response.message});
       }
