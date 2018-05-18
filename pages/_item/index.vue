@@ -14,7 +14,7 @@
         <section v-for="sample in s.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <div class="swiper-zoom-container">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" />
-            <h1 v-else class="sample-title">{{sample.title}}</h1>
+            <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
       </div>
