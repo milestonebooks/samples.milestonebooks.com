@@ -16,6 +16,8 @@ module.exports = {
       { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' },
     ],
     script: [
+      // TODO: enable IE11 access
+      { src: 'https://cdn.polyfill.io/v2/polyfill.min.js' },//?features=String.prototype.includes,Array.prototype.find,Promise' },
       // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
       { src:'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
       // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
@@ -64,10 +66,10 @@ module.exports = {
     subFolders: false,
     fallback:   true,
 
-    routes () {
+    async routes () {
       const routes = [];
       routes.push('/0-SONG', '/49-CD-HLCF', '/49-CD-JTW');
-      //TODO: get dynamically from API; let routes = require('.json'); // `import` triggers "SyntaxError: Unexpected token import" as of 2017-05
+      //TODO: get dynamically from API <https://samples.milestonebooks.com/AudioSamples.php?action=Items>
       return routes;
     }
   },
