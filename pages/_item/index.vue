@@ -6,12 +6,12 @@
 
     <header>
       <h1 class="item-title">{{headerTitle}}</h1>
-      <Player ref="player" :currentIndex="$store.state.currentIndex" />
+      <Player ref="player" :currentIndex="s.currentIndex" />
     </header>
 
     <article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
-        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
+        <section v-for="sample in s.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <div class="swiper-zoom-container">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" />
             <h1 v-else class="sample-title">{{sample.title}}</h1>
@@ -42,11 +42,10 @@ export default {
   },
 
   head () {
-    const s = this.$store.state;
-    const i = s.samples[s.currentIndex];
+    const i = this.s.samples[this.s.currentIndex];
 
     return {
-      title: (!i ? s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${s.title}`),
+      title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
 
       link: [
         // audio speaker favicon
@@ -88,6 +87,24 @@ export default {
     };
   }, // data()
 
+  async asyncData({params, store, error}) {
+    const data = {
+      data: null
+    };
+    const url = `${store.state.urlBase}${params.item}/?action=Samples`;
+
+    try {
+      const res = await axios.get(url);
+      if (typeof res.data === 'string') throw {response:{status:'404'}};
+      data.data = res.data;
+    } catch (err) {
+      console.log('error:',err);
+      return error({ statusCode: err.response.status, message: `help! [${url}]` })
+    }
+
+    return data;
+  }, // asyncData()
+
   computed: {
     s() {
       return this.$store.state;
@@ -99,19 +116,17 @@ export default {
 
     mainClass() {
       return {
-        'is-init':       this.$store.state.isInit,
-        'is-loaded':     this.p.title,
+        'is-init':       this.s.isInit,
         'is-list-shown': this.p.isListShown,
       }
     },
 
     headerTitle() {
-      const s = this.$store.state;
-      return !s.samples[s.currentIndex] ? 'loading...' : s.title;
+      return !this.s.samples[this.s.currentIndex] ? 'loading...' : this.s.title;
     },
 
     alerts() {
-      return this.$store.state.alert ? [this.$store.state.alert] : [];
+      return this.s.alert ? [this.s.alert] : [];
     },
 
   }, // computed{}
@@ -120,7 +135,8 @@ export default {
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
-    this.init();
+
+    this.initSamplesData();
   }, // mounted()
 
   //====================================================================================================================
@@ -133,42 +149,30 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    init() {
-      this.initSamples();
-    }, // init()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    async initSamples() {
-      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?action=Samples`);
-      if (!res.data.response.success) {
-        return this.set({alert: res.data.response.message});
-      }
-
-      const samples = res.data.samples;
+    async initSamplesData() {
+      const samples = this.data.samples;
 
       this.set({
-        title:   res.data.title,
+        isInit:  true,
+        title:   this.data.title,
         item:    this.$route.params.item,
-        type:    res.data.type,
+        type:    this.data.type,
         samples: samples,
         firstId: samples[0].id,
         lastId:  samples[samples.length - 1].id,
       });
 
       this.update();
-
-      this.set({isInit:true});
-    }, // initSamples()
+    }, // initSamplesData()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
       //console.log('update() route...', this.$route.hash);
 
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$store.state.firstId])[0];
+      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 
-      const index = this.$store.state.samples.findIndex(i => i.id === id);
+      const index = this.s.samples.findIndex(i => i.id === id);
 
       if (index === -1) {
         return this.$router.replace('./');
@@ -223,10 +227,10 @@ main {
   flex-direction: column;
   max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
+  @include short-transition;
 }
 
-main:not(.is-init) .audio-player,
-main:not(.is-init) .swiper-container {
+main:not(.is-init) {
   pointer-events: none;
   opacity: 0;
 }
@@ -307,7 +311,6 @@ header {
   padding-left: $unit;
   margin-right: -$unit;
   padding-right: $unit;
-  @include short-transition;
 }
 
 .swiper-container::before { // mask for prev/next slide fades

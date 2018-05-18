@@ -26,18 +26,25 @@ module.exports = {
     __dangerouslyDisableSanitizers: ["script"],
   },
 
-  // customize the progress bar color
-  loading: { color: '#c51' },
-
   plugins: [
     '~plugins/gtm.js',
     { src: '~plugins/storage.js', ssr: false },
-    { src: '~plugins/swiper.js', ssr: false },
+    { src: '~plugins/swiper.js', ssr: false }, // TODO: largest component--optimize if possible
   ],
 
   css: [
     'swiper/dist/css/swiper.css',
   ],
+
+  mode: 'spa',
+
+  loadingIndicator: {
+    color: 'hsl(0, 0%, 50%)',
+    background: 'hsl(0, 0%, 95%)',
+  },
+
+  // customize the progress bar color
+  loading: { color: '#c51' },
 
   // build configuration
   build: {
@@ -66,11 +73,6 @@ module.exports = {
     subFolders: false,
     fallback:   true,
 
-    async routes () {
-      const routes = [];
-      routes.push('/0-SONG', '/49-CD-HLCF', '/49-CD-JTW');
-      //TODO: get dynamically from API <https://samples.milestonebooks.com/AudioSamples.php?action=Items>
-      return routes;
-    }
+    routes: ['/_item'], // unique data is loaded client-side, so only one template is necessary
   },
 };

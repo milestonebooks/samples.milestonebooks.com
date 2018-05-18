@@ -3,19 +3,19 @@ import storage from '../plugins/storage';
 //======================================================================================================================
 
 export const state = () => ({
-  isInit:  false,
-  title:   'Samples',
-  gtmID:   'GTM-PHD5MBC', // https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012
-  urlBase: 'https://samples.milestonebooks.com/',
+  isInit:   false,
+  title:    'Samples',
+  gtmID:    'GTM-PHD5MBC', // https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012
+  urlBase:  'https://samples.milestonebooks.com/',
 
-  item: '',
-  type: 'audio',
+  item:    '',
+  type:    'audio',
   samples: [],
   currentIndex: null,
   firstId: '',
-  lastId: '',
+  lastId:  '',
 
-  alert: '',
+  alert:   '',
 });
 
 //======================================================================================================================
