@@ -68,3 +68,13 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
     transform: translateY(-50%);
   }
 }
+
+@mixin base_styling() {
+  html {
+    font-size: $base-size;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    min-height: 100%;
+    background-color: $background-color;
+    overflow-y: scroll; // always on to avoid possible jank when toggling playlist
+  }
+}

@@ -95,11 +95,11 @@ export default {
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string') throw {response:{status:'404'}};
+      if (typeof res.data === 'string' || !res.data.samples.length) throw {response:{status:500}};
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
-      return error({ statusCode: err.response.status, message: `help! [${url}]` })
+      return error({ statusCode: err.response.status, message: 'Oops! This page has a problem. :-(', url })
     }
 
     return data;
@@ -213,13 +213,7 @@ export default {
 <style lang="scss">
 @import "../../assets/settings.scss";
 
-html {
-  font-size: $base-size;
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  min-height: 100%;
-  background-color: $background-color;
-  overflow-y: scroll; // always on to avoid possible jank when toggling playlist
-}
+@include base_styling;
 
 main {
   position: relative;
