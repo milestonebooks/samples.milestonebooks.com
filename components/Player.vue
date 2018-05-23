@@ -7,7 +7,6 @@
       <nuxt-link class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <!-- TODO: .btn-list @focus forwarding prevents Shift-Tab function -->
       <div class="btn btn-list opt-multi" @click="showList">
         <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
       </div>
@@ -236,16 +235,16 @@ export default {
       let dir = null;
 
       switch (e.key) {
-      case 'ArrowLeft':
+      case 'ArrowLeft': case 'Left':
         if (idEl.selectionStart !== 0) return;
         dir = -1; break;
-      case 'ArrowUp':
+      case 'ArrowUp': case 'Up':
         if (!this.p.isListShown) this.showList();
         dir = -1; break;
-      case 'ArrowRight':
+      case 'ArrowRight': case 'Right':
         if (idEl.selectionEnd !== idEl.value.length) return;
         dir = 1; break;
-      case 'ArrowDown':
+      case 'ArrowDown': case 'Down':
         if (!this.p.isListShown) this.showList();
         dir = 1; break;
       case ' ':
@@ -309,9 +308,9 @@ export default {
 
       switch (e.key) {
       case 'Backspace':
-      case 'ArrowLeft':
+      case 'ArrowLeft': case 'Left':
         newPct = (Math.ceil( Math.round(len * pct / 100) / secIntv) - 1) * secIntv / len * 100; break;
-      case 'ArrowRight':
+      case 'ArrowRight': case 'Right':
         newPct = (Math.floor(Math.round(len * pct / 100) / secIntv) + 1) * secIntv / len * 100; break;
       case 'Home':
         newPct =   0; break;
@@ -574,7 +573,7 @@ export default {
   width: 3em;
   height: 2em;
   @include absolute-center();
-  //transform: translate(-50%, -50%);
+  top: calc(50% + .5em);
 }
 
 .btn-list input {
