@@ -1,17 +1,17 @@
 <template>
   <aside :class="['audio-player', uiClass]">
     <div class="controls">
-      <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
+      <button class="btn btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
         <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
       </button>
-      <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
       <!-- TODO: .btn-list @focus forwarding prevents Shift-Tab function -->
-      <button class="btn-list opt-multi" @focus="$refs.inputId.focus()" @click="showList">
+      <div class="btn btn-list opt-multi" @click="showList">
         <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
-      </button>
-      <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      </div>
+      <nuxt-link class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
@@ -462,7 +462,7 @@ export default {
   height: 100%;
 }
 
-button {
+.btn {
   background: none;
   border: none;
   box-sizing: content-box;
@@ -474,23 +474,23 @@ button {
   @include short-transition;
   color: $disabled-color;
 }
-button:not(:disabled) {
+.btn:not(:disabled) {
   cursor: pointer;
   color: $player-color;
 }
-button:not(:disabled):focus,
-button:not(:disabled):hover {
+.btn:not(:disabled):focus,
+.btn:not(:disabled):hover {
   color: $focus-color;
 }
-button:not(:disabled):focus input,
-button:not(:disabled) input:focus,
-button:not(:disabled):hover input {
+.btn:not(:disabled):focus input,
+.btn:not(:disabled) input:focus,
+.btn:not(:disabled):hover input {
   color: $focus-color;
   border-color: $focus-color;
   background-color: $list-hover-bg-color;
 }
 
-button svg {
+.btn svg {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -573,7 +573,8 @@ button svg {
 .btn-list span {
   width: 3em;
   height: 2em;
-  transform: translate(-50%, -50%);
+  @include absolute-center();
+  //transform: translate(-50%, -50%);
 }
 
 .btn-list input {
