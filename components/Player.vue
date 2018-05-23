@@ -7,9 +7,9 @@
       <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
+      <!-- TODO: .btn-list @focus forwarding prevents Shift-Tab function -->
       <button class="btn-list opt-multi" @focus="$refs.inputId.focus()" @click="showList">
         <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
-        <!--SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon-->
       </button>
       <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
@@ -251,6 +251,7 @@ export default {
       case ' ':
         if (!this.p.isListShown) this.showList();
         else this.gotoId();
+        dir = 0;
         break;
       case 'Enter':
         this.gotoId(); break;
@@ -258,16 +259,17 @@ export default {
         return; // ignore all other keys
       }
 
-      if (dir) {
+      if (dir !== null) {
         const newId = this.getSample(dir, 'id', i);
         if (newId === null) return;
-        console.log('onInputKey()', id, '->', newId);
-        idEl.value = newId;
-        idEl.setSelectionRange(0, idEl.value.length);
 
-        if (!this.p.isListShown) this.gotoId();
+        // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
+        this.$nextTick(() => {
+          idEl.value = newId;
+          idEl.setSelectionRange(0, idEl.value.length);
+        });
 
-        // TODO: input value gets overwritten by currentIndex id when list is shown
+        if (!this.p.isListShown) this.gotoId(newId);
 
         this.updateListMatch(newId);
       }
@@ -596,12 +598,6 @@ button svg {
   border-color: $alert-color !important;
   background-color: $alert-bg-color !important;
 }
-
-/*
-.btn-list svg {
-  top: calc(50% + .5em);
-}
-//*/
 
 .is-list-shown .btn-list::before {
   box-shadow: $list-shadow;
