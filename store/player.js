@@ -10,6 +10,7 @@ export const state = () => ({
   interrupted: false,
   interrupt_t: null,
   isListShown: false,
+  isValidInputId: true,
 
   isAutoPlay: true,
   isAutoNext: true,

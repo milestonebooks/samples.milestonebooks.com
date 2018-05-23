@@ -6,16 +6,19 @@ $layer-header: 10;
 $base-size: 10px;
 $unit: 4em;
 $radius: .5em;
+$list-font-size: 1.8em;
 
 // colors
-$alert-color: #f00;
+$alert-color: hsl(0, 100%, 50%);
+$alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
-$theme-color: #c51;
+$theme-color: hsl(22, 85%, 43%);
+$focus-color: $theme-color;
 $player-bg-color: white;
 $player-color: black;
 $disabled-color: lighten($player-color, 90%);
-$focus-color: hsla(22, 85%, 43%, 1);
-$list-background-color: lighten($disabled-color, 5%);
+$list-hover-bg-color: hsl(60, 100%, 95%);
+$list-bg-color: lighten($disabled-color, 5%);
 
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 

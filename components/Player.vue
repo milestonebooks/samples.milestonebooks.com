@@ -7,8 +7,9 @@
       <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button class="btn-list opt-multi" :title="listTitle" @click="toggleListShown">
-        <SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon>
+      <button class="btn-list opt-multi" @click="showList">
+        <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" @blur="inputIdGet" /></span>
+        <!--SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon-->
       </button>
       <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
@@ -16,7 +17,7 @@
     </div>
     <nav :class="{list: true, show: p.isListShown}">
       <ul>
-        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.index)">
+        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="gotoSample(sample.index)">
           <div class="track"><span>{{ sample.id }}</span></div>
           <div class="title"><span>{{ sample.title }}</span></div>
         </li>
@@ -92,26 +93,34 @@ export default {
     btnNextPath() {
       return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
     },
+    /*
     btnListPath() {
       return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
     },
-    listTitle() {
-      return 'Toggle List';
+    //*/
+    inputId: {
+      get() {
+        return this.p.isInit ? this.s.samples[this.s.currentIndex].id : '';
+      },
+      set(id) {
+        window.$(this.$refs.inputId).toggleClass('invalid', this.s.samples.find((i) => i.id === id) === undefined);
+        this.set({inputId: id});
+      },
     },
     autoPlay: {
-      get () {
+      get() {
         return this.p.isAutoPlay;
       },
-      set (isAutoPlay) {
-        this.$store.commit('player/set',{isAutoPlay})
+      set(isAutoPlay) {
+        this.set({isAutoPlay});
       },
     },
     autoNext: {
-      get () {
+      get() {
         return this.p.isAutoNext;
       },
-      set (isAutoNext) {
-        this.$store.commit('player/set',{isAutoNext})
+      set(isAutoNext) {
+        this.set({isAutoNext});
       },
     },
   }, // computed {}
@@ -195,6 +204,46 @@ export default {
       const sample = (this.s.samples[i] ? this.s.samples[i] : null);
       return sample && key ? sample[key] : sample;
     }, // getSample()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    inputIdGet() {
+      const i = this.s.samples.find((i) => i.id === this.p.inputId);
+      this.gotoSample(i === undefined ? 0 : i.index);
+      window.$(this.$refs.inputId).toggleClass('invalid', false);
+    }, // inputIdGet()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onInputKey(e) {
+      // throttle
+      if (this.keyActive) return;
+
+      this.keyActive = true;
+
+      setTimeout(() => {
+        this.keyActive = false;
+      }, 250); // match slide transition time
+
+      const id = window.$(this.$refs.inputId).val();
+      console.log('onInputKey', id);
+
+      //TODO: handle keyboard nav shortcuts
+
+      switch (e.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'ArrowRight':
+      case 'ArrowDown':
+        break;
+      case 'Enter':
+        e.target.blur(); break;
+      default:
+        return; // ignore all other keys
+      }
+
+      e.preventDefault();
+    }, // onInputKey()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -300,18 +349,18 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    toggleListShown() {
-
-      this.set({isListShown: !this.p.isListShown});
-
-    }, // toggleListShown()
+    showList() {
+      this.$refs.inputId.focus();
+      this.$refs.inputId.select();
+      this.set({isListShown: true});
+    }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onListClick(index) {
-      this.toggleListShown();
+    gotoSample(index) {
+      this.set({isListShown: false});
       this.$router.replace('#' + this.s.samples[index].id);
-    }, // onListClick()
+    }, // gotoSample()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -455,13 +504,42 @@ button svg {
   height: $unit;
   opacity: 0;
   border-radius: $radius $radius 0 0;
-  background-color: $list-background-color;
+  background-color: $list-bg-color;
   @include short-transition;
 }
 
+.btn-list span {
+  width: 3em;
+  height: 2em;
+  transform: translate(-50%, -50%);
+}
+
+.btn-list input {
+  box-sizing: border-box;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border: 1px solid darken($list-bg-color, 20%);
+  text-align: center;
+  font-size: $list-font-size;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  @include short-transition;
+}
+
+.btn-list input.invalid {
+  border-color: $alert-color;
+  background-color: $alert-bg-color;
+}
+
+/*
 .btn-list svg {
   top: calc(50% + .5em);
 }
+//*/
 
 .is-list-shown .btn-list::before {
   box-shadow: $list-shadow;
@@ -479,7 +557,7 @@ button svg {
   right: 0;
   top: calc(100% + 0em);
   padding: .5em;
-  background-color: $list-background-color;
+  background-color: $list-bg-color;
   box-shadow: $list-shadow;
   border-radius: $radius;
   opacity: 0;
@@ -516,15 +594,19 @@ button svg {
   border-bottom: 1px solid $disabled-color;
 }
 
-.list .item:hover,
-.list .item.current {
-  background-color: white;
+.list .item.current,
+.list .item.match,
+.list .item:hover {
   color: $focus-color;
 }
 
 .list .item.current {
   cursor: default;
   font-weight: bold;
+}
+
+.list .item:hover {
+  background-color: $list-hover-bg-color;
 }
 
 .list .item:not(.sequential) {
@@ -549,7 +631,7 @@ button svg {
 }
 
 .list .item span {
-  font-size: 1.8em;
+  font-size: $list-font-size;
 }
 
 .list .track {

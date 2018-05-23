@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" @click="toggleListShown">
+  <main :class="mainClass" @click="hideList">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
@@ -64,6 +64,7 @@ export default {
         autoHeight: true,
         spaceBetween: 15, /*pixels*/
         zoom: true,
+        //grabCursor: true,
         a11y: {
           prevSlideMessage:  'Previous sample',
           nextSlideMessage:  'Next sample',
@@ -194,13 +195,13 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    toggleListShown(e) {
+    hideList(e) {
 
       if (e.target === window.$('.is-list-shown')[0]) {
         this.$store.commit('player/set', {isListShown: false});
       }
 
-    }, // toggleListShown()
+    }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -274,7 +275,7 @@ main.is-list-shown::before {
   margin: .5em;
   border: 1px solid $alert-color;
   box-shadow: 0 .25em 1em #999;
-  background-color: lighten($alert-color, 40%);
+  background-color: $alert-bg-color;
   font-size: 2rem;
   padding: .5em;
   min-width: 10em;
@@ -324,7 +325,7 @@ header {
 
 .swiper-slide {
   user-select: none;
-  cursor: default;
+  /*cursor: inherit;*/
   text-align: center;
   display: flex;
   justify-content: center;
@@ -356,9 +357,11 @@ header {
 .swiper-zoom-container::after {
   position: absolute;
   content: 'COPYRIGHTED MATERIAL';
+  white-space: nowrap;
   bottom: .5em;
   color: darken($alert-color, 25%);
   text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
+  @include absolute-center(x);
 }
 
 .swiper-button {
