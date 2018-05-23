@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" @click="hideList">
+  <main :class="mainClass" @click="onMaskClick">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
@@ -195,13 +195,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    hideList(e) {
-
-      if (e.target === window.$('.is-list-shown')[0]) {
-        this.$store.commit('player/set', {isListShown: false});
-      }
-
-    }, // hideList()
+    onMaskClick(e) {
+      if (e.target === window.$('.is-list-shown')[0]) this.$refs.player.hideList();
+    }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -325,7 +321,6 @@ header {
 
 .swiper-slide {
   user-select: none;
-  /*cursor: inherit;*/
   text-align: center;
   display: flex;
   justify-content: center;

@@ -7,8 +7,8 @@
       <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button class="btn-list opt-multi" @click="showList">
-        <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" @blur="inputIdGet" /></span>
+      <button class="btn-list opt-multi" @focus="$refs.inputId.focus()" @click="showList">
+        <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
         <!--SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon-->
       </button>
       <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
@@ -17,7 +17,8 @@
     </div>
     <nav :class="{list: true, show: p.isListShown}">
       <ul>
-        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="gotoSample(sample.index)">
+        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
+            @mouseenter="onListMouseEnter" @click="gotoIndex(sample.index)">
           <div class="track"><span>{{ sample.id }}</span></div>
           <div class="title"><span>{{ sample.title }}</span></div>
         </li>
@@ -199,47 +200,76 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getSample(dir = 0, key) {
-      const i = this.s.currentIndex + dir;
+    getSample(dir = 0, key, currentIndex = null) {
+      const i = (currentIndex === null ? this.s.currentIndex : currentIndex) + dir;
       const sample = (this.s.samples[i] ? this.s.samples[i] : null);
       return sample && key ? sample[key] : sample;
     }, // getSample()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    inputIdGet() {
-      const i = this.s.samples.find((i) => i.id === this.p.inputId);
-      this.gotoSample(i === undefined ? 0 : i.index);
+    gotoId(id = null) {
+      const i = this.s.samples.find((i) => i.id === (id ? id : this.$refs.inputId.value));
+      this.gotoIndex(i === undefined ? 0 : i.index);
       window.$(this.$refs.inputId).toggleClass('invalid', false);
-    }, // inputIdGet()
+    }, // gotoId()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onInputKey(e) {
       // throttle
-      if (this.keyActive) return;
+      if (!this.p.isListShown) {
+        if (this.keyActive) return;
 
-      this.keyActive = true;
+        this.keyActive = true;
 
-      setTimeout(() => {
-        this.keyActive = false;
-      }, 250); // match slide transition time
+        setTimeout(() => {
+          this.keyActive = false;
+        }, 250); // match slide transition time
+      }
 
-      const id = window.$(this.$refs.inputId).val();
-      console.log('onInputKey', id);
+      const idEl   = this.$refs.inputId;
+      const id     = idEl.value;
+      const sample = this.s.samples.find((i) => i.id === id);
+      const i      = (sample !== undefined ? sample.index : null);
 
-      //TODO: handle keyboard nav shortcuts
+      let dir = null;
 
       switch (e.key) {
       case 'ArrowLeft':
+        if (idEl.selectionStart !== 0) return;
+        dir = -1; break;
       case 'ArrowUp':
+        if (!this.p.isListShown) this.showList();
+        dir = -1; break;
       case 'ArrowRight':
+        if (idEl.selectionEnd !== idEl.value.length) return;
+        dir = 1; break;
       case 'ArrowDown':
+        if (!this.p.isListShown) this.showList();
+        dir = 1; break;
+      case ' ':
+        if (!this.p.isListShown) this.showList();
+        else this.gotoId();
         break;
       case 'Enter':
-        e.target.blur(); break;
+        this.gotoId(); break;
       default:
         return; // ignore all other keys
+      }
+
+      if (dir) {
+        const newId = this.getSample(dir, 'id', i);
+        if (newId === null) return;
+        console.log('onInputKey()', id, '->', newId);
+        idEl.value = newId;
+        idEl.setSelectionRange(0, idEl.value.length);
+
+        if (!this.p.isListShown) this.gotoId();
+
+        // TODO: input value gets overwritten by currentIndex id when list is shown
+
+        this.updateListMatch(newId);
       }
 
       e.preventDefault();
@@ -350,17 +380,40 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     showList() {
-      this.$refs.inputId.focus();
-      this.$refs.inputId.select();
+      if (this.$refs.inputId !== document.activeElement) this.$refs.inputId.focus();
       this.set({isListShown: true});
+      this.updateListMatch();
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    gotoSample(index) {
+    hideList() {
+      this.set({isListShown: false});
+      window.$(this.$refs.inputId).toggleClass('invalid', false);
+    }, // hideList()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListMouseEnter(e) {
+      const id = window.$(e.target).attr('data-id');
+      this.updateListMatch(id);
+      this.$refs.inputId.value = id;
+    }, // onListMouseEnter()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    updateListMatch(id = null) {
+      if (!id) id = this.$refs.inputId.value;
+      window.$('.list .item.match').removeClass('match');
+      window.$(`.list .item[data-id="${id}"]`).addClass('match');
+    }, // updateListMatch()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    gotoIndex(index) {
       this.set({isListShown: false});
       this.$router.replace('#' + this.s.samples[index].id);
-    }, // gotoSample()
+    }, // gotoIndex()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -426,6 +479,13 @@ button:not(:disabled) {
 button:not(:disabled):focus,
 button:not(:disabled):hover {
   color: $focus-color;
+}
+button:not(:disabled):focus input,
+button:not(:disabled) input:focus,
+button:not(:disabled):hover input {
+  color: $focus-color;
+  border-color: $focus-color;
+  background-color: $list-hover-bg-color;
 }
 
 button svg {
@@ -522,6 +582,7 @@ button svg {
   height: 100%;
   background: white;
   border: 1px solid darken($list-bg-color, 20%);
+  padding: 0;
   text-align: center;
   font-size: $list-font-size;
   font-weight: bold;
@@ -531,8 +592,9 @@ button svg {
 }
 
 .btn-list input.invalid {
-  border-color: $alert-color;
-  background-color: $alert-bg-color;
+  color: $alert-color !important;
+  border-color: $alert-color !important;
+  background-color: $alert-bg-color !important;
 }
 
 /*
@@ -552,6 +614,7 @@ button svg {
 
 .list {
   pointer-events: none;
+  user-select: none;
   position: absolute;
   left: 0;
   right: 0;
@@ -595,8 +658,7 @@ button svg {
 }
 
 .list .item.current,
-.list .item.match,
-.list .item:hover {
+.list .item.match {
   color: $focus-color;
 }
 
@@ -605,7 +667,7 @@ button svg {
   font-weight: bold;
 }
 
-.list .item:hover {
+.list .item.match {
   background-color: $list-hover-bg-color;
 }
 

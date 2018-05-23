@@ -1,3 +1,5 @@
+<!-- TODO: [2018-05-23] NOT IN USE -->
+
 <!-- adapted from https://www.reddit.com/r/vuejs/comments/852sy4/best_slider_swiper_im_having_trouble_with/ -->
 <template>
   <div class="swiper-container">
