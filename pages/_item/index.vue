@@ -63,9 +63,9 @@ export default {
       swiperOption: {
         speed: 250,
         autoHeight: true,
-        spaceBetween: 15, /*pixels*/
+        spaceBetween: 15, // pixels
         zoom: true,
-        //grabCursor: true,
+        grabCursor: true, // [2018-05-25] a little glitchy on Chrome
         a11y: {
           prevSlideMessage:  'Previous sample',
           nextSlideMessage:  'Next sample',
@@ -329,7 +329,7 @@ header {
   justify-content: center;
   align-items: center;
   background-color: white;
-  min-height: 25vh;
+  min-height: 50vh;
 }
 
 .swiper-slide::after {

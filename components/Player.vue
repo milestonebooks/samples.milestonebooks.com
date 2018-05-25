@@ -21,8 +21,10 @@
       <div class="pages">
         <button v-for="sample in s.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
-          <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
-          <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+          <span class="item-flex">
+            <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
+            <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+          </span>
         </button>
       </div>
       <ul class="settings">
@@ -669,19 +671,22 @@ export default {
   list-style: none;
 }
 
-.list .item {
-  display: flex;
+.list .item { // .item is a <button> which cannot be flex (see child .item-flex)
   height: 0;
   cursor: pointer;
   background-color: change-color($disabled-color, $lightness: 100%);
   @include short-transition;
 }
 
-// TODO: fix bug with vertical alignment of content in Edge
-
 .list.show .item {
   height: 1 * $unit;
   border-bottom: 1px solid $disabled-color;
+}
+
+// [2018-05-25] hack to fix Edge rendering bug
+.list.show .item:not(:last-child) {
+  border-bottom-width: 2px;
+  margin-bottom: -1px;
 }
 
 .list .item.current,
@@ -707,23 +712,33 @@ export default {
   content: 'Some tracks omitted';
   position: absolute;
   bottom: calc(100% + 1px);
+  width: 100%;
+  box-sizing: border-box;
   line-height: 1.5em;
-  padding-left: 6em;
+  padding-left: 6em; // align with track title
   color: darken($disabled-color, 25%);
+  background-color: $list-bg-color;
   font-weight: normal;
   font-style: italic;
 }
 
-.list .item > * {
-  display: inline-block;
-  box-sizing: border-box;
+.list .item-flex {
+  width: 100%;
+  height: 100%;
+  display: flex;
 }
 
-.list .item .font-resize {
-  font-size: $list-font-size;
+.list .item-flex > * {
+  display: flex;
+  align-items: center;
+}
+
+.list .item-flex > * > * {
+  flex: 1 1 auto;
 }
 
 .list .track {
+  box-sizing: border-box;
   width: 1 * $unit;
   text-align: right;
   padding-right: .5em;
@@ -731,8 +746,12 @@ export default {
 
 .list .title {
   margin-left: .5 * $unit;
-  flex: 1;
+  //flex: 1;
   @include one-line-ellipsis;
+}
+
+.list .item .font-resize {
+  font-size: $list-font-size;
 }
 
 .list .settings {
