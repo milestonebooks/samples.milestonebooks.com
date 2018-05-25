@@ -61,6 +61,7 @@ export default {
   data () {
     return {
       swiperOption: {
+        speed: 250,
         autoHeight: true,
         spaceBetween: 15, /*pixels*/
         zoom: true,

@@ -7,17 +7,20 @@
       <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <div class="btn btn-list opt-multi" @click="showList">
-        <span><input tabindex="4" ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
-      </div>
+      <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click="toggleList" @keydown="onListKey">
+        <span class="id-indicator-frame">
+          <span v-for="sample in s.samples" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
+        </span>
+      </button>
+      <span class="btn-list-mask"></span>
       <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
     <nav ref="list" :class="{list: true, show: p.isListShown}" @keydown="onListKey">
       <div class="pages">
-        <button v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
-            @mouseenter="onListMouseEnter" @focus="onListMouseEnter">
+        <button v-for="sample in s.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
+            @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
           <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
           <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
         </button>
@@ -93,20 +96,6 @@ export default {
     btnNextPath() {
       return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
     },
-    /*
-    btnListPath() {
-      return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
-    },
-    //*/
-    inputId: {
-      get() {
-        return this.p.isInit ? this.s.samples[this.s.currentIndex].id : '';
-      },
-      set(id) {
-        window.$(this.$refs.inputId).toggleClass('invalid', this.s.samples.find((i) => i.id === id) === undefined);
-        this.set({inputId: id});
-      },
-    },
     autoPlay: {
       get() {
         return this.p.isAutoPlay;
@@ -171,10 +160,12 @@ export default {
       window.addEventListener('resize',        this.refresh);
 
       // list input is not very usable with touch
+      /* [2018-05-25] not needed at this time
       window.addEventListener('touchstart', function onFirstTouch() {
-        window.$('.btn-list input').attr('readonly',true);
+        window.$('input').attr('readonly',true);
         window.removeEventListener('touchstart', onFirstTouch, false);
       }, false);
+      //*/
     }, // bindEvents()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -200,7 +191,6 @@ export default {
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
         this.$store.commit('set', {alert:`Error loading audio [${err_code}]`});
       });
-      //this.showList();// TODO: debugging
       this.refresh();
     }, // load()
 
@@ -214,19 +204,11 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    gotoId(id = null) {
-      if (!id) id = this.$refs.inputId.value;
-
-      this.hideList();
-      this.$router.replace(`#${id}`);
-
-      window.$(this.$refs.inputId).toggleClass('invalid', false);
-    }, // gotoId()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    throttleKey() {
-      if (this.keyActive) return true;
+    throttleKey(e) {
+      if (this.keyActive) {
+        e.preventDefault();
+        return true;
+      }
 
       this.keyActive = true;
 
@@ -237,111 +219,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getListKeyDir(e, idEl = null) {
-      let dir = null;
-
-      switch (e.key) {
-      case 'ArrowLeft': case 'Left':
-        if (idEl && idEl.selectionStart !== 0) return;
-        dir = {x:-1, y:0}; break;
-      case 'ArrowUp': case 'Up':
-        if (!this.p.isListShown) this.showList();
-        dir = {x:0, y:-1}; break;
-      case 'ArrowRight': case 'Right':
-        if (idEl && idEl.selectionEnd !== idEl.value.length) return;
-        dir = {x:1, y:0}; break;
-      case 'ArrowDown': case 'Down':
-        if (!this.p.isListShown) this.showList();
-        dir = {x:0, y:1}; break;
-      case ' ':
-        if (!this.p.isListShown) this.showList();
-        else this.gotoId();
-        dir = {x:0, y:0}; break;
-      case 'Enter':
-        this.gotoId();
-        dir = {x:0, y:0}; break;
-      default:
-        if (idEl && idEl.readOnly) this.showList();
-      }
-
-      if (dir && (dir.x || dir.y)) dir.value = dir.x + dir.y;
-
-      return dir;
-    }, // getListKeyDir()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    getIndexById(id) {
-      const sample = this.s.samples.find((i) => i.id === id);
-      return (sample !== undefined ? sample.index : null);
-    }, // getIndexById()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onInputKey(e) {
-      if (!this.p.isListShown && this.throttleKey()) return;
-
-      const idEl = this.$refs.inputId;
-      const dir  = this.getListKeyDir(e, idEl);
-
-      if (dir === null) return;
-
-      const i = this.getIndexById(idEl.value);
-
-      const newId = this.getSample(dir.value, 'id', i);
-      if (newId === null) return;
-
-      e.preventDefault();
-
-      // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
-      this.$nextTick(() => {
-        idEl.value = newId;
-        idEl.setSelectionRange(0, idEl.value.length);
-      });
-
-      if (!this.p.isListShown) return this.gotoId(newId);
-
-      this.updateListMatch(newId);
-
-    }, // onInputKey()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onListKey(e) {
-      if (this.throttleKey()) return;
-
-      const idEl = this.$refs.inputId;
-      const dir  = this.getListKeyDir(e);
-
-      if (dir === null) return;
-
-      const id = window.$(e.target).parents('.item').attr('data-id');
-      const i  = this.getIndexById(id);
-
-      const newId = this.getSample(dir.value, 'id', i);
-      if (newId === null) return;
-
-      // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
-      this.$nextTick(() => {
-        idEl.value = newId;
-        idEl.setSelectionRange(0, idEl.value.length);
-      });
-
-      if (!this.p.isListShown) this.gotoId(newId);
-
-      console.log('onListKey', e.key, id, window.$(`.list .item[data-id="${id}"] button`)[0]);
-
-      window.$(`.list .item[data-id="${id}"] button`)[0].focus();
-
-      this.updateListMatch(newId);
-
-      e.preventDefault();
-    }, // onListKey()
-
-    //------------------------------------------------------------------------------------------------------------------
-
     onHandleKey(e) {
-      if (this.throttleKey()) return;
+      if (this.throttleKey(e)) return;
 
       // see <https://stackoverflow.com/questions/8584902/get-closest-number-out-of-array>
       const getClosest = (num, arr) => {
@@ -436,10 +315,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     showList() {
-      if (this.$refs.inputId !== document.activeElement) this.$refs.inputId.focus();
       this.$refs.list.display = 'block';
       this.set({isListShown: true});
-      this.updateListMatch();
+      this.updateListFocus();
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -451,25 +329,106 @@ export default {
       setTimeout(() => {
         this.$refs.list.display = 'none';
       }, 250);
-      window.$(this.$refs.inputId).toggleClass('invalid', false);
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onListMouseEnter(e) {
-      console.log('onListMouseEnter', e.target);
-      const id = window.$(e.target).attr('data-id');
-      this.updateListMatch(id);
-      this.$refs.inputId.value = id;
-    }, // onListMouseEnter()
+    toggleList() {
+      this[this.p.isListShown ? 'hideList' : 'showList']();
+    }, // toggleList()
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListItemMouseEnter(e) {
+      e.target.focus();
+    }, // onListItemMouseEnter()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    updateListMatch(id = null) {
-      if (!id) id = this.$refs.inputId.value;
-      window.$('.list .item.match').removeClass('match');
-      window.$(`.list .item[data-id="${id}"]`).addClass('match');
-    }, // updateListMatch()
+    getListKeyDir(e, isBtn = false) {
+      let dir = {x:0, y:0};
+
+      const id = e.target.getAttribute('data-id');
+
+      switch (e.key) {
+      case 'ArrowLeft': case 'Left':
+        dir.x = -1; break;
+      case 'ArrowUp': case 'Up':
+        dir.y = -1;
+        break;
+      case 'ArrowRight': case 'Right':
+        dir.x = 1; break;
+      case 'ArrowDown': case 'Down':
+        dir.y = 1; break;
+      case ' ':
+      case 'Enter':
+        if (isBtn) this.toggleList();
+        else this.gotoId(id);
+        break;
+      default:
+        dir = null;
+      }
+
+      // don't make any up-down movement unless list is already shown
+      if (dir && dir.y && !this.p.isListShown) {
+        this.showList();
+        dir.y = 0;
+      }
+
+      if (dir && (dir.x || dir.y)) dir.value = dir.x + dir.y;
+
+      return dir;
+    }, // getListKeyDir()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getIndexById(id) {
+      const sample = this.s.samples.find((i) => i.id === id);
+      return (sample !== undefined ? sample.index : null);
+    }, // getIndexById()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListKey(e) {
+      const isBtn = (e.target === this.$refs.btnList);
+
+      if (isBtn && this.throttleKey(e)) return;
+
+      const dir = this.getListKeyDir(e, isBtn);
+
+      if (!dir) return;
+
+      e.preventDefault();
+
+      const id = e.target.getAttribute('data-id');
+      const i  = this.getIndexById(id);
+
+      const newId = this.getSample(dir.value, 'id', i);
+      if (newId === null) return;
+
+      if (!this.p.isListShown) return this.gotoId(newId);
+
+      this.updateListFocus(newId);
+
+    }, // onListKey()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    updateListFocus(id = null) {
+      if (!id) id = this.s.samples[this.s.currentIndex].id;
+      window.$(`.list .item[data-id="${id}"]`)[0].focus();
+    }, // updateListFocus()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    gotoId(id) {
+      this.$router.replace(`#${id}`);
+      if (this.p.isListShown) {
+        this.hideList();
+        this.$nextTick(() => {
+          this.$refs.btnList.focus();
+        });
+      }
+    }, // gotoId()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -506,10 +465,6 @@ export default {
   outline: none;
 }
 
-:focus {
-  outline: 1px solid red !important; // TODO: debugging
-}
-
 .audio-player:not(.is-multi) .opt-multi {
   opacity: 0;
   @include short-transition;
@@ -540,12 +495,10 @@ export default {
 .btn:not(:disabled):hover {
   color: $focus-color;
 }
-.btn:not(:disabled):focus input,
-.btn:not(:disabled) input:focus,
-.btn:not(:disabled):hover input {
+.btn:not(:disabled):hover .id-indicator-frame,
+.btn:not(:disabled):focus .id-indicator-frame {
   color: $focus-color;
   border-color: $focus-color;
-  background-color: $list-hover-bg-color;
 }
 
 .btn svg {
@@ -603,6 +556,16 @@ export default {
   right: 1 * $unit;
 }
 
+// this element is used to prevent clicking on the .btn-list outside the visible ui
+.is-multi .btn-list-mask {
+  display: block;
+  right: calc((1 * #{$unit}) - 1em);
+  width: 6em;
+  height: 1em;
+  top: -1em;
+  z-index: 2; /* raise above .btn-list shadow */
+}
+
 .btn-prev,
 .btn-next {
   z-index: 2; /* raise above .btn-list shadow */
@@ -628,34 +591,30 @@ export default {
   @include short-transition;
 }
 
-.btn-list span {
+.btn-list .id-indicator-frame {
   width: 3em;
   height: 2em;
   @include absolute-center();
+  text-align: left;
   top: calc(50% + .5em);
-}
-
-.btn-list input {
   box-sizing: border-box;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
   border: 1px solid darken($list-bg-color, 20%);
-  padding: 0;
-  text-align: center;
-  font-size: $list-font-size;
-  font-weight: bold;
-  text-overflow: ellipsis;
+  background-color: white;
+  white-space: nowrap;
   overflow: hidden;
   @include short-transition;
 }
 
-.btn-list input.invalid {
-  color: $alert-color !important;
-  border-color: $alert-color !important;
-  background-color: $alert-bg-color !important;
+.btn-list .id-indicator {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  font-size: $list-font-size;
+  line-height: 1em;
+  font-weight: bold;
+  text-align: center;
+  transition: transform .25s ease-in-out; // match slide transition time
 }
 
 .is-list-shown .btn-list::before {
@@ -718,13 +677,15 @@ export default {
   @include short-transition;
 }
 
+// TODO: fix bug with vertical alignment of content in Edge
+
 .list.show .item {
   height: 1 * $unit;
   border-bottom: 1px solid $disabled-color;
 }
 
 .list .item.current,
-.list .item.match {
+.list .item:focus {
   color: $focus-color;
 }
 
@@ -733,7 +694,7 @@ export default {
   font-weight: bold;
 }
 
-.list .item.match {
+.list .item:focus {
   background-color: $list-hover-bg-color;
 }
 
