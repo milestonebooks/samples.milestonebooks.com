@@ -738,6 +738,7 @@ export default {
 }
 
 .list .track {
+  flex: 0 0 auto; // no resizing
   box-sizing: border-box;
   width: 1 * $unit;
   text-align: right;
@@ -746,7 +747,9 @@ export default {
 
 .list .title {
   margin-left: .5 * $unit;
-  //flex: 1;
+  overflow: hidden;
+}
+.list .title .font-resize {
   @include one-line-ellipsis;
 }
 

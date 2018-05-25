@@ -1,4 +1,4 @@
-<!-- TODO: [2018-05-23] NOT IN USE -->
+<!-- TODO: [2018-05-23] NOT IN USE; intended for custom build estimated to save 15 KB (gzipped) -->
 
 <!-- adapted from https://www.reddit.com/r/vuejs/comments/852sy4/best_slider_swiper_im_having_trouble_with/ -->
 <template>
@@ -7,8 +7,6 @@
     <div class="swiper-wrapper">
       <slot/>
     </div>
-    <div v-if="defaultPagination" class="swiper-pagination"></div>
-    <div v-if="defaultScrollbars" class="swiper-scrollbar"></div>
     <div v-if="defaultNavigation" class="swiper-button-next"></div>
     <div v-if="defaultNavigation" class="swiper-button-prev"></div>
     <slot name="after-wrapper"/>
