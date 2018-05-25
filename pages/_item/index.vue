@@ -169,17 +169,19 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      //console.log('update() route...', this.$route.hash);
-
+      // if id is not given in the hash, select the first in the samples list
       const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 
       const index = this.s.samples.findIndex(i => i.id === id);
 
+      // if id is not found, return to default
       if (index === -1) {
         return this.$router.replace('./');
       }
 
       this.set({currentIndex: index});
+
+      this.$refs.player.hideList();
 
       if (this.swiper.activeIndex !== index) {
         this.swiper.slideTo(index);

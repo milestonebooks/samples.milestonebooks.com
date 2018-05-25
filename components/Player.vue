@@ -1,27 +1,27 @@
 <template>
   <aside :class="['audio-player', uiClass]">
     <div class="controls">
-      <button class="btn btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
+      <button tabindex="1" class="btn btn-play" :title="playTitle" @click="$store.commit('player/togglePlay')">
         <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
       </button>
-      <nuxt-link class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
       <div class="btn btn-list opt-multi" @click="showList">
-        <span><input ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
+        <span><input tabindex="4" ref="inputId" type="text" v-model="inputId" @keydown="onInputKey" /></span>
       </div>
-      <nuxt-link class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
-    <nav :class="{list: true, show: p.isListShown}">
-      <ul>
-        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
-            @mouseenter="onListMouseEnter" @click="gotoIndex(sample.index)">
-          <div class="track"><span>{{ sample.id }}</span></div>
-          <div class="title"><span>{{ sample.title }}</span></div>
-        </li>
-      </ul>
+    <nav ref="list" :class="{list: true, show: p.isListShown}" @keydown="onListKey">
+      <div class="pages">
+        <button v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
+            @mouseenter="onListMouseEnter" @focus="onListMouseEnter">
+          <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
+          <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+        </button>
+      </div>
       <ul class="settings">
         <li><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
         <li><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
@@ -30,7 +30,7 @@
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onHandleKey" @click.prevent="">
+          <a tabindex="2" href="#" class="bar-handle" ref="handle" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent="">
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -169,6 +169,12 @@ export default {
       document.addEventListener('touchcancel', this.moveEnd, {passive: false});
       document.addEventListener('mouseup',     this.moveEnd);
       window.addEventListener('resize',        this.refresh);
+
+      // list input is not very usable with touch
+      window.addEventListener('touchstart', function onFirstTouch() {
+        window.$('.btn-list input').attr('readonly',true);
+        window.removeEventListener('touchstart', onFirstTouch, false);
+      }, false);
     }, // bindEvents()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -194,6 +200,7 @@ export default {
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
         this.$store.commit('set', {alert:`Error loading audio [${err_code}]`});
       });
+      //this.showList();// TODO: debugging
       this.refresh();
     }, // load()
 
@@ -208,85 +215,133 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     gotoId(id = null) {
-      const i = this.s.samples.find((i) => i.id === (id ? id : this.$refs.inputId.value));
-      this.gotoIndex(i === undefined ? 0 : i.index);
+      if (!id) id = this.$refs.inputId.value;
+
+      this.hideList();
+      this.$router.replace(`#${id}`);
+
       window.$(this.$refs.inputId).toggleClass('invalid', false);
     }, // gotoId()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onInputKey(e) {
-      // throttle
-      if (!this.p.isListShown) {
-        if (this.keyActive) return;
-
-        this.keyActive = true;
-
-        setTimeout(() => {
-          this.keyActive = false;
-        }, 250); // match slide transition time
-      }
-
-      const idEl   = this.$refs.inputId;
-      const id     = idEl.value;
-      const sample = this.s.samples.find((i) => i.id === id);
-      const i      = (sample !== undefined ? sample.index : null);
-
-      let dir = null;
-
-      switch (e.key) {
-      case 'ArrowLeft': case 'Left':
-        if (idEl.selectionStart !== 0) return;
-        dir = -1; break;
-      case 'ArrowUp': case 'Up':
-        if (!this.p.isListShown) this.showList();
-        dir = -1; break;
-      case 'ArrowRight': case 'Right':
-        if (idEl.selectionEnd !== idEl.value.length) return;
-        dir = 1; break;
-      case 'ArrowDown': case 'Down':
-        if (!this.p.isListShown) this.showList();
-        dir = 1; break;
-      case ' ':
-        if (!this.p.isListShown) this.showList();
-        else this.gotoId();
-        dir = 0;
-        break;
-      case 'Enter':
-        this.gotoId(); break;
-      default:
-        return; // ignore all other keys
-      }
-
-      if (dir !== null) {
-        const newId = this.getSample(dir, 'id', i);
-        if (newId === null) return;
-
-        // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
-        this.$nextTick(() => {
-          idEl.value = newId;
-          idEl.setSelectionRange(0, idEl.value.length);
-        });
-
-        if (!this.p.isListShown) this.gotoId(newId);
-
-        this.updateListMatch(newId);
-      }
-
-      e.preventDefault();
-    }, // onInputKey()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onHandleKey(e) {
-      // throttle
-      if (this.keyActive) return;
+    throttleKey() {
+      if (this.keyActive) return true;
 
       this.keyActive = true;
 
       setTimeout(() => {
         this.keyActive = false;
-      }, 100);
+      }, 250); // match slide transition time
+    }, // throttleKey()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getListKeyDir(e, idEl = null) {
+      let dir = null;
+
+      switch (e.key) {
+      case 'ArrowLeft': case 'Left':
+        if (idEl && idEl.selectionStart !== 0) return;
+        dir = {x:-1, y:0}; break;
+      case 'ArrowUp': case 'Up':
+        if (!this.p.isListShown) this.showList();
+        dir = {x:0, y:-1}; break;
+      case 'ArrowRight': case 'Right':
+        if (idEl && idEl.selectionEnd !== idEl.value.length) return;
+        dir = {x:1, y:0}; break;
+      case 'ArrowDown': case 'Down':
+        if (!this.p.isListShown) this.showList();
+        dir = {x:0, y:1}; break;
+      case ' ':
+        if (!this.p.isListShown) this.showList();
+        else this.gotoId();
+        dir = {x:0, y:0}; break;
+      case 'Enter':
+        this.gotoId();
+        dir = {x:0, y:0}; break;
+      default:
+        if (idEl && idEl.readOnly) this.showList();
+      }
+
+      if (dir && (dir.x || dir.y)) dir.value = dir.x + dir.y;
+
+      return dir;
+    }, // getListKeyDir()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getIndexById(id) {
+      const sample = this.s.samples.find((i) => i.id === id);
+      return (sample !== undefined ? sample.index : null);
+    }, // getIndexById()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onInputKey(e) {
+      if (!this.p.isListShown && this.throttleKey()) return;
+
+      const idEl = this.$refs.inputId;
+      const dir  = this.getListKeyDir(e, idEl);
+
+      if (dir === null) return;
+
+      const i = this.getIndexById(idEl.value);
+
+      const newId = this.getSample(dir.value, 'id', i);
+      if (newId === null) return;
+
+      e.preventDefault();
+
+      // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
+      this.$nextTick(() => {
+        idEl.value = newId;
+        idEl.setSelectionRange(0, idEl.value.length);
+      });
+
+      if (!this.p.isListShown) return this.gotoId(newId);
+
+      this.updateListMatch(newId);
+
+    }, // onInputKey()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onListKey(e) {
+      if (this.throttleKey()) return;
+
+      const idEl = this.$refs.inputId;
+      const dir  = this.getListKeyDir(e);
+
+      if (dir === null) return;
+
+      const id = window.$(e.target).parents('.item').attr('data-id');
+      const i  = this.getIndexById(id);
+
+      const newId = this.getSample(dir.value, 'id', i);
+      if (newId === null) return;
+
+      // $nextTick() is needed to override the input value when this.showList() has been used (which updates state and reverts value to current id)
+      this.$nextTick(() => {
+        idEl.value = newId;
+        idEl.setSelectionRange(0, idEl.value.length);
+      });
+
+      if (!this.p.isListShown) this.gotoId(newId);
+
+      console.log('onListKey', e.key, id, window.$(`.list .item[data-id="${id}"] button`)[0]);
+
+      window.$(`.list .item[data-id="${id}"] button`)[0].focus();
+
+      this.updateListMatch(newId);
+
+      e.preventDefault();
+    }, // onListKey()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onHandleKey(e) {
+      if (this.throttleKey()) return;
 
       // see <https://stackoverflow.com/questions/8584902/get-closest-number-out-of-array>
       const getClosest = (num, arr) => {
@@ -382,6 +437,7 @@ export default {
 
     showList() {
       if (this.$refs.inputId !== document.activeElement) this.$refs.inputId.focus();
+      this.$refs.list.display = 'block';
       this.set({isListShown: true});
       this.updateListMatch();
     }, // showList()
@@ -389,13 +445,19 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     hideList() {
+      if (!this.p.isListShown) return;
+
       this.set({isListShown: false});
+      setTimeout(() => {
+        this.$refs.list.display = 'none';
+      }, 250);
       window.$(this.$refs.inputId).toggleClass('invalid', false);
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onListMouseEnter(e) {
+      console.log('onListMouseEnter', e.target);
       const id = window.$(e.target).attr('data-id');
       this.updateListMatch(id);
       this.$refs.inputId.value = id;
@@ -408,13 +470,6 @@ export default {
       window.$('.list .item.match').removeClass('match');
       window.$(`.list .item[data-id="${id}"]`).addClass('match');
     }, // updateListMatch()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    gotoIndex(index) {
-      this.set({isListShown: false});
-      this.$router.replace('#' + this.s.samples[index].id);
-    }, // gotoIndex()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -449,6 +504,10 @@ export default {
 }
 .audio-player :focus {
   outline: none;
+}
+
+:focus {
+  outline: 1px solid red !important; // TODO: debugging
 }
 
 .audio-player:not(.is-multi) .opt-multi {
@@ -633,6 +692,18 @@ export default {
   position: relative;
 }
 
+.list .pages {
+  display: flex;
+  flex-direction: column;
+}
+
+.list button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  text-align: inherit;
+}
+
 .list ul, .list ul {
   margin: 0;
   padding: 0;
@@ -641,7 +712,6 @@ export default {
 
 .list .item {
   display: flex;
-  align-items: center;
   height: 0;
   cursor: pointer;
   background-color: change-color($disabled-color, $lightness: 100%);
@@ -688,7 +758,7 @@ export default {
   box-sizing: border-box;
 }
 
-.list .item span {
+.list .item .font-resize {
   font-size: $list-font-size;
 }
 
