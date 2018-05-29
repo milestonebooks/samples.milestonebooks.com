@@ -216,6 +216,7 @@ export default {
 @include base_styling;
 
 main {
+  user-select: none; // expected to be more hindrance than useful in this app
   position: relative;
   display: flex;
   flex-direction: column;
@@ -317,8 +318,10 @@ header {
   z-index: 2; // raise above prev/next slides
   pointer-events: none;
   background: linear-gradient(to right, $background-color, transparent $unit, transparent calc(100% - #{$unit}), $background-color);
-  html[data-browser*="Edge"] & { // [2018-05-11] Edge cannot handle calc()
-    background: linear-gradient(to right, $background-color, transparent 5%, transparent 94.5%, $background-color);
+  // [2018-05-29] IE11 and Edge cannot handle calc()
+  html[data-browser*="Trident"] &,
+  html[data-browser*="Edge"] & {
+    background: linear-gradient(to right, $background-color, transparent 5.5%, transparent 94.5%, $background-color);
   }
 }
 
