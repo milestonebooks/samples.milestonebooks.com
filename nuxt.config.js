@@ -16,7 +16,7 @@ module.exports = {
       { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' },
     ],
     script: [
-      // TODO: enable IE11 access
+      // enable IE11 access
       { src: 'https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.includes,Array.prototype.find,Array.prototype.findIndex' },
       // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
       { src:'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },

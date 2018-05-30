@@ -9,7 +9,7 @@
       </nuxt-link>
       <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
-          <span v-for="sample in s.samples" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
+          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
@@ -416,7 +416,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     updateListFocus(id = null) {
-      if (!id) id = this.s.samples[this.s.currentIndex].id;
+      if (!id) id = this.getSample(0, 'id');
       window.$(`.list .item[data-id="${id}"]`)[0].focus();
     }, // updateListFocus()
 
@@ -468,6 +468,7 @@ export default {
 }
 
 .audio-player:not(.is-multi) .opt-multi {
+  pointer-events: none;
   opacity: 0;
   @include short-transition;
 }
