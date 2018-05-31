@@ -1,5 +1,3 @@
-import {Howl} from 'howler';
-
 import storage from '../plugins/storage';
 
 export const state = () => ({
@@ -218,7 +216,7 @@ export const actions = {
     if (!window.howls[index] && rootState.samples[index].audio) {
 
       await new Promise((resolve, reject) => {
-        window.howls[index] = new Howl({
+        window.howls[index] = new window.Howl({
           src: [rootState.urlBase + rootState.samples[index].audio],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },

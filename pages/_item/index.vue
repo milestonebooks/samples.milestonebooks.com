@@ -9,6 +9,17 @@
       <Player ref="player" :currentIndex="s.currentIndex" />
     </header>
 
+    <!--LorySlider :options="{ enableMouseEvents: true }">
+      <item>1</item>
+      <item>2</item>
+      <item>3</item>
+      <item>4</item>
+      <item>5</item>
+      <item>6</item>
+      <prev slot="actions"></prev>
+      <next slot="actions"></next>
+    </LorySlider-->
+
     <article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
         <section v-for="sample in s.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
@@ -29,6 +40,8 @@
 <script>
 import Player from '~/components/Player.vue';
 
+import { LorySlider, Item, Prev, Next } from '~/components/Lory'
+
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
@@ -39,6 +52,10 @@ import axios from 'axios';
 export default {
   components: {
     Player,
+    LorySlider,
+    Item,
+    Prev,
+    Next,
   },
 
   head () {
@@ -138,6 +155,16 @@ export default {
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
+    /*
+    const lory = this.$refs.lory.$el;
+    console.log('index.vue mounted()');
+    //slider.addEventListener('on.lory.touchend',  i => { console.log('touchend...', i) });
+    //slider.addEventListener('before.lory.slide', i => { console.log('before...', i) });
+    lory.addEventListener('after.lory.slide',  e => { console.log('after...',  e.detail, lory) });
+
+    this.$refs.lory.slider.next();
+    //*/
+
     this.initSamplesData();
   }, // mounted()
 
@@ -184,9 +211,11 @@ export default {
 
       this.$refs.player.hideList();
 
+      /* TODO: temp
       if (this.swiper.activeIndex !== index) {
         this.swiper.slideTo(index);
       }
+      //*/
 
     }, // update()
 
