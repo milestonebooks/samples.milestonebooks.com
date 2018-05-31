@@ -1,23 +1,27 @@
 <template>
-  <div class="slider js_slider">
+  <article class="slider js_slider">
     <div class="frame js_frame">
-      <ul class="slides js_slides">
+      <div class="slides js_slides">
         <slot></slot>
-      </ul>
+      </div>
     </div>
     <slot name="actions"></slot>
-  </div>
+  </article>
 </template>
 
 <script>
-import { lory } from 'lory.js'
+import { lory } from 'lory.js';
 
 export default {
 
   props: {
     options: {
       type: Object,
-      default: () => ({})
+      default: () => {}
+    },
+    samples: {
+      type: Array,
+      default: () => []
     }
   },
 
@@ -27,12 +31,24 @@ export default {
     }
   },
 
+  watch: {
+    samples: 'setup',
+  },
+
   mounted () {
-    this.slider = lory(this.$el, this.options)
+    console.log('mounted', this.samples.length);
+    this.slider = lory(this.$el, this.options);
   },
 
   beforeDestroy () {
     this.slider.destroy()
+  },
+
+  methods: {
+    setup() {
+      console.log('setup', this.samples.length);
+      this.slider.setup();
+    },
   }
 
 }
@@ -61,11 +77,12 @@ export default {
 
   .slides {
     box-sizing: border-box;
+    padding: 0;
     width: 100%;
     display: inline-block;
   }
 
-  li {
+  .slide {
     position: relative;
     display: inline-block;
 

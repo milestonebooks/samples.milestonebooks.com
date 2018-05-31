@@ -1,5 +1,5 @@
 <template>
-  <li class="js_slide">
+  <section class="slide js_slide">
     <slot></slot>
-  </li>
+  </section>
 </template>
