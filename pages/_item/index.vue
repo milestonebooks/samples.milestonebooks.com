@@ -9,16 +9,10 @@
       <Player ref="player" :currentIndex="s.currentIndex" />
     </header>
 
-    <!--LorySlider :options="{ enableMouseEvents: true }">
-      <item>1</item>
-      <item>2</item>
-      <item>3</item>
-      <item>4</item>
-      <item>5</item>
-      <item>6</item>
-      <prev slot="actions"></prev>
-      <next slot="actions"></next>
-    </LorySlider-->
+    <Slider :options="{ enableMouseEvents: true}" :samples="s.samples" style="outline:1px solid red;">
+      <section v-if="!s.samples.length" class="slide js_slide"></section>
+      <section v-else v-for="sample in s.samples" :key="sample.id" class="slide js_slide">{{sample.id}}</section>
+    </Slider>
 
     <article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
@@ -40,7 +34,7 @@
 <script>
 import Player from '~/components/Player.vue';
 
-import { LorySlider, Item, Prev, Next } from '~/components/Lory'
+import LorySlider from '~/components/Lory';
 
 import { mapMutations } from 'vuex';
 
@@ -52,10 +46,7 @@ import axios from 'axios';
 export default {
   components: {
     Player,
-    LorySlider,
-    Item,
-    Prev,
-    Next,
+    Slider: LorySlider.Lory,
   },
 
   head () {
