@@ -22,6 +22,9 @@ $list-bg-color: lighten($disabled-color, 5%);
 
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 
+// timings
+$transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
+
 // functions
 
 // adapted from <https://gist.github.com/tqc/2564280>

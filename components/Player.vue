@@ -49,7 +49,9 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters, mapMutations } from 'vuex';
 
-import NuxtLink from '../.nuxt/components/nuxt-link'
+import NuxtLink from '../.nuxt/components/nuxt-link';
+
+import settings from '~/assets/settings';
 
 export default {
   components: {
@@ -208,7 +210,7 @@ export default {
 
       setTimeout(() => {
         this.keyActive = false;
-      }, 250); // match slide transition time
+      }, settings.TRANSITION_TIME_MS);
     }, // throttleKey()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -322,7 +324,7 @@ export default {
       this.set({isListShown: false});
       setTimeout(() => {
         this.$refs.list.display = 'none';
-      }, 250);
+      }, settings.TRANSITION_TIME_MS);
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -609,7 +611,7 @@ export default {
   line-height: 1em;
   font-weight: bold;
   text-align: center;
-  transition: transform .25s ease-in-out; // match slide transition time
+  transition: transform $transition-time ease-in-out; // match slide transition time
 }
 
 .is-list-shown .btn-list::before {

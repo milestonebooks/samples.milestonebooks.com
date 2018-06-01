@@ -5,12 +5,13 @@
         <section v-for="sample in samples" :key="sample.id" class="slide js_slide">{{sample.id}}</section>
       </div>
     </div>
-    <slot name="actions"></slot>
   </article>
 </template>
 
 <script>
 import { lory } from 'lory.js';
+
+import settings from '~/assets/settings';
 
 export default {
 
@@ -22,7 +23,10 @@ export default {
 
   data () {
     return {
-      slider: null
+      slider: null,
+      defaultOptions: {
+        slideSpeed: settings.TRANSITION_TIME_MS,
+      }
     }
   },
 
@@ -55,7 +59,7 @@ export default {
         this.$el.addEventListener('after.lory.slide', (e) => {
           console.log('slide', e.detail);
         });
-        if (!this.slider && this.samples.length) this.slider = lory(this.$el, this.options);
+        if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
       });
     }, // setup()
 
