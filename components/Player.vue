@@ -160,14 +160,6 @@ export default {
       document.addEventListener('touchcancel', this.moveEnd, {passive: false});
       document.addEventListener('mouseup',     this.moveEnd);
       window.addEventListener('resize',        this.refresh);
-
-      // list input is not very usable with touch
-      /* [2018-05-25] not needed at this time
-      window.addEventListener('touchstart', function onFirstTouch() {
-        window.$('input').attr('readonly',true);
-        window.removeEventListener('touchstart', onFirstTouch, false);
-      }, false);
-      //*/
     }, // bindEvents()
 
     //------------------------------------------------------------------------------------------------------------------
