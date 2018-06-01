@@ -30,11 +30,11 @@ module.exports = {
   plugins: [
     '~plugins/gtm.js',
     { src: '~plugins/storage.js', ssr: false },
-    { src: '~plugins/swiper.js', ssr: false }, // TODO: largest component--optimize if possible
+    //{ src: '~plugins/swiper.js', ssr: false }, // TODO: largest component--optimize if possible
   ],
 
   css: [
-    'swiper/dist/css/swiper.css',
+    //'swiper/dist/css/swiper.css',
   ],
 
   mode: 'spa',

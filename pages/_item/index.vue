@@ -9,9 +9,9 @@
       <Player ref="player" :currentIndex="s.currentIndex" />
     </header>
 
-    <Slider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" style="outline:1px solid red;" />
+    <Slider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <article v-swiper:swiper="swiperOption" class="swiper-container">
+    <!--article v-swiper:swiper="swiperOption" class="swiper-container">
       <div class="swiper-wrapper">
         <section v-for="sample in s.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
           <div class="swiper-zoom-container">
@@ -23,7 +23,7 @@
       <div class="swiper-pagination" slot="pagination"></div>
       <div class="swiper-button-prev swiper-button" slot="button-prev"></div>
       <div class="swiper-button-next swiper-button" slot="button-next"></div>
-    </article>
+    </article-->
 
   </main>
 </template>
@@ -38,7 +38,6 @@ import { mapMutations } from 'vuex';
 import axios from 'axios';
 
 // TODO: print option
-// TODO: pagination
 
 export default {
   components: {
@@ -417,7 +416,7 @@ header {
   margin-top: 5vh;
   height: 20vh;
   // audio icon sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M0,6 v6 h4 l5,5 v-16 l-5,5 h-4 z' /%3E%3Cpath d='M13.5,9 c0,-1.8 -1,-3.3 -2.5,-4 v8 c1.5,-0.7 2.5,-2.2 2.5,-4 z' /%3E%3Cpath d='M11,.2 v2 c3,1 5,3.6 5,6.8 s-2,5.8 -5,6.7 v2 c4,-0.8 7,-4.4 7,-8.7 s-3,-8 -7,-8.8 z' /%3E%3C/svg%3E") no-repeat center;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M0,6 v6 h4 l5,5 v-16 l-5,5 h-4 z' /%3E%3Cpath d='M13.5,9 c0,-1.8 -1,-3.3 -2.5,-4 v8 c1.5,-0.7 2.5,-2.2 2.5,-4 z' /%3E%3Cpath d='M11,.2 v2 c3,1 5,3.6 5,6.8 s-2,5.8 -5,6.7 v2 c4,-0.8 7,-4.4 7,-8.7 s-3,-8 -7,-8.8 z' /%3E%3C/svg%3E");
   opacity: .05;
 }
 

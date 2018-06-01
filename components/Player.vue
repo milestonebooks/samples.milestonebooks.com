@@ -473,10 +473,6 @@ export default {
 }
 
 .btn {
-  background: none;
-  border: none;
-  box-sizing: content-box;
-  padding: 0;
   width: $unit;
   height: $unit;
   overflow: hidden;

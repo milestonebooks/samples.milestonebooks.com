@@ -83,4 +83,11 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
     background-color: $background-color;
     overflow-y: scroll; // always on to avoid possible jank when toggling playlist
   }
+
+  .btn {
+    background: none;
+    border: none;
+    box-sizing: content-box;
+    padding: 0;
+  }
 }
