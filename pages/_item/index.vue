@@ -256,8 +256,8 @@ main::before {
   background: white;
   z-index: $layer-header - 1; /* below header, above swiper */
   opacity: 0;
-  transition: all .2s ease;
   pointer-events: none;
+  @include short-transition;
 }
 main.is-list-shown::before {
   opacity: .5;
@@ -279,7 +279,7 @@ main.is-list-shown::before {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  transition: all .2s ease-in-out;
+  @include short-transition;
 }
 .alerts:not([data-length="0"]) {
   height: 100%;
@@ -297,7 +297,7 @@ main.is-list-shown::before {
   padding: .5em;
   min-width: 10em;
   max-width: 30em;
-  transition: all .2s ease;
+  @include short-transition;
 }
 
 header {
