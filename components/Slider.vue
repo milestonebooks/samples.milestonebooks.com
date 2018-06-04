@@ -1,7 +1,7 @@
 <template>
   <article :class="sliderClass">
     <div class="frame js_frame">
-      <div class="slides js_slides" :style="slidesStyle">
+      <div class="slides js_slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide">
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" draggable="false" />
@@ -16,7 +16,6 @@
 </template>
 
 <script>
-// TODO: last slide margins bug
 
 import { lory } from 'lory.js';
 
@@ -57,10 +56,6 @@ export default {
         'grabbing': this.isGrabbing,
       }
     },
-
-    slidesStyle() {
-      console.log('slidesStyle', this.currentIndex);
-    }
   },
 
   watch: {
@@ -113,7 +108,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onSlideChange(e) {
+    onSlideChange(/*e*/) {
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
       if (this.isGrabbing) {
@@ -185,26 +180,21 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
   .slides {
     box-sizing: border-box;
-    padding: 0;
-    width: 100%;
-    display: flex;
-    align-items: start;
+    display: inline-block;
     font-size: 1rem;
     line-height: 1;
   }
 
   .slide {
     position: relative;
-    display: flex;
-    justify-content: center;
+    display: inline-block;
+    vertical-align: text-top;
     text-align: center;
-    align-items: center;
     background-color: white;
-    min-height: 50vh;
     margin-right: ($unit * 1.5/4);
     cursor: grab;
 
-    .grabbing & {
+    @at-root .grabbing .slide {
       cursor: grabbing;
     }
 
@@ -219,7 +209,12 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     }
 
     .slide-liner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
       width: 650px;
+      min-height: 50vh;
 
       &::after {
         position: absolute;
@@ -239,6 +234,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
     .sample-title {
       font-size: 2.5em;
+      margin: 2rem 0; // only has effect in IE, where flexbox positioning does not apply
 
       &::after {
         content: '';
@@ -287,4 +283,5 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     }
   }
 } // .slider
+
 </style>
