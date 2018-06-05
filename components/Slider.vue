@@ -4,24 +4,32 @@
       <div class="slides js_slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide">
           <div class="slide-liner">
-            <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" draggable="false" />
+            <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
       </div>
-      <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" :disabled="!getSample(-1)" aria-label="Previous sample" replace tag="button"></nuxt-link>
-      <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" :disabled="!getSample(+1)" aria-label="Next sample" replace tag="button"></nuxt-link>
+      <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" :disabled="!getSample(-1)" aria-label="Previous sample" replace tag="button">
+        <SvgIcon d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+      </nuxt-link>
+      <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" :disabled="!getSample(+1)" aria-label="Next sample" replace tag="button">
+        <SvgIcon d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+      </nuxt-link>
     </div>
   </article>
 </template>
 
 <script>
+import SvgIcon from './SvgIcon.vue';
 
 import { lory } from 'lory.js';
 
 import settings from '~/assets/settings';
 
 export default {
+  components: {
+    SvgIcon,
+  },
 
   props: {
     options: Object,
@@ -34,12 +42,14 @@ export default {
       slider: null,
 
       defaultOptions: {
+        rewindOnResize: false,
         slideSpeed: settings.TRANSITION_TIME_MS,
         ease: 'ease-in-out',
       },
 
       isInit: false,
       isGrabbing: false,
+      viewWidth: null,
     }
   },
 
@@ -63,9 +73,6 @@ export default {
     currentIndex: 'update',
   },
 
-  mounted () {
-  },
-
   beforeDestroy () {
     this.slider.destroy()
   },
@@ -77,15 +84,20 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      console.log('Slider init()');
       this.$nextTick(() => {
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
         this.$el.addEventListener('after.lory.slide', this.onSlideChange);
+        window.addEventListener('resize', () => {
+          if (document.documentElement.clientWidth !== this.viewWidth) this.update();
+        });
 
         if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
 
         setTimeout(() => {
           this.isInit = true;
+          this.update();
         }, settings.TRANSITION_TIME_MS);
       });
     }, // init()
@@ -94,7 +106,9 @@ export default {
 
     update() {
       this.$nextTick(() => {
+        console.log('Slider update()');
         if (this.slider) this.slider.slideTo(this.currentIndex);
+        this.viewWidth = document.documentElement.clientWidth;
       });
     }, // update()
 
@@ -109,12 +123,18 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onSlideChange(/*e*/) {
+      console.log('Slider onSlideChange()');
+
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
       if (this.isGrabbing) {
         window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
       }
-      window.$('.slider .frame').css({height: window.$(`.slide[data-index="${index}"]`).height() + 'px'});
+      const $slide = window.$(`.slide[data-index="${index}"]`);
+      window.$('.slider .frame').css({
+        height: $slide.height() + 'px',
+        width:  $slide.width()  + 'px',
+      });
     }, // onSlideChange()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -137,15 +157,25 @@ export default {
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
+$sheet-music-width: 650px;
+
+@mixin below-sheet-music-min {
+  @media (max-width: #{$sheet-music-width - 1px}) {
+    @content;
+  }
+}
+
+@mixin sheet-music-min {
+  @media (min-width: #{$sheet-music-width}) {
+    @content;
+  }
+}
+
 .slider {
   margin-top: $unit/4;
 
   .frame {
     width: 100%;
-    margin-left: -$frame-unit;
-    padding-left: $frame-unit;
-    margin-right: -$frame-unit;
-    padding-right: $frame-unit;
 
     position: relative;
     overflow: hidden;
@@ -160,22 +190,29 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       line-height: inherit;
     }
 
-    &::before { // mask for prev/next slide fades
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      z-index: 2; // raise above prev/next slides
-      pointer-events: none;
-      background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit}), $background-color);
-      // [2018-05-29] IE11 and Edge cannot handle calc()
-      html[data-browser*="Trident"] &,
-      html[data-browser*="Edge"] & {
-        background: linear-gradient(to right, $background-color, transparent 5.5%, transparent 94.5%, $background-color);
+    @include sheet-music-min {
+      margin-left: -$frame-unit;
+      padding-left: $frame-unit;
+      margin-right: -$frame-unit;
+      padding-right: $frame-unit;
+
+      &::before { // mask for prev/next slide fades
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 2; // raise above prev/next slides
+        pointer-events: none;
+        background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit}), $background-color);
+        // [2018-05-29] IE11 and Edge cannot handle calc()
+        html[data-browser*="Trident"] &,
+        html[data-browser*="Edge"] & {
+          background: linear-gradient(to right, $background-color, transparent 5.5%, transparent 94.5%, $background-color);
+        }
       }
-    }
+    } // margin fades
   } // .frame
 
   .slides {
@@ -194,7 +231,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     margin-right: ($unit * 1.5/4);
     cursor: grab;
 
-    @at-root .grabbing .slide {
+    @at-root .grabbing#{&} {
       cursor: grabbing;
     }
 
@@ -213,8 +250,14 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      width: 650px;
+      width: 100vw;
       min-height: 50vh;
+      overflow: hidden;
+
+      @include sheet-music-min {
+        width: auto;
+        min-width: $sheet-music-width;
+      }
 
       &::after {
         position: absolute;
@@ -228,13 +271,14 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     }
 
     img {
+      max-width: 100%;
       vertical-align: top;
       object-position: top;
     }
 
     .sample-title {
       font-size: 2.5em;
-      margin: 2rem 0; // only has effect in IE, where flexbox positioning does not apply
+      margin: 2rem;
 
       &::after {
         content: '';
@@ -250,6 +294,18 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
   } // .slide
 
+  .btn:not(:disabled):focus,
+  .btn:not(:disabled):hover {
+    color: $focus-color;
+  }
+
+  .btn svg {
+    width: 2.4em;
+    height: 4.8em;
+    fill: currentColor;
+    @include absolute-center();
+  }
+
   .slider-button {
     position: absolute;
     z-index: 3; // raise above mask
@@ -264,22 +320,46 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     outline: none;
     @include short-transition;
 
+    @include below-sheet-music-min {
+      position: fixed;
+      background-color: #ccc;
+    }
+
     &[disabled] {
-      cursor: default;
+      pointer-events: none;
       opacity: .1 !important;
     }
 
     &.prev {
-      left: .5em;
-      border-radius: 1em 0 0 1em;
-      // copied from swiper.js
-      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2027%2044'%3E%3Cpath%20d%3D'M0%2C22L22%2C0l2.1%2C2.1L4.2%2C22l19.9%2C19.9L22%2C44L0%2C22L0%2C22L0%2C22z'%20fill%3D'%23007aff'%2F%3E%3C%2Fsvg%3E");
+      left: 0;
+      border-radius: 0 50% 50% 0;
+
+      @include below-sheet-music-min {
+        padding-right: 1em;
+        svg {
+          margin-left: -0.5em;
+        }
+      }
+      @include sheet-music-min {
+        left: .5em;
+        border-radius: 1em 0 0 1em;
+      }
     }
     &.next {
-      right: .5em;
-      border-radius: 0 1em 1em 0;
-      // copied from swiper.js
-      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2027%2044'%3E%3Cpath%20d%3D'M27%2C22L27%2C22L5%2C44l-2.1-2.1L22.8%2C22L2.9%2C2.1L5%2C0L27%2C22L27%2C22z'%20fill%3D'%23007aff'%2F%3E%3C%2Fsvg%3E");
+      right: 0;
+      border-radius: 50% 0 0 50%;
+
+      @include below-sheet-music-min {
+        padding-left: 1em;
+        svg {
+          margin-right: -0.5em;
+        }
+      }
+
+      @include sheet-music-min {
+        right: .5em;
+        border-radius: 0 1em 1em 0;
+      }
     }
   }
 } // .slider

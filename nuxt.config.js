@@ -19,8 +19,9 @@ module.exports = {
       // enable IE11 access
       { src: 'https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.includes,Array.prototype.find,Array.prototype.findIndex' },
       // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
-      { src: 'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
-      { src: 'https://cdn.jsdelivr.net/npm/howler@2.0.12/dist/howler.min.js' },
+      //{ src: 'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
+      //{ src: 'https://cdn.jsdelivr.net/npm/howler@2.0.12/dist/howler.min.js' },
+      { src: 'https://cdn.jsdelivr.net/combine/npm/cash-dom@1.3.7,npm/howler@2.0.12' }, // combined
       // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
       { hid: 'ua', innerHTML: 'document.documentElement.setAttribute("data-browser", navigator.userAgent);', type: 'text/javascript' },
     ],
@@ -30,11 +31,6 @@ module.exports = {
   plugins: [
     '~plugins/gtm.js',
     { src: '~plugins/storage.js', ssr: false },
-    //{ src: '~plugins/swiper.js', ssr: false }, // TODO: largest component--optimize if possible
-  ],
-
-  css: [
-    //'swiper/dist/css/swiper.css',
   ],
 
   mode: 'spa',

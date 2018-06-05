@@ -11,20 +11,6 @@
 
     <Slider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <!--article v-swiper:swiper="swiperOption" class="swiper-container">
-      <div class="swiper-wrapper">
-        <section v-for="sample in s.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
-          <div class="swiper-zoom-container">
-            <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" />
-            <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-          </div>
-        </section>
-      </div>
-      <div class="swiper-pagination" slot="pagination"></div>
-      <div class="swiper-button-prev swiper-button" slot="button-prev"></div>
-      <div class="swiper-button-next swiper-button" slot="button-next"></div>
-    </article-->
-
   </main>
 </template>
 

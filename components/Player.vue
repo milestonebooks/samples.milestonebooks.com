@@ -1,11 +1,12 @@
 <template>
   <aside :class="['audio-player', uiClass]">
+
     <div class="controls">
       <button tabindex="1" class="btn btn-play" :title="playTitle" @click="$store.commit('player/togglePlay')">
-        <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
+        <SvgIcon :d="btnPlayPath"></SvgIcon>
       </button>
       <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
-        <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
+        <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
       <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
@@ -14,9 +15,10 @@
       </button>
       <span class="btn-list-mask"></span>
       <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
-        <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
+        <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
+
     <nav ref="list" :class="{list: true, show: p.isListShown}" @keydown="onListKey">
       <div class="pages">
         <button v-for="sample in s.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
@@ -32,6 +34,7 @@
         <li><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
       </ul>
     </nav>
+
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
@@ -41,6 +44,7 @@
         </div>
       </div>
     </div>
+
   </aside>
 </template>
 
@@ -49,13 +53,10 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters, mapMutations } from 'vuex';
 
-import NuxtLink from '../.nuxt/components/nuxt-link';
-
 import settings from '~/assets/settings';
 
 export default {
   components: {
-    NuxtLink,
     SvgIcon,
   },
 
@@ -92,7 +93,7 @@ export default {
       return this.$store.state.player;
     },
     btnPlayPath() {
-      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12' : ''));
+      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
     btnPrevPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
@@ -311,7 +312,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     showList() {
-      this.$refs.list.display = 'block';
+      this.$refs.list.style.display = 'block';
       this.set({isListShown: true});
       this.updateListFocus();
     }, // showList()
@@ -323,7 +324,7 @@ export default {
 
       this.set({isListShown: false});
       setTimeout(() => {
-        this.$refs.list.display = 'none';
+        this.$refs.list.style.display = 'none';
       }, settings.TRANSITION_TIME_MS);
     }, // hideList()
 
@@ -452,13 +453,13 @@ export default {
   font-size: $base-size;
   height: $unit;
   border-radius: $radius;
-}
 
-.audio-player * {
-  position: absolute;
-}
-.audio-player :focus {
-  outline: none;
+  * {
+    position: absolute;
+  }
+  :focus {
+    outline: none;
+  }
 }
 
 .audio-player:not(.is-multi) .opt-multi {
@@ -495,10 +496,15 @@ export default {
 }
 
 .btn svg {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  width: 2.8em;
+  height: 2.8em;
   fill: currentColor;
+  @include absolute-center();
+
+  @at-root .opt-multi#{&} {
+    width: 1.4em;
+    height: 1.4em;
+  }
 }
 
 .audio-player.is-loading .btn-play {
@@ -620,6 +626,7 @@ export default {
 }
 
 .list {
+  display: none;
   pointer-events: none;
   user-select: none;
   position: absolute;
