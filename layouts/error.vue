@@ -2,15 +2,21 @@
   <main class="error">
     <h1 v-if="error.statusCode === 404">Page not found</h1>
     <h1 v-else>{{ error.message }}</h1>
-    <p>Please <a :href="'mailto:office@milestonebooks.com?subject=site error&body=The following page has an error:%0A'+ error.url">send us an email</a> to let us know.</p>
+    <p>Please <a :href="emailLink">send us an email</a> to let us know.</p>
     <p>Return to <a href="https://www.milestonebooks.com">home page</a>.</p>
   </main>
 </template>
 
 <script>
 export default {
-  props: ['error'],
   layout: 'default',
+  props: ['error'],
+
+  computed: {
+    emailLink() {
+      return 'mailto:office@milestonebooks.com?subject=site error&body=The following page has an error:%0A' + (window && window.location ? encodeURIComponent(window.location) : '');
+    }
+  }
 }
 </script>
 

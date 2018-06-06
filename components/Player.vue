@@ -2,24 +2,24 @@
   <aside :class="['audio-player', uiClass]">
 
     <div class="controls">
-      <button tabindex="1" class="btn btn-play" :title="playTitle" @click="$store.commit('player/togglePlay')">
-        <SvgIcon :d="btnPlayPath"></SvgIcon>
+      <button tabindex="1" class="btn btn-play" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+        <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
       </button>
-      <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click="toggleList" @keydown="onListKey">
+      <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click.stop="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
-      <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
 
-    <nav ref="list" :class="{list: true, show: p.isListShown}" @keydown="onListKey">
+    <nav ref="list" class="list" :aria-hidden="!p.isListShown" @keydown="onListKey">
       <div class="pages">
         <button v-for="sample in s.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
@@ -642,7 +642,7 @@ export default {
   @include short-transition;
 }
 
-.list.show {
+.list:not([aria-hidden]) {
   pointer-events: all;
   opacity: 1;
 }
@@ -676,13 +676,13 @@ export default {
   @include short-transition;
 }
 
-.list.show .item {
+.list:not([aria-hidden]) .item {
   height: 1 * $unit;
   border-bottom: 1px solid $disabled-color;
 }
 
 // [2018-05-25] hack to fix Edge rendering bug
-.list.show .item:not(:last-child) {
+.list:not([aria-hidden]) .item:not(:last-child) {
   border-bottom-width: 2px;
   margin-bottom: -1px;
 }

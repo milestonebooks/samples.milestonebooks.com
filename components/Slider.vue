@@ -1,5 +1,5 @@
 <template>
-  <article :class="sliderClass">
+  <article :class="sliderClass" :aria-grabbed="isGrabbing">
     <div class="frame js_frame">
       <div class="slides js_slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide">
@@ -9,11 +9,11 @@
           </div>
         </section>
       </div>
-      <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" :disabled="!getSample(-1)" aria-label="Previous sample" replace tag="button">
-        <SvgIcon d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+      <nuxt-link class="btn slider-button prev" tabindex="0" @click.native.stop :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+        <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
       </nuxt-link>
-      <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" :disabled="!getSample(+1)" aria-label="Next sample" replace tag="button">
-        <SvgIcon d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+      <nuxt-link class="btn slider-button next" tabindex="0" @click.native.stop :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+        <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
       </nuxt-link>
     </div>
   </article>
@@ -63,7 +63,6 @@ export default {
         'slider': true,
         'js_slider': true,
         'is-init': this.isInit,
-        'grabbing': this.isGrabbing,
       }
     },
   },
@@ -84,7 +83,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
-      console.log('Slider init()');
       this.$nextTick(() => {
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
@@ -106,7 +104,6 @@ export default {
 
     update() {
       this.$nextTick(() => {
-        console.log('Slider update()');
         if (this.slider) this.slider.slideTo(this.currentIndex);
         this.viewWidth = document.documentElement.clientWidth;
       });
@@ -123,8 +120,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onSlideChange(/*e*/) {
-      console.log('Slider onSlideChange()');
-
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
       if (this.isGrabbing) {
@@ -159,7 +154,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
 $sheet-music-width: 650px;
 
-@mixin below-sheet-music-min {
+@mixin below-sheet-music-min() {
   @media (max-width: #{$sheet-music-width - 1px}) {
     @content;
   }
@@ -231,7 +226,7 @@ $sheet-music-width: 650px;
     margin-right: ($unit * 1.5/4);
     cursor: grab;
 
-    @at-root .grabbing#{&} {
+    @at-root [aria-grabbed]#{&} {
       cursor: grabbing;
     }
 
@@ -279,6 +274,7 @@ $sheet-music-width: 650px;
     .sample-title {
       font-size: 2.5em;
       margin: 2rem;
+      white-space: normal;
 
       &::after {
         content: '';
@@ -304,6 +300,11 @@ $sheet-music-width: 650px;
     height: 4.8em;
     fill: currentColor;
     @include absolute-center();
+
+    @include sheet-music-min {
+      width: 3em;
+      height: 6em;
+    }
   }
 
   .slider-button {
@@ -312,52 +313,58 @@ $sheet-music-width: 650px;
     top: 50%;
     margin-top: 0;
     transform: translateY(-50%);
-    height: 7em;
-    width: 3.5em;
+    height: 6em;
+    width: 3em;
     background: no-repeat center white;
-    background-size: 27px 44px; // copied from swiper.js
     cursor: pointer;
     outline: none;
     @include short-transition;
 
     @include below-sheet-music-min {
       position: fixed;
-      background-color: #ccc;
+      box-shadow: $list-shadow;
+    }
+
+    @include sheet-music-min {
+      width: 4em;
+      height: 8em;
     }
 
     &[disabled] {
       pointer-events: none;
-      opacity: .1 !important;
+      opacity: 0 !important;
     }
 
     &.prev {
       left: 0;
-      border-radius: 0 50% 50% 0;
+      border-radius: 0 1em 1em 0;
 
       @include below-sheet-music-min {
         padding-right: 1em;
-        svg {
-          margin-left: -0.5em;
+        transition: all .2s ease-in-out, transform 1s ease-in-out;
+        @at-root main:not(.menu-mode) & {
+          transform: translate(-110%, -50%);
         }
       }
       @include sheet-music-min {
-        left: .5em;
+        left: 0;
         border-radius: 1em 0 0 1em;
       }
     }
     &.next {
       right: 0;
-      border-radius: 50% 0 0 50%;
+      border-radius: 1em 0 0 1em;
 
       @include below-sheet-music-min {
         padding-left: 1em;
-        svg {
-          margin-right: -0.5em;
+        transition: all .2s ease-in-out, transform 1s ease-in-out;
+        @at-root main:not(.menu-mode) & {
+          transform: translate(110%, -50%);
         }
       }
 
       @include sheet-music-min {
-        right: .5em;
+        right: 0;
         border-radius: 0 1em 1em 0;
       }
     }
