@@ -59,15 +59,15 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Samples`;
+    const url = `${store.state.urlBase}${params.item}/?action=Data`;
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string' || !res.data.samples.length) throw {response:{status:500}};
+      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw 'No samples included.';
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
-      return error({ statusCode: err.response.status, message: 'Oops! This page has a problem. :-(', url })
+      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: 'Oops! This page has a problem. :-(', url })
     }
 
     return data;
