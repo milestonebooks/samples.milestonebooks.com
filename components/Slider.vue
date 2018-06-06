@@ -26,6 +26,8 @@ import { lory } from 'lory.js';
 
 import settings from '~/assets/settings';
 
+import { mapGetters } from 'vuex';
+
 export default {
   components: {
     SvgIcon,
@@ -54,6 +56,10 @@ export default {
   },
 
   computed: {
+    ...mapGetters([
+      'getSample'
+    ]),
+
     s() {
       return this.$store.state;
     },
@@ -108,14 +114,6 @@ export default {
         this.viewWidth = document.documentElement.clientWidth;
       });
     }, // update()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    getSample(dir = 0, key, currentIndex = null) {
-      const i = (currentIndex === null ? this.s.currentIndex : currentIndex) + dir;
-      const sample = (this.s.samples[i] ? this.s.samples[i] : null);
-      return sample && key ? sample[key] : sample;
-    }, // getSample()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -342,7 +340,7 @@ $sheet-music-width: 650px;
       @include below-sheet-music-min {
         padding-right: 1em;
         transition: all .2s ease-in-out, transform 1s ease-in-out;
-        @at-root main:not(.menu-mode) & {
+        @at-root main:not(.options-mode) & {
           transform: translate(-110%, -50%);
         }
       }
@@ -358,7 +356,7 @@ $sheet-music-width: 650px;
       @include below-sheet-music-min {
         padding-left: 1em;
         transition: all .2s ease-in-out, transform 1s ease-in-out;
-        @at-root main:not(.menu-mode) & {
+        @at-root main:not(.options-mode) & {
           transform: translate(110%, -50%);
         }
       }

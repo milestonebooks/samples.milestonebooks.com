@@ -51,7 +51,7 @@ export default {
 
   data () {
     return {
-      menuMode: true,
+      optionsMode: true,
     };
   }, // data()
 
@@ -86,7 +86,7 @@ export default {
       return {
         'is-init':       this.s.isInit,
         'is-list-shown': this.p.isListShown,
-        'menu-mode':     this.menuMode,
+        'options-mode':     this.optionsMode,
       }
     },
 
@@ -105,13 +105,11 @@ export default {
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    window.addEventListener('click', () => {
-      console.log('click');
-      this.menuMode = !this.menuMode;
-    });
+    // toggle options visibility on small screens
+    window.addEventListener('click', () => this.optionsMode = !this.optionsMode);
 
     setTimeout(() => {
-      this.menuMode = false;
+      this.optionsMode = false;
     }, 2000);
 
     this.initSamplesData();

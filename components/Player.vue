@@ -77,6 +77,9 @@ export default {
   }, // data()
 
   computed: {
+    ...mapGetters([
+      'getSample'
+    ]),
     ...mapGetters('player',[
       'isPlayable',
       'uiClass',
@@ -190,14 +193,6 @@ export default {
       });
       this.refresh();
     }, // load()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    getSample(dir = 0, key, currentIndex = null) {
-      const i = (currentIndex === null ? this.s.currentIndex : currentIndex) + dir;
-      const sample = (this.s.samples[i] ? this.s.samples[i] : null);
-      return sample && key ? sample[key] : sample;
-    }, // getSample()
 
     //------------------------------------------------------------------------------------------------------------------
 
