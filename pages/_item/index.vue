@@ -59,7 +59,7 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data`; //&dev=true`; // TODO dev mode
+    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`; // TODO dev mode
 
     try {
       const res = await axios.get(url);
