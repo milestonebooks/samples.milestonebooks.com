@@ -4,7 +4,7 @@
       <div class="slides js_slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide">
           <div class="slide-liner">
-            <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" draggable="false" />
+            <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -135,6 +135,14 @@ export default {
     imgSrc(sample) {
       return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}.${sample.image.ext}`;
     }, // imgSrc()
+
+    //------------------------------------------------------------------------------------------------------------------
+    // makes sure slider is sized correctly after image dimensions
+    // TODO: encoding dimensions on <img> tag will probably make this unnecessary
+
+    imgLoaded(i) {
+      if (i === this.currentIndex) this.update();
+    }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 module.exports = {
   env: {
-    gtm: process.env.NODE_ENV === 'production'
+    tracking: process.env.NODE_ENV === 'production' // TODO check to see if this is `true` on generate
   },
 
   // headers of the page
@@ -9,7 +9,7 @@ module.exports = {
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: 'audio samples of CDs available through Milestone Books' }
+      { hid: 'description', name: 'description', content: 'samples of products available from Milestone Books' }
     ],
     link: [
       { hid: 'favicon', rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
@@ -29,7 +29,7 @@ module.exports = {
   },
 
   plugins: [
-    '~plugins/gtm.js',
+    '~plugins/tracking.js',
     { src: '~plugins/storage.js', ssr: false },
   ],
 
