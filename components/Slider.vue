@@ -133,7 +133,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     imgSrc(sample) {
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}.${sample.image.ext}`;
+      const dpi = sample.image.dpi[0] ? `(${sample.image.dpi[0]})` : '';
+      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}${dpi}.${sample.image.ext}`;
     }, // imgSrc()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -173,7 +174,18 @@ $sheet-music-width: 650px;
 }
 
 .slider {
+  //*
   margin-top: $unit/4;
+  /*/
+  overflow-y: scroll; // always on to avoid possible jank when toggling playlist
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  //*/
 
   .frame {
     width: 100%;

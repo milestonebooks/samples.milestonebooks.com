@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" @click="onMaskClick">
+  <main :class="mainClass" @click="onMaskClick" :data-type="s.type">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
@@ -63,11 +63,11 @@ export default {
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw 'No samples included.';
+      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples included.'};
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
-      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: 'Oops! This page has a problem. :-(', url })
+      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: (err.message ? err.message : 'Oops! This page has a problem. :-('), url })
     }
 
     return data;

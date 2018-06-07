@@ -12,6 +12,7 @@ export const state = () => ({
 
   isAutoPlay: true,
   isAutoNext: true,
+  isCompactList: true, // TODO: may want default `false` for audio where titles are available
 
   current: {
     index: null, // = rootState.currentIndex
@@ -21,7 +22,7 @@ export const state = () => ({
     pctHandle: 0,
   },
 
-  persist: ['isAutoPlay','isAutoNext'],
+  persist: ['isAutoPlay', 'isAutoNext', 'isCompactList'],
 }); // state{}
 
 //======================================================================================================================
@@ -192,11 +193,11 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async initSettings({commit}) {
+  async initSettings({commit, state}) {
 
     let v;
 
-    for (const key of ['isAutoPlay', 'isAutoNext']) {
+    for (const key of state.persist) {
       if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
     }
 

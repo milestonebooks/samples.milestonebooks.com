@@ -19,9 +19,9 @@
       </nuxt-link>
     </div>
 
-    <nav ref="list" class="list" :aria-hidden="!p.isListShown" @keydown="onListKey">
+    <nav ref="list" :class="'list' + (p.isCompactList ? ' compact' : '')" :aria-hidden="!p.isListShown" @keydown="onListKey">
       <div class="pages">
-        <button v-for="sample in s.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" :data-id="sample.id"
+        <button v-for="sample in s.samples" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
           <span class="item-flex">
             <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
@@ -30,8 +30,9 @@
         </button>
       </div>
       <ul class="settings">
-        <li><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-        <li><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
       </ul>
     </nav>
 
@@ -78,7 +79,8 @@ export default {
 
   computed: {
     ...mapGetters([
-      'getSample'
+      'getSample',
+      'listItemClass',
     ]),
     ...mapGetters('player',[
       'isPlayable',
@@ -118,6 +120,14 @@ export default {
       },
       set(isAutoNext) {
         this.set({isAutoNext});
+      },
+    },
+    compactList: {
+      get() {
+        return this.p.isCompactList;
+      },
+      set(isCompactList) {
+        this.set({isCompactList});
       },
     },
   }, // computed {}
@@ -188,10 +198,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async load(index) {
-      await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$store.commit('set', {alert:`Error loading audio [${err_code}]`});
-      });
-      this.refresh();
+      if (this.s.type === 'audio') {
+        await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
+          this.$store.commit('set', {alert: `Error loading audio [${err_code}]`});
+          //TODO: this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
+        });
+        this.refresh();
+      }
     }, // load()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -628,7 +641,7 @@ export default {
   left: 0;
   right: 0;
   top: calc(100% + 0em);
-  padding: .5em;
+  padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
   border-radius: $radius;
@@ -650,6 +663,10 @@ export default {
   display: flex;
   flex-direction: column;
 }
+.list.compact .pages {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
 
 .list button {
   margin: 0;
@@ -665,21 +682,52 @@ export default {
 }
 
 .list .item { // .item is a <button> which cannot be flex (see child .item-flex)
-  height: 0;
+  height: 1 * $unit;
   cursor: pointer;
-  background-color: change-color($disabled-color, $lightness: 100%);
+  background-color: white;
+  border: 1px solid $list-item-border-color;
   @include short-transition;
 }
 
-.list:not([aria-hidden]) .item {
-  height: 1 * $unit;
-  border-bottom: 1px solid $disabled-color;
+.list.compact .item {
+  margin-bottom: ($list-padding * 2);
+}
+.list.compact .pages {
+  margin-bottom: -($list-padding * 2);
 }
 
-// [2018-05-25] hack to fix Edge rendering bug
-.list:not([aria-hidden]) .item:not(:last-child) {
-  border-bottom-width: 2px;
-  margin-bottom: -1px;
+.list:not(.compact) .item:not(:first-child).sequential-before {
+  border-top-width: 0;
+}
+.list.compact .item:not(:first-child).sequential-before {
+  border-left-width: 0;
+}
+
+//* [2018-05-25] hack to fix Edge rendering bug
+html[data-browser*="Trident"],
+html[data-browser*="Edge"] {
+  .list .item:not(:last-child) {
+    border-bottom-width: 2px;
+    margin-bottom: -1px;
+  }
+
+  //* mask extra
+  .list .item.non-sequential-after::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    top: calc(100% + 1px);
+    background-color: $list-bg-color;
+  }
+  //*/
+}
+
+.list:not(.compact) .item.non-sequential-after {
+  margin-bottom: calc(#{$list-padding} - 1px) !important;
+}
+.list.compact .item.non-sequential-after {
+  margin-right: calc(#{$list-padding} - 1px) !important;
 }
 
 .list .item.current,
@@ -694,25 +742,6 @@ export default {
 
 .list .item:focus {
   background-color: $list-hover-bg-color;
-}
-
-.list .item:not(.sequential) {
-  margin-top: 1.5em;
-  border-top: 1px solid $disabled-color;
-}
-.list .item:not(.sequential)::before {
-  pointer-events: none;
-  content: 'Some tracks omitted';
-  position: absolute;
-  bottom: calc(100% + 1px);
-  width: 100%;
-  box-sizing: border-box;
-  line-height: 1.5em;
-  padding-left: 6em; // align with track title
-  color: darken($disabled-color, 25%);
-  background-color: $list-bg-color;
-  font-weight: normal;
-  font-style: italic;
 }
 
 .list .item-flex {
@@ -737,11 +766,19 @@ export default {
   text-align: right;
   padding-right: .5em;
 }
+.list.compact .track {
+  padding-right: 0;
+  text-align: center;
+}
 
 .list .title {
   margin-left: .5 * $unit;
   overflow: hidden;
 }
+.list.compact .title {
+  display: none;
+}
+
 .list .title .font-resize {
   @include one-line-ellipsis;
 }

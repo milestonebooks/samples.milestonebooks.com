@@ -7,6 +7,7 @@ $base-size: 10px;
 $unit: 4em;
 $radius: .5em;
 $list-font-size: 1.8em;
+$list-padding: .5em;
 
 // colors
 $alert-color: hsl(0, 100%, 50%);
@@ -17,8 +18,9 @@ $focus-color: $theme-color;
 $player-bg-color: white;
 $player-color: black;
 $disabled-color: lighten($player-color, 90%);
-$list-hover-bg-color: hsl(60, 100%, 95%);
 $list-bg-color: lighten($disabled-color, 5%);
+$list-hover-bg-color: hsl(60, 100%, 95%);
+$list-item-border-color: $disabled-color;
 
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 
