@@ -51,6 +51,8 @@ export default {
 
   data () {
     return {
+      hasTouch: false,
+      hasHover: false,
       optionsMode: true,
     };
   }, // data()
@@ -63,7 +65,7 @@ export default {
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples included.'};
+      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples found.'};
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
@@ -86,7 +88,9 @@ export default {
       return {
         'is-init':       this.s.isInit,
         'is-list-shown': this.p.isListShown,
-        'options-mode':     this.optionsMode,
+        'has-touch':     this.hasTouch,
+        'has-hover':     this.hasHover,
+        'options-mode':  this.optionsMode,
       }
     },
 
@@ -104,6 +108,18 @@ export default {
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
+
+    const _firstmouseover = () => {
+      this.hasHover = true;
+      window.removeEventListener('mouseover', _firstmouseover, false);
+    };
+    window.addEventListener('mouseover', _firstmouseover, false);
+
+    const _firsttouchstart = () => {
+      this.hasTouch = true;
+      window.removeEventListener('touchstart', _firsttouchstart, false);
+    };
+    window.addEventListener('touchstart', _firsttouchstart, false);
 
     // toggle options visibility on small screens
     window.addEventListener('click', () => this.optionsMode = !this.optionsMode);
