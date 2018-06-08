@@ -500,7 +500,7 @@ export default {
 .btn:not(:disabled):hover .id-indicator-frame,
 .btn:not(:disabled):focus .id-indicator-frame {
   color: $focus-color;
-  border-color: $focus-color;
+  border-color: $focus-color; // $list-item-border-focus-color;
 }
 
 .btn svg {
@@ -605,7 +605,7 @@ export default {
   text-align: left;
   top: calc(50% + .5em);
   box-sizing: border-box;
-  border: 1px solid darken($list-bg-color, 20%);
+  border: 1px solid $list-item-border-focus-color; //darken($list-bg-color, 20%);
   background-color: white;
   white-space: nowrap;
   overflow: hidden;
@@ -699,10 +699,12 @@ export default {
 }
 
 .list:not(.compact) .item:not(:first-child).sequential-before {
-  border-top-width: 0;
+  margin-top: -1px;
+  //border-top-width: 0;
 }
 .list.compact .item:not(:first-child).sequential-before {
-  border-left-width: 0;
+  margin-left: -1px;
+  //border-left-width: 0;
 }
 
 //* [2018-05-25] hack to fix Edge rendering bug
@@ -762,10 +764,17 @@ html[data-browser*="Edge"] {
 .list .item.current {
   cursor: default;
   font-weight: bold;
+  background-color: $list-hover-bg-color;
 }
 
 .list .item:focus {
-  background-color: $list-hover-bg-color;
+  border-color: $list-item-border-focus-color;
+}
+.list:not(.compact) .item:focus + .sequential-before {
+  border-top-color: $list-item-border-focus-color;
+}
+.list.compact .item:focus + .sequential-before {
+  border-left-color: $list-item-border-focus-color;
 }
 
 .list .item-flex {
