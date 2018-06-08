@@ -686,7 +686,7 @@ export default {
   cursor: pointer;
   background-color: white;
   border: 1px solid $list-item-border-color;
-  @include short-transition;
+  transition: all .2s ease-in-out, margin 0s ease-in-out; // transitioning margins looks weird
 }
 
 .list.compact .item {
@@ -706,21 +706,19 @@ export default {
 //* [2018-05-25] hack to fix Edge rendering bug
 html[data-browser*="Trident"],
 html[data-browser*="Edge"] {
-  .list .item:not(:last-child) {
+  .list .item {
     border-bottom-width: 2px;
     margin-bottom: -1px;
-  }
 
-  //* mask extra
-  .list .item.non-sequential-after::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 1px;
-    top: calc(100% + 1px);
-    background-color: $list-bg-color;
+    &::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 1px;
+      top: calc(100% + 1px);
+      background-color: $list-bg-color;
+    }
   }
-  //*/
 }
 
 .list:not(.compact) .item.non-sequential-after {
