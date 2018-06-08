@@ -144,6 +144,15 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
+      const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
+
+      // replace url with the sample id
+      if (seq) {
+        const i = this.s.samples.find(i => i.index === seq - 1);
+        if (i) return this.$router.replace(`./#${i.id}`);
+      }
+
       // if id is not given in the hash, select the first in the samples list
       const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 

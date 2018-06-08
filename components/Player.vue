@@ -666,6 +666,7 @@ export default {
 .list.compact .pages {
   flex-direction: row;
   flex-wrap: wrap;
+  padding: $list-padding;
 }
 
 .list button {
@@ -690,6 +691,7 @@ export default {
 }
 
 .list.compact .item {
+  width: 1 * $unit;
   margin-bottom: ($list-padding * 2);
 }
 .list.compact .pages {
@@ -722,10 +724,34 @@ html[data-browser*="Edge"] {
 }
 
 .list:not(.compact) .item.non-sequential-after {
-  margin-bottom: calc(#{$list-padding} - 1px) !important;
+  margin-bottom: calc(#{$list-padding * 2} - 1px) !important;
+
+  &::after {
+    content: '•';
+    font-weight: normal;
+    color: darken($list-item-border-color, 10%);
+    position: absolute;
+    top: 100%;
+    transform: translateX(-50%);
+    left: 50%; //calc(100% + 1px);
+    height: 1em;
+    //text-align: center;
+  }
 }
 .list.compact .item.non-sequential-after {
-  margin-right: calc(#{$list-padding} - 1px) !important;
+  margin-right: calc(#{$list-padding * 2} - 1px) !important;
+
+  &::after {
+    content: '•';
+    font-weight: normal;
+    color: darken($list-item-border-color, 10%);
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: calc(100% + 1px);
+    width: calc(1em - 1px);
+    text-align: center;
+  }
 }
 
 .list .item.current,
