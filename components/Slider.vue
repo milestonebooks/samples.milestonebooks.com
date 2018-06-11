@@ -2,7 +2,7 @@
   <article :class="sliderClass" :aria-grabbed="isGrabbing">
     <div class="frame js_frame">
       <div class="slides js_slides">
-        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide">
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide" :style="sampleStyleSize(sample)">
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -99,10 +99,11 @@ export default {
 
         if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
 
-        setTimeout(() => {
+        //setTimeout(() => {
+          console.timeEnd('Slider');
           this.isInit = true;
           this.update();
-        }, settings.TRANSITION_TIME_MS);
+        //}, settings.TRANSITION_TIME_MS);
       });
     }, // init()
 
@@ -123,12 +124,34 @@ export default {
       if (this.isGrabbing) {
         window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
       }
-      const $slide = window.$(`.slide[data-index="${index}"]`);
-      window.$('.slider .frame').css({
-        height: $slide.height() + 'px',
-        width:  $slide.width()  + 'px',
+
+      const $frame  = window.$('.slider .frame');
+      const $slides = window.$('.slides');
+      const $slide  = window.$(`.slide[data-index="${index}"]`);
+
+      const h = Math.ceil($slide.height());
+      const w = Math.ceil($slide.width());
+
+      const margin = -(Math.ceil($slides.height()) - h) / 2;
+
+      // autosize
+      $frame.css({
+        height: `${h}px`,
+        width:  `${w}px`,
+      });
+      window.$('.slider .slides').css({
+        marginTop: `${margin}px`,
       });
     }, // onSlideChange()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    sampleStyleSize(sample) {
+      const width  = (sample.image ? sample.image.w : 500);
+      const height = (sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2);
+
+      return `width:${width}px; height:${height}px`;
+    }, // sampleStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -138,11 +161,8 @@ export default {
     }, // imgSrc()
 
     //------------------------------------------------------------------------------------------------------------------
-    // makes sure slider is sized correctly after image dimensions
-    // TODO: encoding dimensions on <img> tag will probably make this unnecessary
 
     imgLoaded(i) {
-      if (i === this.currentIndex) this.update();
     }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -174,21 +194,20 @@ $sheet-music-width: 650px;
 }
 
 .slider {
-  //*
-  margin-top: $unit/4;
-  /*/
-  overflow-y: scroll; // always on to avoid possible jank when toggling playlist
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  opacity: 0;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  //*/
+  align-items: center;
+  @include short-transition;
+
+  &.is-init {
+    opacity: 1;
+  }
 
   .frame {
-    width: 100%;
+    width: 100px; // must have a default px width
+    height: 100px;
 
     position: relative;
     overflow: hidden;
@@ -233,6 +252,8 @@ $sheet-music-width: 650px;
     display: inline-block;
     font-size: 1rem;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
   }
 
   .slide {
@@ -263,13 +284,14 @@ $sheet-music-width: 650px;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      width: 100vw;
-      min-height: 50vh;
+      //width: 100vw;
+      //min-height: 50vh;
+      height: 100%;
       overflow: hidden;
 
       @include sheet-music-min {
-        width: auto;
-        min-width: $sheet-music-width;
+        //width: auto;
+        //min-width: $sheet-music-width;
       }
 
       &::after {

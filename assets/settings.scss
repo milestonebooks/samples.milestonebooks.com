@@ -21,6 +21,7 @@ $disabled-color: lighten($player-color, 90%);
 $list-bg-color: lighten($disabled-color, 5%);
 $list-hover-bg-color: hsl(60, 100%, 95%);
 $list-item-border-color: $disabled-color;
+$list-item-border-focus-color: darken($list-item-border-color, 15%);
 
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 

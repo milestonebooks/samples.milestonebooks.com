@@ -107,6 +107,9 @@ export default {
   //====================================================================================================================
 
   mounted() {
+    console.time('index');
+    console.time('Player');
+    console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     const _firstmouseover = () => {
@@ -154,6 +157,8 @@ export default {
         lastId:  samples[samples.length - 1].id,
       });
 
+      console.timeEnd('index');
+
       this.update();
     }, // initSamplesData()
 
@@ -182,12 +187,6 @@ export default {
       this.set({currentIndex: index});
 
       this.$refs.player.hideList();
-
-      /* TODO: temp
-      if (this.swiper.activeIndex !== index) {
-        this.swiper.slideTo(index);
-      }
-      //*/
 
     }, // update()
 
@@ -221,7 +220,6 @@ main {
   position: relative;
   display: flex;
   flex-direction: column;
-  max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
   @include short-transition;
 }
@@ -254,6 +252,7 @@ main.is-list-shown::before {
 
 .alerts {
   z-index: $layer-alerts;
+  pointer-events: none; // continue to allow interaction
   position: fixed;
   left: 0;
   top: 0;
@@ -286,6 +285,8 @@ main.is-list-shown::before {
 
 header {
   z-index: $layer-header;
+  position: absolute;
+  align-self: center;
   background-color: white;
   border-radius: 0 0 $radius $radius;
   @include drop-shadow;
