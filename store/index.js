@@ -35,14 +35,6 @@ export const getters = {
 
   listItemClass: (state) => (sample) => {
     const i = sample.index;
-    /*
-    return {
-      item: true,
-      current: i === state.currentIndex,
-      'non-sequential-before': !sample.sequential,
-      'non-sequential-after': i < state.samples.length - 1 && !state.samples[i + 1].sequential,
-    }
-    //*/
 
     return 'item'
       + (i === state.currentIndex ? ' current' : '')

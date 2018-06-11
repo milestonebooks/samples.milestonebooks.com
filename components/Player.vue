@@ -2,7 +2,7 @@
   <aside :class="['audio-player', uiClass]">
 
     <div class="controls">
-      <button tabindex="1" class="btn btn-play" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+      <button v-if="s.type === 'audio'" tabindex="1" class="btn btn-play" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
         <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
       </button>
       <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
@@ -36,7 +36,7 @@
       </ul>
     </nav>
 
-    <div class="bar-progress">
+    <div class="bar-progress" v-if="s.type === 'audio'">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
           <a tabindex="2" href="#" class="bar-handle" ref="handle" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent="">
@@ -701,11 +701,10 @@ export default {
 
 .list:not(.compact) .item:not(:first-child).sequential-before {
   margin-top: -1px;
-  //border-top-width: 0;
 }
-.list.compact .item:not(:first-child).sequential-before {
-  margin-left: -1px;
-  //border-left-width: 0;
+// adjusting right margin avoids flex-wrap alignment issues
+.list.compact .item:not(:last-child).sequential-after {
+  margin-right: -1px;
 }
 
 //* [2018-05-25] hack to fix Edge rendering bug
@@ -736,9 +735,8 @@ html[data-browser*="Edge"] {
     position: absolute;
     top: 100%;
     transform: translateX(-50%);
-    left: 50%; //calc(100% + 1px);
+    left: 50%;
     height: 1em;
-    //text-align: center;
   }
 }
 .list.compact .item.non-sequential-after {
@@ -751,7 +749,7 @@ html[data-browser*="Edge"] {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    left: calc(100% + 1px);
+    left: calc(100% + 0.5px);
     width: calc(1em - 1px);
     text-align: center;
   }
@@ -801,6 +799,7 @@ html[data-browser*="Edge"] {
   padding-right: .5em;
 }
 .list.compact .track {
+  width: 100%;
   padding-right: 0;
   text-align: center;
 }

@@ -2,7 +2,7 @@
   <article :class="sliderClass" :aria-grabbed="isGrabbing">
     <div class="frame js_frame">
       <div class="slides js_slides">
-        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide" :style="sampleStyleSize(sample)">
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide" :style="sampleStyleSize(sample)" @click.native.prevent.stop>
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -100,9 +100,9 @@ export default {
         if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
 
         //setTimeout(() => {
-          console.timeEnd('Slider');
-          this.isInit = true;
-          this.update();
+        console.timeEnd('Slider');
+        this.isInit = true;
+        this.update();
         //}, settings.TRANSITION_TIME_MS);
       });
     }, // init()
@@ -147,8 +147,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample) {
-      const width  = (sample.image ? sample.image.w : 500);
-      const height = (sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2);
+      const xdpi   = sample.image.dpi[0] ? sample.image.dpi[0] : 1;
+      const width  = Math.ceil((sample.image ? sample.image.w : 500) * xdpi);
+      const height = Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi);
 
       return `width:${width}px; height:${height}px`;
     }, // sampleStyleSize()
@@ -162,7 +163,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imgLoaded(i) {
+    imgLoaded(/*i*/) {
+      // TODO: multiple size images; lazy loading; fadein when first image has loaded
     }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
