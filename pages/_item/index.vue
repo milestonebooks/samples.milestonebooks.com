@@ -4,6 +4,8 @@
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
+    <TheNav ref="nav" :currentIndex="s.currentIndex" />
+
     <header>
       <h1 class="item-title">{{headerTitle}}</h1>
       <Player ref="player" :currentIndex="s.currentIndex" />
@@ -15,9 +17,11 @@
 </template>
 
 <script>
-import Player from '~/components/Player.vue';
+import Player from '~/components/Player';
 
 import Slider from '~/components/Slider';
+
+import TheNav from '~/components/TheNav';
 
 import { mapMutations } from 'vuex';
 
@@ -27,8 +31,9 @@ import axios from 'axios';
 
 export default {
   components: {
-    Player,
     Slider,
+    TheNav,
+    Player,
   },
 
   head () {
@@ -286,6 +291,7 @@ main.is-list-shown::before {
 header {
   z-index: $layer-header;
   position: absolute;
+  top: 25%; // TODO
   align-self: center;
   background-color: white;
   border-radius: 0 0 $radius $radius;
