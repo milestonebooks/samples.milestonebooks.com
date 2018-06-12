@@ -489,19 +489,38 @@ export default {
   @include absolute-center(y);
   @include short-transition;
   color: $disabled-color;
-}
-.btn:not(:disabled) {
-  cursor: pointer;
-  color: $player-color;
-}
-.btn:not(:disabled):focus,
-.btn:not(:disabled):hover {
-  color: $focus-color;
-}
-.btn:not(:disabled):hover .id-indicator-frame,
-.btn:not(:disabled):focus .id-indicator-frame {
-  color: $focus-color;
-  border-color: $focus-color; // $list-item-border-focus-color;
+
+  &::before {
+    content: '';
+    position: absolute;
+    background-color: $focus-bg-color;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    @include short-transition;
+
+    @at-root .btn:focus::before {
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  &:not(:disabled) {
+    cursor: pointer;
+    color: $player-color;
+
+    &:focus,
+    &:hover {
+      color: $focus-color;
+
+      & .id-indicator-frame {
+        color: $focus-color;
+        border-color: $focus-color; // $list-item-border-focus-color;
+      }
+    }
+  }
 }
 
 .btn svg {
@@ -521,7 +540,7 @@ export default {
 }
 .btn-play {
   left: 0;
-  border-radius: 50%;
+  //border-radius: 50%;
 }
 
 .is-loading .btn-play::before {
@@ -583,51 +602,45 @@ export default {
   z-index: 1; /* raise above .list shadow */
   padding: 1em 1em 0 1em;
   transform: translateY(calc(-50% - .5em)) translateX(1em);
-}
+
+  & .id-indicator-frame {
+    width: 3em;
+    height: 2em;
+    @include absolute-center();
+    text-align: left;
+    top: calc(50% + .5em);
+    box-sizing: border-box;
+    border: 1px solid $list-item-border-focus-color; //darken($list-bg-color, 20%);
+    background-color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    @include short-transition;
+  }
+
+  & .id-indicator {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    height: 100%;
+    font-size: $list-font-size;
+    line-height: 1em;
+    font-weight: bold;
+    text-align: center;
+    transition: transform $transition-time ease-in-out; // match slide transition time
+  }
+} // .btn-list
 
 .btn-list::before {
-  position: absolute;
-  content: '';
-  left: 50%;
   top: calc(50% + .5em);
-  margin: -.5 * $unit;
   width: $unit;
   height: $unit;
-  opacity: 0;
-  border-radius: $radius $radius 0 0;
-  background-color: $list-bg-color;
-  @include short-transition;
-}
 
-.btn-list .id-indicator-frame {
-  width: 3em;
-  height: 2em;
-  @include absolute-center();
-  text-align: left;
-  top: calc(50% + .5em);
-  box-sizing: border-box;
-  border: 1px solid $list-item-border-focus-color; //darken($list-bg-color, 20%);
-  background-color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  @include short-transition;
-}
-
-.btn-list .id-indicator {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-  height: 100%;
-  font-size: $list-font-size;
-  line-height: 1em;
-  font-weight: bold;
-  text-align: center;
-  transition: transform $transition-time ease-in-out; // match slide transition time
-}
-
-.is-list-shown .btn-list::before {
-  box-shadow: $list-shadow;
-  opacity: 1;
+  .is-list-shown & {
+    margin: -.5 * $unit;
+    border-radius: $radius $radius 0 0;
+    box-shadow: $list-shadow;
+    transform: scale(1);
+  }
 }
 
 .is-multi .btn-next {
@@ -763,7 +776,7 @@ html[data-browser*="Edge"] {
 .list .item.current {
   cursor: default;
   font-weight: bold;
-  background-color: $list-hover-bg-color;
+  background-color: $list-current-bg-color;
 }
 
 .list .item:focus {

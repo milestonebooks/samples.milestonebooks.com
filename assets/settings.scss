@@ -13,13 +13,14 @@ $list-padding: .5em;
 $alert-color: hsl(0, 100%, 50%);
 $alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
-$theme-color: hsl(22, 85%, 43%);
-$focus-color: $theme-color;
 $player-bg-color: white;
 $player-color: black;
 $disabled-color: lighten($player-color, 90%);
+$theme-color: hsl(22, 85%, 43%);
+$focus-color: $theme-color;
+$focus-bg-color: lighten($disabled-color, 5%);
 $list-bg-color: lighten($disabled-color, 5%);
-$list-hover-bg-color: hsl(60, 100%, 95%);
+$list-current-bg-color: $list-bg-color; // hsl(60, 100%, 95%);
 $list-item-border-color: $disabled-color;
 $list-item-border-focus-color: darken($list-item-border-color, 15%);
 

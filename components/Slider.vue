@@ -96,18 +96,6 @@ export default {
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
         this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
 
-        /*
-        this.$el.addEventListener('on.lory.resize', (e) => {
-          console.log('on.lory.resize', e.detail.event);
-          this.slider.destroy();
-          this.isInit = false;
-
-          setTimeout(() => {
-            this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
-          }, settings.TRANSITION_TIME_MS);
-        });
-        //*/
-
         window._resizeT = null;
         window.addEventListener('resize', () => {
           // this is needed to ensure that font-size = 0 when lory resize calculations occur
@@ -186,17 +174,12 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample) {
-      const xdpi   = sample.image && sample.image.dpi[0] ? sample.image.dpi[0] : 1;
-      const width  = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
-      const height = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : ' 50vmin';
-//      const height = `${Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi)}px`;
-      //Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi);
+      const xdpi     = sample.image && sample.image.dpi[0] ? sample.image.dpi[0] : 1;
+      const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
+      const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : ' 50vmin';
+      const maxWidth = sample.image ? 'unset' : '650px'; // sheet music width
 
-      //*
-      return {width, height};
-      /*/
-      return `width:${width}px; height:${height}px`;
-      //*/
+      return {width, height, maxWidth};
     }, // sampleStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -271,7 +254,7 @@ $sheet-music-width: 650px;
 
     // [2018-06-12] hack to fix sizing bug
     html[data-browser*="Firefox"] & {
-      margin-bottom: 1px;
+      padding-bottom: 1px;
     }
 
     @include sheet-music-min {
