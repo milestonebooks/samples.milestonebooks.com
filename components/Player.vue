@@ -710,7 +710,7 @@ export default {
 //* [2018-05-25] hack to fix Edge rendering bug
 html[data-browser*="Trident"],
 html[data-browser*="Edge"] {
-  .list .item {
+  .list:not(.compact) .item {
     border-bottom-width: 2px;
     margin-bottom: -1px;
 
@@ -772,7 +772,7 @@ html[data-browser*="Edge"] {
 .list:not(.compact) .item:focus + .sequential-before {
   border-top-color: $list-item-border-focus-color;
 }
-.list.compact .item:focus + .sequential-before {
+.list.compact .item:focus + .sequential-before { // looks a little tacky on flex-wrap row break
   border-left-color: $list-item-border-focus-color;
 }
 

@@ -2,7 +2,7 @@
   <article :class="sliderClass" :aria-grabbed="isGrabbing">
     <div class="frame js_frame">
       <div class="slides js_slides">
-        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" class="slide js_slide" :style="sampleStyleSize(sample)" @click.native.prevent.stop>
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click.native.stop>
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -57,7 +57,8 @@ export default {
 
   computed: {
     ...mapGetters([
-      'getSample'
+      'getSample',
+      'listItemClass',
     ]),
 
     s() {
@@ -90,22 +91,50 @@ export default {
 
     init() {
       this.$nextTick(() => {
+        this.$el.addEventListener('after.lory.init',    this.onInit);
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
-        this.$el.addEventListener('after.lory.slide', this.onSlideChange);
+        this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
+
+        /*
+        this.$el.addEventListener('on.lory.resize', (e) => {
+          console.log('on.lory.resize', e.detail.event);
+          this.slider.destroy();
+          this.isInit = false;
+
+          setTimeout(() => {
+            this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
+          }, settings.TRANSITION_TIME_MS);
+        });
+        //*/
+
+        window._resizeT = null;
         window.addEventListener('resize', () => {
+          // this is needed to ensure that font-size = 0 when lory resize calculations occur
+          window.$('.slider').addClass('is-resizing');
+          clearTimeout(window._resizeT);
+
+          window._resizeT = setTimeout(() => {
+            window.$('.slider').removeClass('is-resizing');
+          }, settings.TRANSITION_TIME_MS);
+
           if (document.documentElement.clientWidth !== this.viewWidth) this.update();
+          this.autosize();
         });
 
         if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
-
-        //setTimeout(() => {
-        console.timeEnd('Slider');
-        this.isInit = true;
-        this.update();
-        //}, settings.TRANSITION_TIME_MS);
       });
     }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onInit() {
+      console.log('after.lory.init');
+      setTimeout(() => {
+        this.isInit = true;
+        this.update();
+      }, settings.TRANSITION_TIME_MS);
+    }, // onInit()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -125,14 +154,24 @@ export default {
         window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
       }
 
+      this.autosize();
+    }, // onSlideChange()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    autosize() {
+      console.log('autosize');
+      const index = this.slider.returnIndex();
+
       const $frame  = window.$('.slider .frame');
       const $slides = window.$('.slides');
       const $slide  = window.$(`.slide[data-index="${index}"]`);
 
-      const h = Math.ceil($slide.height());
+      const h = $slide.height();
       const w = Math.ceil($slide.width());
 
-      const margin = -(Math.ceil($slides.height()) - h) / 2;
+      const margin = -(($slides.height() - h) / 2);
+      console.log('$slides.height:', $slides.height(), 'h:', h, 'margin:', margin);
 
       // autosize
       $frame.css({
@@ -142,16 +181,22 @@ export default {
       window.$('.slider .slides').css({
         marginTop: `${margin}px`,
       });
-    }, // onSlideChange()
+    }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample) {
-      const xdpi   = sample.image.dpi[0] ? sample.image.dpi[0] : 1;
-      const width  = Math.ceil((sample.image ? sample.image.w : 500) * xdpi);
-      const height = Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi);
+      const xdpi   = sample.image && sample.image.dpi[0] ? sample.image.dpi[0] : 1;
+      const width  = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
+      const height = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : ' 50vmin';
+//      const height = `${Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi)}px`;
+      //Math.ceil((sample.image ? sample.image.h : Math.min(document.body.clientHeight, window.innerHeight) / 2) * xdpi);
 
+      //*
+      return {width, height};
+      /*/
       return `width:${width}px; height:${height}px`;
+      //*/
     }, // sampleStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -214,14 +259,19 @@ $sheet-music-width: 650px;
     position: relative;
     overflow: hidden;
     white-space: nowrap;
-    @include short-transition;
 
-    font-size: 0;
     line-height: 0;
-    // lory setup has errors if font size is not 0
+    font-size: 0; // lory setup has errors if font size is not 0
     @at-root .slider.is-init .frame {
       font-size: inherit;
-      line-height: inherit;
+    }
+    @at-root .slider.is-resizing .frame {
+      font-size: 0;
+    }
+
+    // [2018-06-12] hack to fix sizing bug
+    html[data-browser*="Firefox"] & {
+      margin-bottom: 1px;
     }
 
     @include sheet-music-min {
@@ -251,11 +301,10 @@ $sheet-music-width: 650px;
 
   .slides {
     box-sizing: border-box;
-    display: inline-block;
-    font-size: 1rem;
-    line-height: 1;
     display: inline-flex;
     align-items: center;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .slide {
@@ -271,7 +320,7 @@ $sheet-music-width: 650px;
       cursor: grabbing;
     }
 
-    &::after {
+    &::before {
       content: '';
       position: absolute;
       left: 0;
