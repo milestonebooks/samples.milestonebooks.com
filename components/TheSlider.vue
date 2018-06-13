@@ -153,10 +153,24 @@ export default {
       const $slides = window.$('.slides');
       const $slide  = window.$(`.slide[data-index="${index}"]`);
 
-      const h = $slide.height();
-      const w = Math.ceil($slide.width());
+      let scale = 1;
+      let h = $slide.height();
+      let w = Math.ceil($slide.width());
 
-      const margin = -(($slides.height() - h) / 2);
+      /*
+      if (w > document.body.clientWidth) {
+        scale = document.body.clientWidth / w;
+        w = Math.floor(w * scale);
+        h = Math.ceil(h * scale);
+      }
+
+      $slide.css({
+        'transform-origin': 'left',
+        transform: `scale(${scale})`,
+      });
+      //*/
+
+      const margin = -Math.floor(($slides.height() - h) / 2);
 
       // autosize
       $frame.css({
@@ -214,6 +228,12 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
   align-items: center;
   @include short-transition;
 
+  @include sheet-music-min {
+    [data-type="audio"] & {
+      padding: ($frame-unit / 2) 0;
+    }
+  }
+
   &.is-init {
     opacity: 1;
   }
@@ -245,11 +265,6 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       padding-left:  $frame-unit;
       margin-right: -$frame-unit;
       padding-right: $frame-unit;
-
-      [data-type="audio"] & {
-        margin-top:    $frame-unit / 2;
-        margin-bottom: $frame-unit / 2;
-      }
 
       &::before { // mask for prev/next slide fades
         content: '';
