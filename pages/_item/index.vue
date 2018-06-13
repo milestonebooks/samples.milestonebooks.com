@@ -4,7 +4,7 @@
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
-    <TheNav ref="nav" :currentIndex="s.currentIndex" />
+    <TheNav v-if="s.samples.length > 1" />
 
     <header>
       <h1 class="item-title">{{headerTitle}}</h1>

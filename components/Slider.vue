@@ -117,7 +117,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onInit() {
-      console.log('after.lory.init');
       setTimeout(() => {
         this.isInit = true;
         this.update();
@@ -148,7 +147,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize() {
-      console.log('autosize');
       const index = this.slider.returnIndex();
 
       const $frame  = window.$('.slider .frame');
@@ -159,7 +157,6 @@ export default {
       const w = Math.ceil($slide.width());
 
       const margin = -(($slides.height() - h) / 2);
-      console.log('$slides.height:', $slides.height(), 'h:', h, 'margin:', margin);
 
       // autosize
       $frame.css({

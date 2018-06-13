@@ -164,7 +164,6 @@ export default {
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
-      console.timeEnd('Player');
       this.refresh();
     }, // init()
 

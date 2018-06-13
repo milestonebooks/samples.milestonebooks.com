@@ -1,22 +1,22 @@
 <template>
-  <aside :class="['the-nav', uiClass]">
+  <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click.stop="onMaskClick">
 
     <div class="controls">
-      <nuxt-link tabindex="3" class="btn btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link tabindex="3" class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button tabindex="4" ref="btnList" class="btn btn-list opt-multi" @click.stop="toggleList" @keydown="onListKey">
+      <button tabindex="4" ref="btnList" class="btn btn-list" @click.stop="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
-      <nuxt-link tabindex="5" class="btn btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link tabindex="5" class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
 
-    <nav ref="list" :class="'list' + (p.isCompactList ? ' compact' : '')" :aria-hidden="!p.isListShown" @keydown="onListKey">
+    <nav ref="list" :class="'list' + (p.isCompactList ? ' compact' : '')" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
         <button v-for="sample in s.samples" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
@@ -27,9 +27,9 @@
         </button>
       </div>
       <ul class="settings">
+        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
         <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
         <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
-        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
       </ul>
     </nav>
 
@@ -48,19 +48,10 @@ export default {
     SvgIcon,
   },
 
-  props: [
-    'currentIndex',
-  ],
-
   data () {
     return {
-      baseSize: '10px',
-      selSlider: '.bar-seek',
-      $slider: null,
-      selHandle: '.bar-handle',
-      moveCaptured: false,
+      isListShown: false,
       keyActive: false,
-      minX: 0,
     }
   }, // data()
 
@@ -69,23 +60,11 @@ export default {
       'getSample',
       'listItemClass',
     ]),
-    ...mapGetters('player',[
-      'isPlayable',
-      'uiClass',
-      'barSeekStyle',
-      'barPlayStyle',
-      'barHandleStyle',
-      'playTitle',
-      'handleTip',
-    ]),
     s() {
       return this.$store.state;
     },
     p() {
       return this.$store.state.player;
-    },
-    btnPlayPath() {
-      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
     btnPrevPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
@@ -121,20 +100,8 @@ export default {
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
-    this.bindEvents();
-    this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.p.isAutoNext && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
-    });
     this.init();
   }, // mounted ()
-
-  beforeDestroy() {
-    this.unbindEvents();
-  }, // beforeDestroy ()
-
-  watch: {
-    currentIndex: 'update',
-  },
 
   //====================================================================================================================
 
@@ -149,51 +116,8 @@ export default {
 
     init() {
       this.$store.dispatch('player/initSettings');
-      this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
-      console.timeEnd('Player');
-      this.refresh();
     }, // init()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    bindEvents() {
-      document.addEventListener('touchmove',   this.moving, {passive: false});
-      document.addEventListener('mousemove',   this.moving);
-      document.addEventListener('touchend',    this.moveEnd, {passive: false});
-      document.addEventListener('touchcancel', this.moveEnd, {passive: false});
-      document.addEventListener('mouseup',     this.moveEnd);
-      window.addEventListener('resize',        this.refresh);
-    }, // bindEvents()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    unbindEvents() {
-      document.removeEventListener('touchmove',   this.moving);
-      document.removeEventListener('mousemove',   this.moving);
-      document.removeEventListener('touchend',    this.moveEnd);
-      document.removeEventListener('touchcancel', this.moveEnd);
-      document.removeEventListener('mouseup',     this.moveEnd);
-      window.removeEventListener('resize',        this.refresh)
-    }, // unbindEvents()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    update() {
-      this.load(this.currentIndex);
-    }, // update()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    async load(index) {
-      if (this.s.type === 'audio') {
-        await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-          this.$store.commit('set', {alert: `Error loading audio [${err_code}]`});
-          //TODO: this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
-        });
-        this.refresh();
-      }
-    }, // load()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -212,113 +136,18 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onHandleKey(e) {
-      if (this.throttleKey(e)) return;
-
-      // see <https://stackoverflow.com/questions/8584902/get-closest-number-out-of-array>
-      const getClosest = (num, arr) => {
-        let closest = arr[0];
-        for (const val of arr) {
-          if (Math.abs(val - num) < Math.abs(num - closest)) closest = val;
-        }
-        return closest;
-      };
-
-      // adjust to the interval nearest 20th (5%) rounded to an interval:
-      // 10s; 20s (len > 5m); 30s (>~8m); 1m (>15m); 5m (>1h); 10m (>2.5h)
-      const len = this.p.current.duration;
-      const intv = 20;
-      const secIntv = getClosest(len / intv, [10, 20, 30, 60, 300, 600]);
-      const pct = this.p.current.pct;
-
-      let newPct = pct;
-
-      switch (e.key) {
-      case 'Backspace':
-      case 'ArrowLeft': case 'Left':
-        newPct = (Math.ceil( Math.round(len * pct / 100) / secIntv) - 1) * secIntv / len * 100; break;
-      case 'ArrowRight': case 'Right':
-        newPct = (Math.floor(Math.round(len * pct / 100) / secIntv) + 1) * secIntv / len * 100; break;
-      case 'Home':
-        newPct =   0; break;
-      case 'End':
-        newPct = 100; break;
-      case 'Enter':
-      case ' ': // duplicate play button behavior
-        this.$store.commit('player/togglePlay',false); break;
-      default:
-        return; // ignore all other keys
-      }
-
-      if (newPct !== pct) {
-        this.moveStart(e, newPct);
-        this.moveEnd(e);
-      }
-
-      e.preventDefault();
-    }, // onHandleKey()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    // adapted from <https://github.com/NightCatSama/vue-slider-component/blob/master/src/vue2-slider.vue>
-    moveStart(e, pct) {
-      e.preventDefault();
-      this.minX = this.$slider.offset().left;
-      this.moveCaptured = true;
-      this.set({isCaptured: this.moveCaptured});
-      this.moving(e, pct);
-    }, // moveStart()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    moving(e, pct) {
-      if (!this.moveCaptured) return false;
-      e.preventDefault();
-
-      if (pct === undefined) {
-
-        if (e.targetTouches && e.targetTouches[0]) e = e.targetTouches[0];
-
-        let x = e.pageX;
-        const minX = this.minX;
-        const maxX = minX + this.$slider.width(); // width could change (based on loading state) during drag
-
-        if (x < minX) x = minX;
-        if (x > maxX) x = maxX;
-
-        pct = ((x - minX) / (maxX - minX)) * 100;
-      }
-
-      this.$store.dispatch('player/setPctHandle', pct);
-    }, // moving()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    moveEnd(/*e:unused*/) {
-      if (!this.moveCaptured) return false;
-
-      this.moveCaptured = false;
-      this.set({isCaptured: this.moveCaptured});
-
-      if (!this.p.isPlaying || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
-
-      this.$refs.handle.focus();
-    }, // moveEnd()
-
-    //------------------------------------------------------------------------------------------------------------------
-
     showList() {
       this.$refs.list.style.display = 'block';
-      this.set({isListShown: true});
+      this.isListShown = true;
       this.updateListFocus();
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
 
     hideList() {
-      if (!this.p.isListShown) return;
+      if (!this.isListShown) return;
 
-      this.set({isListShown: false});
+      this.isListShown = false;
       setTimeout(() => {
         this.$refs.list.style.display = 'none';
       }, settings.TRANSITION_TIME_MS);
@@ -327,7 +156,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleList() {
-      this[this.p.isListShown ? 'hideList' : 'showList']();
+      this[this.isListShown ? 'hideList' : 'showList']();
     }, // toggleList()
     //------------------------------------------------------------------------------------------------------------------
 
@@ -362,7 +191,7 @@ export default {
       }
 
       // don't make any up-down movement unless list is already shown
-      if (dir && dir.y && !this.p.isListShown) {
+      if (dir && dir.y && !this.isListShown) {
         this.showList();
         dir.y = 0;
       }
@@ -398,7 +227,7 @@ export default {
       const newId = this.getSample(dir.value, 'id', i);
       if (newId === null) return;
 
-      if (!this.p.isListShown) return this.gotoId(newId);
+      if (!this.isListShown) return this.gotoId(newId);
 
       this.updateListFocus(newId);
 
@@ -415,7 +244,7 @@ export default {
 
     gotoId(id) {
       this.$router.replace(`#${id}`);
-      if (this.p.isListShown) {
+      if (this.isListShown) {
         this.hideList();
         this.$nextTick(() => {
           this.$refs.btnList.focus();
@@ -425,9 +254,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    refresh() {
-      this.setCurrent({pctPixel: 100 / this.$slider.width()});
-    }, // refresh()
+    onMaskClick(e) {
+      if (e.target === window.$('.is-list-shown')[0]) this.hideList();
+    }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -442,7 +271,7 @@ export default {
 @import "../assets/settings.scss";
 
 .the-nav {
-  z-index: $layer-controls;
+  z-index: $layer-the-nav;
   box-sizing: border-box;
   position: absolute;
   align-self: center;
@@ -452,15 +281,6 @@ export default {
   height: $unit;
   width: 3 * $unit;
 
-  /*
-  position: relative;
-  font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
-  background-color: $player-bg-color;
-  box-sizing: border-box;
-  font-size: $base-size;
-  border-radius: $radius;
-  //*/
-
   * {
     position: absolute;
   }
@@ -468,10 +288,22 @@ export default {
     outline: none;
   }
 
-  &:not(.is-multi) .opt-multi {
-    pointer-events: none;
+  &::before {
+    content: '';
+    position: fixed;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    //z-index: $layer-header - 1; /* below header, above swiper */
     opacity: 0;
+    pointer-events: none;
     @include short-transition;
+  }
+
+  &.is-list-shown::before {
+    opacity: .5;
+    pointer-events: auto;
   }
 }
 
@@ -522,45 +354,28 @@ export default {
 }
 
 .btn svg {
-  width: 2.8em;
-  height: 2.8em;
+  width: 1.4em;
+  height: 1.4em;
   fill: currentColor;
   @include absolute-center();
-
-  @at-root .opt-multi#{&} {
-    width: 1.4em;
-    height: 1.4em;
-  }
 }
 
-.opt-multi {
-  opacity: 0;
-  right: 0;
-  @include short-transition;
-
-  .is-multi & {
-    opacity: 1;
-  }
+.btn-prev {
+  left: 0;
 }
 
-.is-multi {
-  .btn-prev {
-    right: 2 * $unit;
-  }
+.btn-list {
+  left: 1 * $unit;
+}
 
-  .btn-list {
-    right: 1 * $unit;
-  }
-
-  .btn-next {
-    right: 0;
-  }
+.btn-next {
+  left: 2 * $unit;
 }
 
 // this element is used to prevent clicking on the .btn-list outside the visible ui
-.is-multi .btn-list-mask {
+.btn-list-mask {
   display: block;
-  right: calc((1 * #{$unit}) - 1em);
+  left: calc((1 * #{$unit}) - 1em);
   width: 6em;
   height: 1em;
   top: -1em;
@@ -575,7 +390,7 @@ export default {
 .btn-list {
   z-index: 1; /* raise above .list shadow */
   padding: 1em 1em 0 1em;
-  transform: translateY(calc(-50% - .5em)) translateX(1em);
+  transform: translateY(calc(-50% - .5em)) translateX(-1em);
 
   & .id-indicator-frame {
     width: 3em;
@@ -594,10 +409,11 @@ export default {
   & .id-indicator {
     position: relative;
     display: inline-block;
-    width: 100%;
     height: 100%;
+    width: 100%;
+    overflow: hidden;
     font-size: $list-font-size;
-    line-height: 1em;
+    line-height: 1.2em; // 16 * 1.2 = 19.2 (best compromise between Chrome and Firefox alignment)
     font-weight: bold;
     text-align: center;
     transition: transform $transition-time ease-in-out; // match slide transition time
@@ -624,7 +440,10 @@ export default {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(100% + 0em);
+  top: 100%;
+  @include absolute-center(x);
+  width: 100vw;
+  max-width: 10 * $unit;
   padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
@@ -670,8 +489,12 @@ export default {
   height: 1 * $unit;
   cursor: pointer;
   background-color: white;
-  border: 1px solid $list-item-border-color;
-  transition: all .2s ease-in-out, margin 0s ease-in-out; // transitioning margins looks weird
+  border: 1px solid $list-bg-color; // $list-item-border-color;
+  transition: all .2s ease-in-out, margin 0s ease-in-out; // transitioning margins (row vs column) looks weird
+
+  &.current {
+    border-color: $list-item-border-color;
+  }
 }
 
 .list.compact .item {
@@ -690,7 +513,36 @@ export default {
   margin-right: -1px;
 }
 
-//* [2018-05-25] hack to fix Edge rendering bug
+.list .item.non-sequential-after::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background-color: darken($list-item-border-color, 10%);
+  border-radius: 50%;
+}
+
+.list:not(.compact) .item.non-sequential-after {
+  margin-bottom: calc(#{$list-padding * 2} - 1px) !important;
+
+  &::after {
+    left: 50%;
+    transform: translateX(-50%);
+    top: calc(100% + #{$list-padding} - 1px);
+  }
+}
+.list.compact .item.non-sequential-after {
+  margin-right: calc(#{$list-padding * 2} - 1px) !important;
+
+  &::after {
+    top: 50%;
+    transform: translateY(-50%);
+    left: calc(100% + #{$list-padding} - 1px);
+  }
+}
+
+/* [2018-05-25] hack to fix Edge rendering bug
 html[data-browser*="Trident"],
 html[data-browser*="Edge"] {
   .list:not(.compact) .item {
@@ -704,39 +556,11 @@ html[data-browser*="Edge"] {
       height: 1px;
       top: calc(100% + 1px);
       background-color: $list-bg-color;
+      border-radius: unset;
     }
   }
 }
-
-.list:not(.compact) .item.non-sequential-after {
-  margin-bottom: calc(#{$list-padding * 2} - 1px) !important;
-
-  &::after {
-    content: '•';
-    font-weight: normal;
-    color: darken($list-item-border-color, 10%);
-    position: absolute;
-    top: 100%;
-    transform: translateX(-50%);
-    left: 50%;
-    height: 1em;
-  }
-}
-.list.compact .item.non-sequential-after {
-  margin-right: calc(#{$list-padding * 2} - 1px) !important;
-
-  &::after {
-    content: '•';
-    font-weight: normal;
-    color: darken($list-item-border-color, 10%);
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: calc(100% + 0.5px);
-    width: calc(1em - 1px);
-    text-align: center;
-  }
-}
+//*/
 
 .list .item.current,
 .list .item:focus {
@@ -793,6 +617,10 @@ html[data-browser*="Edge"] {
 }
 .list.compact .title {
   display: none;
+}
+
+.list .font-resize {
+  margin-bottom: -1px; // compromise between Chrome and Firefox vertical alignment
 }
 
 .list .title .font-resize {
