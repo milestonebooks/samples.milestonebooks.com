@@ -173,8 +173,8 @@ export default {
     sampleStyleSize(sample) {
       const xdpi     = sample.image && sample.image.dpi[0] ? sample.image.dpi[0] : 1;
       const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
-      const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : ' 50vmin';
-      const maxWidth = sample.image ? 'unset' : '650px'; // sheet music width
+      const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : '';
+      const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -205,20 +205,6 @@ export default {
 @import "../assets/settings.scss";
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
-
-$sheet-music-width: 650px;
-
-@mixin below-sheet-music-min() {
-  @media (max-width: #{$sheet-music-width - 1px}) {
-    @content;
-  }
-}
-
-@mixin sheet-music-min {
-  @media (min-width: #{$sheet-music-width}) {
-    @content;
-  }
-}
 
 .slider {
   opacity: 0;
@@ -255,10 +241,15 @@ $sheet-music-width: 650px;
     }
 
     @include sheet-music-min {
-      margin-left: -$frame-unit;
-      padding-left: $frame-unit;
+      margin-left:  -$frame-unit;
+      padding-left:  $frame-unit;
       margin-right: -$frame-unit;
       padding-right: $frame-unit;
+
+      [data-type="audio"] & {
+        margin-top:    $frame-unit / 2;
+        margin-bottom: $frame-unit / 2;
+      }
 
       &::before { // mask for prev/next slide fades
         content: '';
@@ -295,6 +286,10 @@ $sheet-music-width: 650px;
     background-color: white;
     margin-right: ($unit * 1.5/4);
     cursor: grab;
+
+    @include below-sheet-music-min {
+      height: 100vmin;
+    }
 
     @at-root [aria-grabbed]#{&} {
       cursor: grabbing;

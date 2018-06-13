@@ -2,16 +2,16 @@
   <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click.stop="onMaskClick">
 
     <div class="controls">
-      <nuxt-link tabindex="3" class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button tabindex="4" ref="btnList" class="btn btn-list" @click.stop="toggleList" @keydown="onListKey">
+      <button ref="btnList" class="btn btn-list" :title="btnListTitle" @click.stop="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
-      <nuxt-link tabindex="5" class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
@@ -72,6 +72,9 @@ export default {
     btnNextPath() {
       return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
     },
+    btnListTitle() {
+      return `${this.isListShown ? 'hide' : 'show'} sample list`;
+    },
     autoPlay: {
       get() {
         return this.p.isAutoPlay;
@@ -102,6 +105,15 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.init();
   }, // mounted ()
+
+  watch: {
+    $route() {
+      // [2018-06-13] Firefox doesn't automatically blur prev/next buttons
+      this.$nextTick(() => {
+        if (document.activeElement.hasAttribute('disabled')) document.activeElement.blur();
+      });
+    },
+  },
 
   //====================================================================================================================
 
@@ -270,10 +282,13 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
+$nav-top: 0;
+
 .the-nav {
   z-index: $layer-the-nav;
-  box-sizing: border-box;
   position: absolute;
+  top: $nav-top;
+  box-sizing: border-box;
   align-self: center;
   background-color: white;
   border-radius: 0 0 $radius $radius;
@@ -295,7 +310,6 @@ export default {
     width: 100%;
     height: 100%;
     background: white;
-    //z-index: $layer-header - 1; /* below header, above swiper */
     opacity: 0;
     pointer-events: none;
     @include short-transition;
@@ -307,48 +321,12 @@ export default {
   }
 }
 
-.controls {
-  width: 100%;
-  height: 100%;
-}
-
-.btn {
-  width: $unit;
-  height: $unit;
-  overflow: hidden;
-  @include absolute-center(y);
-  @include short-transition;
-  color: $disabled-color;
-
-  &::before {
-    content: '';
-    position: absolute;
-    background-color: $focus-bg-color;
-    left: 50%;
-    top: 50%;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    @include short-transition;
-
-    @at-root .btn:focus::before {
-      transform: translate(-50%, -50%) scale(1);
-    }
-  }
-
-  &:not(:disabled) {
-    cursor: pointer;
-    color: $player-color;
-
-    &:focus,
-    &:hover {
+.btn:not(:disabled) {
+  &:focus,
+  &:hover {
+    & .id-indicator-frame {
       color: $focus-color;
-
-      & .id-indicator-frame {
-        color: $focus-color;
-        border-color: $focus-color; // $list-item-border-focus-color;
-      }
+      border-color: $focus-color;
     }
   }
 }
@@ -373,13 +351,16 @@ export default {
 }
 
 // this element is used to prevent clicking on the .btn-list outside the visible ui
-.btn-list-mask {
-  display: block;
-  left: calc((1 * #{$unit}) - 1em);
-  width: 6em;
-  height: 1em;
-  top: -1em;
-  z-index: 2; /* raise above .btn-list shadow */
+// not necessary as long as btn is at top of page
+@if $nav-top != 0 {
+  .btn-list-mask {
+    display: block;
+    left: calc((1 * #{$unit}) - 1em);
+    width: 6em;
+    height: 1em;
+    top: -1em;
+    z-index: 2; /* raise above .btn-list shadow */
+  }
 }
 
 .btn-prev,

@@ -1,39 +1,35 @@
 <template>
-  <main :class="mainClass" @click="onMaskClick" :data-type="s.type">
+  <main :class="mainClass" :data-type="s.type" :data-title="s.title">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
+    <TheSlider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" />
+
     <TheNav v-if="s.samples.length > 1" />
 
-    <header>
-      <h1 class="item-title">{{headerTitle}}</h1>
-      <Player ref="player" :currentIndex="s.currentIndex" />
-    </header>
-
-    <Slider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" />
+    <ThePlayer ref="player" v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
 
 <script>
-import Player from '~/components/Player';
-
-import Slider from '~/components/Slider';
-
-import TheNav from '~/components/TheNav';
+import TheSlider from '~/components/TheSlider';
+import TheNav    from '~/components/TheNav';
+import ThePlayer from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
 // TODO: print option
+// TODO: enable IE 11 (can't understand flexbox)
 
 export default {
   components: {
-    Slider,
+    TheSlider,
     TheNav,
-    Player,
+    ThePlayer,
   },
 
   head () {
@@ -91,16 +87,12 @@ export default {
 
     mainClass() {
       return {
-        'is-init':       this.s.isInit,
-        'is-list-shown': this.p.isListShown,
-        'has-touch':     this.hasTouch,
-        'has-hover':     this.hasHover,
-        'options-mode':  this.optionsMode,
+        'is-init':      this.s.isInit,
+        'has-touch':    this.hasTouch,
+        'has-hover':    this.hasHover,
+        'options-mode': this.optionsMode,
+        'show-title':   true,
       }
-    },
-
-    headerTitle() {
-      return !this.s.samples[this.s.currentIndex] ? 'loading...' : this.s.title;
     },
 
     alerts() {
@@ -191,8 +183,6 @@ export default {
 
       this.set({currentIndex: index});
 
-      this.$refs.player.hideList();
-
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -200,12 +190,6 @@ export default {
     imgSrc(sample) {
       return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}.${sample.image.ext}`;
     }, // imgSrc()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onMaskClick(e) {
-      if (e.target === window.$('.is-list-shown')[0]) this.$refs.player.hideList();
-    }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -227,28 +211,46 @@ main {
   flex-direction: column;
   margin: auto;
   @include short-transition;
+
+  &::before {
+    content: attr(data-title);
+    z-index: $layer-title;
+    @include absolute-center(fixed);
+    max-width: 100vw;
+    text-align: center;
+    font-size: 3em;
+    font-weight: bold;
+    padding: 1em;
+    border-radius: $radius / 3;
+    background-color: white;
+    color: $theme-color;
+    box-shadow: 0 0 1em transparentize($theme-color, 0.5);
+    pointer-events: none;
+  }
+
+  &.show-title::before {
+    animation: a-titlefade 3s 1 forwards ease-in-out;
+  }
+}
+
+@keyframes a-titlefade {
+  from {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  10%, 75% {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 0;
+  }
 }
 
 main:not(.is-init) {
   pointer-events: none;
   opacity: 0;
-}
-
-main::before {
-  content: '';
-  position: fixed;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
-  z-index: $layer-header - 1; /* below header, above swiper */
-  opacity: 0;
-  pointer-events: none;
-  @include short-transition;
-}
-main.is-list-shown::before {
-  opacity: .5;
-  pointer-events: auto;
 }
 
 .glue {
@@ -286,25 +288,6 @@ main.is-list-shown::before {
   min-width: 10em;
   max-width: 30em;
   @include short-transition;
-}
-
-header {
-  z-index: $layer-header;
-  position: absolute;
-  top: 25%; // TODO
-  align-self: center;
-  background-color: white;
-  border-radius: 0 0 $radius $radius;
-  @include drop-shadow;
-}
-
-.item-title {
-  font-size: 1.8em;
-  margin: 0;
-  padding: 0.5em;
-  text-align: center;
-  color: $theme-color;
-  @include one-line-ellipsis;
 }
 
 </style>
