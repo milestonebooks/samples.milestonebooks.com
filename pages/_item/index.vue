@@ -1,10 +1,10 @@
 <template>
-  <main :class="mainClass" :data-type="s.type" :data-title="s.title">
+  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
-    <TheSlider :options="{ enableMouseEvents: true}" :samples="s.samples" :currentIndex="s.currentIndex" />
+    <TheSlider :options="{ enableMouseEvents: false}" :samples="s.samples" :currentIndex="s.currentIndex" />
 
     <TheNav v-if="s.samples.length > 1" />
 
@@ -53,7 +53,7 @@ export default {
   data () {
     return {
       hasTouch: false,
-      hasHover: false,
+      hasMouse: false,
       optionsMode: true,
     };
   }, // data()
@@ -89,7 +89,7 @@ export default {
       return {
         'is-init':      this.s.isInit,
         'has-touch':    this.hasTouch,
-        'has-hover':    this.hasHover,
+        'has-mouse':    this.hasMouse,
         'options-mode': this.optionsMode,
         'show-title':   true,
       }
@@ -110,7 +110,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     const _firstmouseover = () => {
-      this.hasHover = true;
+      this.hasMouse = true;
       window.removeEventListener('mouseover', _firstmouseover, false);
     };
     window.addEventListener('mouseover', _firstmouseover, false);

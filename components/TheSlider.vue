@@ -2,7 +2,8 @@
   <article :class="sliderClass" :aria-grabbed="isGrabbing">
     <div class="frame js_frame">
       <div class="slides js_slides">
-        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index" :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click.native.stop>
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click.stop="onclickSlide">
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -154,7 +155,7 @@ export default {
       const $slide  = window.$(`.slide[data-index="${index}"]`);
 
       let scale = 1;
-      let h = $slide.height();
+      let h = Math.ceil($slide.height());
       let w = Math.ceil($slide.width());
 
       /*
@@ -208,6 +209,12 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    onclickSlide(e) {
+      if (window.$('main.has-mouse').length) this.$store.dispatch('toggleDpi');
+    }, // onclickSlide()
+
+    //------------------------------------------------------------------------------------------------------------------
+
   }, // methods {}
 
   //====================================================================================================================
@@ -220,6 +227,10 @@ export default {
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
+$layer-pagefades: 2; // raise above prev/next slides
+$layer-hover: $layer-pagefades + 1;
+$layer-buttons: $layer-hover + 1;
+
 .slider {
   opacity: 0;
   min-height: 100vh;
@@ -227,12 +238,6 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
   justify-content: center;
   align-items: center;
   @include short-transition;
-
-  @include sheet-music-min {
-    [data-type="audio"] & {
-      padding: ($frame-unit / 2) 0;
-    }
-  }
 
   &.is-init {
     opacity: 1;
@@ -255,6 +260,13 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       font-size: 0;
     }
 
+    /* [2018-06-14] pointless when mouse sliding is off
+    cursor: grab;
+    @at-root [aria-grabbed]#{&} {
+      cursor: grabbing;
+    }
+    //*/
+
     // [2018-06-12] hack to fix sizing bug
     html[data-browser*="Firefox"] & {
       padding-bottom: 1px;
@@ -273,7 +285,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
         right: 0;
         top: 0;
         bottom: 0;
-        z-index: 2; // raise above prev/next slides
+        z-index: $layer-pagefades;
         pointer-events: none;
         background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit}), $background-color);
         // [2018-05-29] IE11 and Edge cannot handle calc()
@@ -300,14 +312,16 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     text-align: center;
     background-color: white;
     margin-right: ($unit * 1.5/4);
-    cursor: grab;
+
+    @at-root .has-mouse[data-dpi="80"] .slide.has-multi-dpi {
+      cursor: zoom-in;
+    }
+    @at-root .has-mouse[data-dpi="120"] .slide.has-multi-dpi {
+      cursor: zoom-out;
+    }
 
     @include below-sheet-music-min {
       height: 100vmin;
-    }
-
-    @at-root [aria-grabbed]#{&} {
-      cursor: grabbing;
     }
 
     &::before {
@@ -390,7 +404,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
   .slider-button {
     position: absolute;
-    z-index: 3; // raise above mask
+    z-index: $layer-buttons;
     top: 50%;
     margin-top: 0;
     transform: translateY(-50%);

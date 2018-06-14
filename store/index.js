@@ -11,6 +11,7 @@ export const state = () => ({
 
   item:    '',
   type:    'audio',
+  dpi:     80, // 80 | 120
   samples: [],
   currentIndex: null,
   firstId: '',
@@ -39,7 +40,9 @@ export const getters = {
     return 'item'
       + (i === state.currentIndex ? ' current' : '')
       + (!sample.sequential ? ' non-' : ' ') + 'sequential-before'
-      + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after';
+      + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after'
+      + (sample.image && sample.image.dpi.includes(80) && sample.image.dpi.includes(120) ? ' has-multi-dpi' : '')
+      + (sample.image && sample.image.dpi.includes(200) ? ' has-print-dpi' : '');
   }, // listItemClass()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -64,3 +67,20 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
 }; // mutations {}
+
+//======================================================================================================================
+
+export const actions = {
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  toggleDpi({commit, state}) {
+
+    const dpi = (state.dpi === 80 ? 120 : 80);
+    commit('set', {dpi});
+
+  }, // toggleDpi()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+}; // actions {}
