@@ -3,17 +3,20 @@
     <div class="frame js_frame">
       <div class="slides js_slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click.stop="onclickSlide">
+                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click="onclickSlide">
           <div class="slide-liner">
-            <img v-if="sample.image" :src="imgSrc(sample)" :style="`/*height:${sample.image.h}px; width:${sample.image.w}px*/`" @load="imgLoaded(sample.index)" draggable="false" />
+            <template v-if="sample.image">
+              <img                  data-dpi="80"       :src="imgSrc(sample,  80)" @load="imgLoaded(sample.index,  80)" draggable="false" />
+              <img v-if="s.hasZoom" data-dpi="120" :data-src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+            </template>
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
       </div>
-      <nuxt-link class="btn slider-button prev" tabindex="0" @click.native.stop :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+      <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
         <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
       </nuxt-link>
-      <nuxt-link class="btn slider-button next" tabindex="0" @click.native.stop :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+      <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
         <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
       </nuxt-link>
     </div>
@@ -78,10 +81,11 @@ export default {
   watch: {
     samples: 'init',
     currentIndex: 'update',
+    's.dpi': 'onDpiChange',
   },
 
   beforeDestroy () {
-    this.slider.destroy()
+    this.slider.destroy();
   },
 
   //====================================================================================================================
@@ -154,22 +158,8 @@ export default {
       const $slides = window.$('.slides');
       const $slide  = window.$(`.slide[data-index="${index}"]`);
 
-      let scale = 1;
-      let h = Math.ceil($slide.height());
-      let w = Math.ceil($slide.width());
-
-      /*
-      if (w > document.body.clientWidth) {
-        scale = document.body.clientWidth / w;
-        w = Math.floor(w * scale);
-        h = Math.ceil(h * scale);
-      }
-
-      $slide.css({
-        'transform-origin': 'left',
-        transform: `scale(${scale})`,
-      });
-      //*/
+      const h = Math.ceil($slide.height());
+      const w = Math.ceil($slide.width());
 
       const margin = -Math.floor(($slides.height() - h) / 2);
 
@@ -177,7 +167,7 @@ export default {
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
-      });
+      }).toggleClass('show-pagefades', w < document.body.clientWidth);
       window.$('.slider .slides').css({
         marginTop: `${margin}px`,
       });
@@ -186,7 +176,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample) {
-      const xdpi     = sample.image && sample.image.dpi[0] ? sample.image.dpi[0] : 1;
+      const xdpi     = sample.image ? this.s.dpi : 1;
       const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
       const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
@@ -196,22 +186,32 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imgSrc(sample) {
-      const dpi = sample.image.dpi[0] ? `(${sample.image.dpi[0]})` : '';
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}${dpi}.${sample.image.ext}`;
+    imgSrc(sample, dpi) {
+      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
     }, // imgSrc()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imgLoaded(/*i*/) {
+    imgLoaded(i, dpi) {
+      console.log('imgLoaded', i, dpi);
       // TODO: multiple size images; lazy loading; fadein when first image has loaded
     }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onclickSlide(e) {
+    onclickSlide() {
       if (window.$('main.has-mouse').length) this.$store.dispatch('toggleDpi');
     }, // onclickSlide()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onDpiChange() {
+      console.log('onDpiChange()', this.s.dpi);
+      setTimeout(() => {
+        this.autosize();
+      }, settings.TRANSITION_TIME_MS);
+      //this.update();
+    }, // onDpiChange()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -253,11 +253,13 @@ $layer-buttons: $layer-hover + 1;
 
     line-height: 0;
     font-size: 0; // lory setup has errors if font size is not 0
+    @include short-transition;
     @at-root .slider.is-init .frame {
       font-size: inherit;
     }
     @at-root .slider.is-resizing .frame {
       font-size: 0;
+      transition: none;
     }
 
     /* [2018-06-14] pointless when mouse sliding is off
@@ -272,7 +274,7 @@ $layer-buttons: $layer-hover + 1;
       padding-bottom: 1px;
     }
 
-    @include sheet-music-min {
+    &.show-pagefades {
       margin-left:  -$frame-unit;
       padding-left:  $frame-unit;
       margin-right: -$frame-unit;
@@ -312,11 +314,12 @@ $layer-buttons: $layer-hover + 1;
     text-align: center;
     background-color: white;
     margin-right: ($unit * 1.5/4);
+    @include short-transition;
 
-    @at-root .has-mouse[data-dpi="80"] .slide.has-multi-dpi {
+    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide {
       cursor: zoom-in;
     }
-    @at-root .has-mouse[data-dpi="120"] .slide.has-multi-dpi {
+    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide {
       cursor: zoom-out;
     }
 
@@ -402,19 +405,20 @@ $layer-buttons: $layer-hover + 1;
     }
   }
 
-  .slider-button {
+  .show-pagefades .slider-button {
     position: absolute;
     z-index: $layer-buttons;
     top: 50%;
     margin-top: 0;
     transform: translateY(-50%);
-    height: 6em;
-    width: 3em;
+    height: 8em;
+    width: 4em;
     background: no-repeat center white;
     cursor: pointer;
     outline: none;
     @include short-transition;
 
+    /*
     @include below-sheet-music-min {
       position: fixed;
       box-shadow: $list-shadow;
@@ -424,6 +428,7 @@ $layer-buttons: $layer-hover + 1;
       width: 4em;
       height: 8em;
     }
+    //*/
 
     &[disabled] {
       pointer-events: none;
@@ -432,8 +437,9 @@ $layer-buttons: $layer-hover + 1;
 
     &.prev {
       left: 0;
-      border-radius: 0 1em 1em 0;
+      border-radius: 1em 0 0 1em;
 
+      /*
       @include below-sheet-music-min {
         padding-right: 1em;
         transition: all .2s ease-in-out, transform 1s ease-in-out;
@@ -445,11 +451,13 @@ $layer-buttons: $layer-hover + 1;
         left: 0;
         border-radius: 1em 0 0 1em;
       }
+      //*/
     }
     &.next {
       right: 0;
-      border-radius: 1em 0 0 1em;
+      border-radius: 0 1em 1em 0;
 
+      /*
       @include below-sheet-music-min {
         padding-left: 1em;
         transition: all .2s ease-in-out, transform 1s ease-in-out;
@@ -457,11 +465,11 @@ $layer-buttons: $layer-hover + 1;
           transform: translate(110%, -50%);
         }
       }
-
       @include sheet-music-min {
         right: 0;
         border-radius: 0 1em 1em 0;
       }
+      //*/
     }
   }
 } // .slider

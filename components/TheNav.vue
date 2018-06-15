@@ -1,17 +1,17 @@
 <template>
-  <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click.stop="onMaskClick">
+  <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
-      <nuxt-link class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" @click.native.stop :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button ref="btnList" class="btn btn-list" :title="btnListTitle" @click.stop="toggleList" @keydown="onListKey">
+      <button ref="btnList" class="btn btn-list" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
-      <nuxt-link class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" @click.native.stop :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
@@ -410,7 +410,7 @@ $nav-top: 0;
     margin: -.5 * $unit;
     border-radius: $radius $radius 0 0;
     box-shadow: $list-shadow;
-    transform: scale(1);
+    transform: translate(0%, 0%) scale(1); // translate(0%, 0%) ensures expected transition when removing .is-list-shown
   }
 }
 

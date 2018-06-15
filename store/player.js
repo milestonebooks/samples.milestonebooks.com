@@ -105,7 +105,7 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   set(state, o) {
-    Object.keys(o).map((key) => {
+    Object.keys(o).map(key => {
       state[key] = typeof o[key] === 'object' ? {...state[key], ...o[key]} : o[key];
 
       if (state.persist && state.persist.includes(key)) storage.setItem(key, o[key]);

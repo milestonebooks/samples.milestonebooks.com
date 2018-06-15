@@ -54,7 +54,7 @@ export default {
     return {
       hasTouch: false,
       hasMouse: false,
-      optionsMode: true,
+      //optionsMode: true,
     };
   }, // data()
 
@@ -90,8 +90,10 @@ export default {
         'is-init':      this.s.isInit,
         'has-touch':    this.hasTouch,
         'has-mouse':    this.hasMouse,
-        'options-mode': this.optionsMode,
+        'has-zoom':     this.s.hasZoom,
+        'has-print':    this.s.hasPrint,
         'show-title':   true,
+        //'options-mode': this.optionsMode,
       }
     },
 
@@ -121,12 +123,16 @@ export default {
     };
     window.addEventListener('touchstart', _firsttouchstart, false);
 
-    // toggle options visibility on small screens
-    window.addEventListener('click', () => this.optionsMode = !this.optionsMode);
+    /* [2018-06-15] too complex
+    // toggle options visibility on touch screens
+    window.addEventListener('click', () => {
+      if (window.$('main.has-touch').length) this.optionsMode = !this.optionsMode;
+    });
 
     setTimeout(() => {
       this.optionsMode = false;
     }, 2000);
+    //*/
 
     this.initSamplesData();
   }, // mounted()
@@ -142,16 +148,25 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initSamplesData() {
-      const samples = this.data.samples;
+      const d = this.data;
+      const samples = d.samples;
+
+      // create object to monitor loaded state
+      for (const i of samples) {
+        if (!i.image) continue;
+        i.image.loaded = {};
+      }
 
       this.set({
-        isInit:  true,
-        title:   this.data.title,
-        item:    this.$route.params.item,
-        type:    this.data.type,
-        samples: samples,
-        firstId: samples[0].id,
-        lastId:  samples[samples.length - 1].id,
+        isInit:   true,
+        title:    d.title,
+        item:     this.$route.params.item,
+        type:     d.type,
+        hasZoom:  d.hasZoom  || false,
+        hasPrint: d.hasPrint || false,
+        samples:  samples,
+        firstId:  samples[0].id,
+        lastId:   samples[samples.length - 1].id,
       });
 
       console.timeEnd('index');

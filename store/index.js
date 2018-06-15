@@ -9,15 +9,18 @@ export const state = () => ({
   psID:     '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
   urlBase:  'https://samples.milestonebooks.com/',
 
-  item:    '',
-  type:    'audio',
-  dpi:     80, // 80 | 120
-  samples: [],
+  item:     '',
+  type:     'audio',
+  samples:  [],
   currentIndex: null,
-  firstId: '',
-  lastId:  '',
+  firstId:  '',
+  lastId:   '',
 
-  alert:   '',
+  dpi:      80, // 80 | 120
+  hasZoom:  false,
+  hasPrint: false,
+
+  alert:    '',
 });
 
 //======================================================================================================================
@@ -40,9 +43,7 @@ export const getters = {
     return 'item'
       + (i === state.currentIndex ? ' current' : '')
       + (!sample.sequential ? ' non-' : ' ') + 'sequential-before'
-      + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after'
-      + (sample.image && sample.image.dpi.includes(80) && sample.image.dpi.includes(120) ? ' has-multi-dpi' : '')
-      + (sample.image && sample.image.dpi.includes(200) ? ' has-print-dpi' : '');
+      + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after';
   }, // listItemClass()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -56,7 +57,7 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   set(state, o) {
-    Object.keys(o).map((key) => {
+    Object.keys(o).map(key => {
       state[key] = Array.isArray(o[key]) ? [...state[key], ...o[key]]
         : (typeof o[key] === 'object'    ? {...state[key], ...o[key]} : o[key]);
 
