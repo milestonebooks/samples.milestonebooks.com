@@ -168,7 +168,8 @@ export default {
         height: `${h}px`,
         width:  `${w}px`,
       }).toggleClass('show-pagefades', w < document.body.clientWidth);
-      window.$('.slider .slides').css({
+
+      $slides.css({
         marginTop: `${margin}px`,
       });
     }, // autosize()
@@ -176,7 +177,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample) {
+      //*
+      const xdpi     = sample.image ? 80 : 1;
+      /*/
       const xdpi     = sample.image ? this.s.dpi : 1;
+      //*/
       const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
       const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
@@ -200,18 +205,69 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onclickSlide() {
-      if (window.$('main.has-mouse').length) this.$store.dispatch('toggleDpi');
+      if (window.$('main.has-mouse').length && this.s.hasZoom) this.$store.dispatch('toggleDpi');
     }, // onclickSlide()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onDpiChange() {
-      console.log('onDpiChange()', this.s.dpi);
+      window.$('.slider').addClass('is-zooming');
       setTimeout(() => {
-        this.autosize();
+        //window.$('.slider').removeClass('is-zooming');
       }, settings.TRANSITION_TIME_MS);
-      //this.update();
+
+      const index = this.slider.returnIndex();
+
+      const $frame  = window.$('.slider .frame');
+      const $slides = window.$('.slides');
+      const $slide  = window.$(`.slide[data-index="${index}"]`);
+
+      const hOld = Math.ceil($slide.height());
+      const wOld = Math.ceil($slide.width());
+
+      const availH = document.documentElement.clientHeight;
+
+      const h = this.s.samples[index].image.h * this.s.dpi;
+      const w = this.s.samples[index].image.w * this.s.dpi;
+
+      const margin = -Math.floor(($slides.height() - h) / 2);
+
+      //*
+      $frame.css({
+        'transform-origin': availH > h ? 'center' : `center ${(.5 - ((h - availH) / hOld)) * 100}%`,
+      });
+      //*/
+
+      let {x, y, z} = this.getTranslate($slides);
+
+      x -= ((w - wOld) * index) + (15 / 2 * index * (this.s.dpi === 120 ? 1 : -1));
+
+      console.log('onDpiChange()', this.s.dpi, '@', index, `h: ${hOld} -> ${h}`, `w: ${wOld} -> ${w}`, 'transform:', x, y, z);
+
+      // autosize
+      /*
+      $frame.css({
+        height: `${h}px`,
+        width:  `${w}px`,
+      }).toggleClass('show-pagefades', w < document.body.clientWidth);
+
+      $slides.css({
+        'transform-origin': 'left',
+        transform: `translate3d(${x}px, ${y}px, ${z}px)` + (this.s.dpi === 120 ? ' scale(1.5)' : ''),
+      });
+      //*/
+
     }, // onDpiChange()
+
+    //------------------------------------------------------------------------------------------------------------------
+    // adapted from <https://stackoverflow.com/questions/7982053/get-translate3d-values-of-a-div>
+
+    getTranslate($el) {
+      const m = $el.css('-webkit-transform').match(/matrix(?:(3d)\(-{0,1}\d+\.?\d*(?:, -{0,1}\d+\.?\d*)*(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*)), -{0,1}\d+\.?\d*\)|\(-{0,1}\d+\.?\d*(?:, -{0,1}\d+\.?\d*)*(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*))\))/);
+      if (!m) return {x:0, y:0, z:0};
+      if (m[1] === '3d') return {x:+m[2], y:+m[3], z:+m[4]};
+      return {x:+m[5], y:+m[6], z:0};
+    }, // getTranslate()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -254,12 +310,17 @@ $layer-buttons: $layer-hover + 1;
     line-height: 0;
     font-size: 0; // lory setup has errors if font size is not 0
     @include short-transition;
-    @at-root .slider.is-init .frame {
+
+    @at-root .is-init#{&} {
       font-size: inherit;
     }
-    @at-root .slider.is-resizing .frame {
+    @at-root .is-resizing#{&} {
       font-size: 0;
       transition: none;
+    }
+
+    @at-root [data-dpi="120"] .is-zooming#{&} {
+      transform: scale(1.5);
     }
 
     /* [2018-06-14] pointless when mouse sliding is off
@@ -418,6 +479,10 @@ $layer-buttons: $layer-hover + 1;
     outline: none;
     @include short-transition;
 
+    @at-root [data-dpi="120"] .is-zooming#{&} {
+      transform: translateY(-50%) scale((80 / 120));
+    }
+
     /*
     @include below-sheet-music-min {
       position: fixed;
@@ -438,6 +503,7 @@ $layer-buttons: $layer-hover + 1;
     &.prev {
       left: 0;
       border-radius: 1em 0 0 1em;
+      transform-origin: right;
 
       /*
       @include below-sheet-music-min {
@@ -456,6 +522,7 @@ $layer-buttons: $layer-hover + 1;
     &.next {
       right: 0;
       border-radius: 0 1em 1em 0;
+      transform-origin: left;
 
       /*
       @include below-sheet-music-min {
