@@ -1,26 +1,49 @@
 <template>
-  <article :class="sliderClass" :aria-grabbed="isGrabbing">
-    <div class="frame js_frame">
-      <div class="slides js_slides">
-        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample)" @click="onclickSlide">
-          <div class="slide-liner">
-            <template v-if="sample.image">
-              <img                  data-dpi="80"       :src="imgSrc(sample,  80)" @load="imgLoaded(sample.index,  80)" draggable="false" />
-              <img v-if="s.hasZoom" data-dpi="120" :data-src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
-            </template>
-            <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-          </div>
-        </section>
+  <div>
+    <article :class="sliderClass('dpi80')" :aria-grabbed="isGrabbing">
+      <div class="frame js_frame">
+        <div class="slides js_slides">
+          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
+            <div class="slide-liner">
+              <template v-if="sample.image">
+                <img                  data-dpi="80"       :src="imgSrc(sample,  80)" @load="imgLoaded(sample.index,  80)" draggable="false" />
+              </template>
+              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
+            </div>
+          </section>
+        </div>
+        <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+        </nuxt-link>
+        <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+        </nuxt-link>
       </div>
-      <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-        <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-      </nuxt-link>
-      <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-        <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-      </nuxt-link>
-    </div>
-  </article>
+    </article>
+
+    <article v-if="s.hasZoom" :class="sliderClass('dpi120')" :aria-grabbed="isGrabbing">
+      <div class="frame js_frame">
+        <div class="slides js_slides">
+          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
+            <div class="slide-liner">
+              <template v-if="sample.image">
+                <img data-dpi="120" :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+              </template>
+              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
+            </div>
+          </section>
+        </div>
+        <nuxt-link class="btn slider-button prev" tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+        </nuxt-link>
+        <nuxt-link class="btn slider-button next" tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+        </nuxt-link>
+      </div>
+    </article>
+  </div>
 </template>
 
 <script>
@@ -46,6 +69,7 @@ export default {
   data () {
     return {
       slider: null,
+      sliderZoom: null,
 
       defaultOptions: {
         rewindOnResize: false,
@@ -69,6 +93,7 @@ export default {
       return this.$store.state;
     },
 
+    /*
     sliderClass() {
       return {
         'slider': true,
@@ -76,6 +101,7 @@ export default {
         'is-init': this.isInit,
       }
     },
+    //*/
   },
 
   watch: {
@@ -85,7 +111,8 @@ export default {
   },
 
   beforeDestroy () {
-    this.slider.destroy();
+    if (this.slider) this.slider.destroy();
+    if (this.sliderZoom) this.sliderZoom.destroy();
   },
 
   //====================================================================================================================
@@ -115,9 +142,19 @@ export default {
           this.autosize();
         });
 
-        if (!this.slider && this.samples.length) this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
+        if (!this.slider && this.samples.length) {
+          //this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
+          this.slider     = lory(document.getElementsByClassName('dpi80')[0],  Object.assign(this.defaultOptions, this.options));
+          this.sliderZoom = lory(document.getElementsByClassName('dpi120')[0], Object.assign(this.defaultOptions, this.options));
+        }
       });
     }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    sliderClass(dpiClass) {
+      return `${dpiClass} slider js_slider ${this.isInit ? 'is-init' : ''}`;
+    }, // sliderClass()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -132,7 +169,10 @@ export default {
 
     update() {
       this.$nextTick(() => {
-        if (this.slider) this.slider.slideTo(this.currentIndex);
+        if (this.slider) {
+          this.slider.slideTo(this.currentIndex);
+          this.sliderZoom.slideTo(this.currentIndex);
+        }
         this.viewWidth = document.documentElement.clientWidth;
       });
     }, // update()
@@ -140,6 +180,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onSlideChange(/*e*/) {
+      console.log('onSlideChange()');
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
       if (this.isGrabbing) {
@@ -151,12 +192,16 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize() {
+    autosize(dpi = 80) {
       const index = this.slider.returnIndex();
 
-      const $frame  = window.$('.slider .frame');
-      const $slides = window.$('.slides');
-      const $slide  = window.$(`.slide[data-index="${index}"]`);
+      const $slider = window.$(`.slider.dpi${dpi}`);
+      if (!$slider.length) return;
+
+      const $frame  = $slider.find('.frame');
+console.log('autosize()', $frame);
+      const $slides = $slider.find('.slides');
+      const $slide  = $slider.find(`.slide[data-index="${index}"]`);
 
       const h = Math.ceil($slide.height());
       const w = Math.ceil($slide.width());
@@ -172,13 +217,15 @@ export default {
       $slides.css({
         marginTop: `${margin}px`,
       });
+
+      if (dpi === 80) this.autosize(120);
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    sampleStyleSize(sample) {
+    sampleStyleSize(sample, dpi = 80) {
       //*
-      const xdpi     = sample.image ? 80 : 1;
+      const xdpi     = sample.image ? dpi : 1;
       /*/
       const xdpi     = sample.image ? this.s.dpi : 1;
       //*/
@@ -211,9 +258,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onDpiChange() {
-      window.$('.slider').addClass('is-zooming');
+      window.$('main').addClass('is-zooming');
       setTimeout(() => {
-        //window.$('.slider').removeClass('is-zooming');
+        //window.$('main').removeClass('is-zooming');
       }, settings.TRANSITION_TIME_MS);
 
       const index = this.slider.returnIndex();
@@ -288,6 +335,8 @@ $layer-hover: $layer-pagefades + 1;
 $layer-buttons: $layer-hover + 1;
 
 .slider {
+  position: absolute;
+  width: 100%;
   opacity: 0;
   min-height: 100vh;
   display: flex;
@@ -297,6 +346,10 @@ $layer-buttons: $layer-hover + 1;
 
   &.is-init {
     opacity: 1;
+  }
+
+  &.dpi80 {
+    z-index: 1;
   }
 
   .frame {
@@ -319,7 +372,7 @@ $layer-buttons: $layer-hover + 1;
       transition: none;
     }
 
-    @at-root [data-dpi="120"] .is-zooming#{&} {
+    @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
       transform: scale(1.5);
     }
 
@@ -374,7 +427,10 @@ $layer-buttons: $layer-hover + 1;
     vertical-align: text-top;
     text-align: center;
     background-color: white;
-    margin-right: ($unit * 1.5/4);
+    margin-right: ($unit * 1/4);
+    @at-root .dpi120#{&} {
+      margin-right: ($unit * 1/4 * 120/80);
+    }
     @include short-transition;
 
     @at-root .has-mouse.has-zoom[data-dpi="80"] .slide {
@@ -479,7 +535,7 @@ $layer-buttons: $layer-hover + 1;
     outline: none;
     @include short-transition;
 
-    @at-root [data-dpi="120"] .is-zooming#{&} {
+    @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
       transform: translateY(-50%) scale((80 / 120));
     }
 
