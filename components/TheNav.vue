@@ -286,7 +286,7 @@ $nav-top: 0;
 
 .the-nav {
   z-index: $layer-the-nav;
-  position: absolute;
+  position: fixed;
   top: $nav-top;
   box-sizing: border-box;
   align-self: center;

@@ -107,11 +107,10 @@ export default {
   watch: {
     samples: 'init',
     currentIndex: 'update',
-    's.dpi': 'onDpiChange',
   },
 
   beforeDestroy () {
-    if (this.slider) this.slider.destroy();
+    if (this.slider)     this.slider.destroy();
     if (this.sliderZoom) this.sliderZoom.destroy();
   },
 
@@ -144,8 +143,8 @@ export default {
 
         if (!this.slider && this.samples.length) {
           //this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
-          this.slider     = lory(document.getElementsByClassName('dpi80')[0],  Object.assign(this.defaultOptions, this.options));
-          this.sliderZoom = lory(document.getElementsByClassName('dpi120')[0], Object.assign(this.defaultOptions, this.options));
+          this.slider = lory(document.getElementsByClassName('dpi80')[0],  Object.assign(this.defaultOptions, this.options));
+          if (this.s.hasZoom) this.sliderZoom = lory(document.getElementsByClassName('dpi120')[0], Object.assign(this.defaultOptions, this.options));
         }
       });
     }, // init()
@@ -169,10 +168,9 @@ export default {
 
     update() {
       this.$nextTick(() => {
-        if (this.slider) {
-          this.slider.slideTo(this.currentIndex);
-          this.sliderZoom.slideTo(this.currentIndex);
-        }
+        if (this.slider)     this.slider.slideTo(this.currentIndex);
+        if (this.sliderZoom) this.sliderZoom.slideTo(this.currentIndex);
+
         this.viewWidth = document.documentElement.clientWidth;
       });
     }, // update()
@@ -193,13 +191,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize(dpi = 80) {
-      const index = this.slider.returnIndex();
+      const index = this.s.currentIndex;
 
       const $slider = window.$(`.slider.dpi${dpi}`);
-      if (!$slider.length) return;
 
       const $frame  = $slider.find('.frame');
-console.log('autosize()', $frame);
       const $slides = $slider.find('.slides');
       const $slide  = $slider.find(`.slide[data-index="${index}"]`);
 
@@ -218,7 +214,7 @@ console.log('autosize()', $frame);
         marginTop: `${margin}px`,
       });
 
-      if (dpi === 80) this.autosize(120);
+      if (dpi === 80 && this.s.hasZoom) this.autosize(120);
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -251,51 +247,91 @@ console.log('autosize()', $frame);
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onclickSlide() {
-      if (window.$('main.has-mouse').length && this.s.hasZoom) this.$store.dispatch('toggleDpi');
+    onclickSlide(e) {
+      if (!window.$('main.has-mouse').length || !this.s.hasZoom) return;
+
+      const asDec = (el, x) => {
+        const dim = (x === 'X' ? 'Width' : 'Height');
+        if (el === 'view') return e[`client${x}`] / document.documentElement[`client${dim}`];
+        else               return e[`offset${x}`] / e.target.getBoundingClientRect()[dim.toLowerCase()];
+      };
+
+      this.toggleDpi({
+        elX:   asDec('target','X'),
+        elY:   asDec('target','Y'),
+        viewX: asDec('view',  'X'),
+        viewY: asDec('view',  'Y'),
+      });
     }, // onclickSlide()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onDpiChange() {
-      window.$('main').addClass('is-zooming');
+    toggleDpi({elX = .5, elY = .5, viewX = .5, viewY = .5} = {}) {
+      const dpi = (this.s.dpi === 80 ? 120 : 80);
+      this.$store.commit('set', {dpi});
+
+      const zoomIn = (dpi === 120);
+
+      window.$('main').addClass('is-zoom-prep');
       setTimeout(() => {
         //window.$('main').removeClass('is-zooming');
       }, settings.TRANSITION_TIME_MS);
 
-      const index = this.slider.returnIndex();
+      const index = this.s.currentIndex;
+      const h = this.s.samples[index].image.h;
+      const w = this.s.samples[index].image.w;
 
-      const $frame  = window.$('.slider .frame');
-      const $slides = window.$('.slides');
-      const $slide  = window.$(`.slide[data-index="${index}"]`);
+      const $slider     = window.$(`.slider.dpi80`);
+      const $frame      = $slider.find('.frame');
+      const $sliderZoom = window.$(`.slider.dpi120`);
 
-      const hOld = Math.ceil($slide.height());
-      const wOld = Math.ceil($slide.width());
+      const xScroll = window.scrollX;
+      const yScroll = window.scrollY;
+
+      const xDiff = (w / 2) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetLeft;
+      const yDiff = (h / 2) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetTop;
+
+      $sliderZoom.css({'position': (zoomIn ? 'absolute' : 'fixed')});
+
+      console.log('scroll top:', window.scrollY, yScroll, yDiff, $frame[0].offsetTop);
+
+      $frame.css({'transform': `translate(0, ${Math.max(yDiff, 0)}px)`});
+      window.scroll({left: xScroll + xDiff, top: yScroll + yDiff});
+
+      console.log(`toggleDpi() to ${dpi} @ [${elX}, ${elY}] in [${viewX}, ${viewY}] delta [ , ${yDiff}]`);
+
+      /*
+      const $slides = $slider.find('.slides');
+      const $slide  = $slider.find(`.slide[data-index="${index}"]`);
+
+      const hFrom = Math.ceil($slide.height());
+      const wFrom = Math.ceil($slide.width());
 
       const availH = document.documentElement.clientHeight;
 
-      const h = this.s.samples[index].image.h * this.s.dpi;
-      const w = this.s.samples[index].image.w * this.s.dpi;
+      const hTo = this.s.samples[index].image.h * this.s.dpi;
+      const wTo = this.s.samples[index].image.w * this.s.dpi;
 
-      const margin = -Math.floor(($slides.height() - h) / 2);
+      let vOrigin = (.5 - ((hTo - availH) / hFrom)) * 100;
 
-      //*
+      const margin = -Math.floor(($slides.height() - hTo) / 2);
+
       $frame.css({
-        'transform-origin': availH > h ? 'center' : `center ${(.5 - ((h - availH) / hOld)) * 100}%`,
+        'transform-origin': availH > hTo ? 'center' : `center ${vOrigin > 0 ? vOrigin : 0}%`,
       });
-      //*/
 
       let {x, y, z} = this.getTranslate($slides);
 
-      x -= ((w - wOld) * index) + (15 / 2 * index * (this.s.dpi === 120 ? 1 : -1));
+      x -= ((wTo - wFrom) * index) + (15 / 2 * index * (this.s.dpi === 120 ? 1 : -1));
+      //*/
 
-      console.log('onDpiChange()', this.s.dpi, '@', index, `h: ${hOld} -> ${h}`, `w: ${wOld} -> ${w}`, 'transform:', x, y, z);
+      //console.log('...', this.s.dpi, '@', index, `availH: ${availH} h: ${hFrom} -> ${hTo}`, `w: ${wFrom} -> ${wTo}`, 'transform:', x, y, z);
 
       // autosize
       /*
       $frame.css({
-        height: `${h}px`,
-        width:  `${w}px`,
+        height: `${hTo}px`,
+        width:  `${wTo}px`,
       }).toggleClass('show-pagefades', w < document.body.clientWidth);
 
       $slides.css({
@@ -304,7 +340,7 @@ console.log('autosize()', $frame);
       });
       //*/
 
-    }, // onDpiChange()
+    }, // toggleDpi()
 
     //------------------------------------------------------------------------------------------------------------------
     // adapted from <https://stackoverflow.com/questions/7982053/get-translate3d-values-of-a-div>
@@ -329,6 +365,7 @@ console.log('autosize()', $frame);
 @import "../assets/settings.scss";
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
+$zoomRatio: 120 / 80;
 
 $layer-pagefades: 2; // raise above prev/next slides
 $layer-hover: $layer-pagefades + 1;
@@ -351,6 +388,9 @@ $layer-buttons: $layer-hover + 1;
   &.dpi80 {
     z-index: 1;
   }
+  &.dpi120 {
+    position: fixed; // TODO
+  }
 
   .frame {
     width: 100px; // must have a default px width
@@ -372,8 +412,12 @@ $layer-buttons: $layer-hover + 1;
       transition: none;
     }
 
+    @at-root .is-zoom-prep & {
+      transition: none;
+    }
+
     @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
-      transform: scale(1.5);
+      //transform: scale(1.5);
     }
 
     /* [2018-06-14] pointless when mouse sliding is off
@@ -394,7 +438,14 @@ $layer-buttons: $layer-hover + 1;
       margin-right: -$frame-unit;
       padding-right: $frame-unit;
 
-      &::before { // mask for prev/next slide fades
+      @at-root .dpi120#{&} {
+        margin-left:  -$frame-unit * $zoomRatio;
+        padding-left:  $frame-unit * $zoomRatio;
+        margin-right: -$frame-unit * $zoomRatio;
+        padding-right: $frame-unit * $zoomRatio;
+      }
+
+      @at-root .slider:not(.is-resizing) .show-pagefades::before { // mask for prev/next slide fades
         content: '';
         position: absolute;
         left: 0;
@@ -407,7 +458,7 @@ $layer-buttons: $layer-hover + 1;
         // [2018-05-29] IE11 and Edge cannot handle calc()
         html[data-browser*="Trident"] &,
         html[data-browser*="Edge"] & {
-          background: linear-gradient(to right, $background-color, transparent 5.5%, transparent 94.5%, $background-color);
+          background: linear-gradient(to right, $background-color, transparent 5%, transparent 95%, $background-color);
         }
       }
     } // margin fades
@@ -429,7 +480,7 @@ $layer-buttons: $layer-hover + 1;
     background-color: white;
     margin-right: ($unit * 1/4);
     @at-root .dpi120#{&} {
-      margin-right: ($unit * 1/4 * 120/80);
+      margin-right: ($unit * 1/4 * $zoomRatio);
     }
     @include short-transition;
 
@@ -477,6 +528,10 @@ $layer-buttons: $layer-hover + 1;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
         @include absolute-center(x);
+
+        @at-root .dpi120#{&} {
+          font-size: 1.5em;
+        }
       }
     }
 
@@ -536,7 +591,7 @@ $layer-buttons: $layer-hover + 1;
     @include short-transition;
 
     @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
-      transform: translateY(-50%) scale((80 / 120));
+      transform: translateY(-50%) scale(1 / $zoomRatio);
     }
 
     /*
@@ -558,6 +613,9 @@ $layer-buttons: $layer-hover + 1;
 
     &.prev {
       left: 0;
+      @at-root .dpi120#{&} {
+        left: 2em;
+      }
       border-radius: 1em 0 0 1em;
       transform-origin: right;
 
@@ -577,6 +635,9 @@ $layer-buttons: $layer-hover + 1;
     }
     &.next {
       right: 0;
+      @at-root .dpi120#{&} {
+        right: 2em;
+      }
       border-radius: 0 1em 1em 0;
       transform-origin: left;
 
