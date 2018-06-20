@@ -92,16 +92,6 @@ export default {
     s() {
       return this.$store.state;
     },
-
-    /*
-    sliderClass() {
-      return {
-        'slider': true,
-        'js_slider': true,
-        'is-init': this.isInit,
-      }
-    },
-    //*/
   },
 
   watch: {
@@ -208,7 +198,7 @@ export default {
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
-      }).toggleClass('show-pagefades', w < document.body.clientWidth);
+      }).toggleClass('show-pagefades', w + 20 /* margin gaps */ < document.documentElement.clientWidth);
 
       $slides.css({
         marginTop: `${margin}px`,
@@ -252,93 +242,94 @@ export default {
 
       const asDec = (el, x) => {
         const dim = (x === 'X' ? 'Width' : 'Height');
-        if (el === 'view') return e[`client${x}`] / document.documentElement[`client${dim}`];
-        else               return e[`offset${x}`] / e.target.getBoundingClientRect()[dim.toLowerCase()];
+        if (el === 'el') return e[`offset${x}`] / e.target.getBoundingClientRect()[dim.toLowerCase()];
+        else             return e[`client${x}`] / document.documentElement[`client${dim}`];
       };
 
       this.toggleDpi({
-        elX:   asDec('target','X'),
-        elY:   asDec('target','Y'),
-        viewX: asDec('view',  'X'),
-        viewY: asDec('view',  'Y'),
+        elX:   asDec('el',   'X'),
+        elY:   asDec('el',   'Y'),
+        viewX: asDec('view', 'X'),
+        viewY: asDec('view', 'Y'),
       });
     }, // onclickSlide()
 
     //------------------------------------------------------------------------------------------------------------------
 
     toggleDpi({elX = .5, elY = .5, viewX = .5, viewY = .5} = {}) {
+
       const dpi = (this.s.dpi === 80 ? 120 : 80);
       this.$store.commit('set', {dpi});
 
+      console.log(`toggleDpi() to ${dpi} @ el[${elX}, ${elY}] in view[${viewX}, ${viewY}]`);
+
       const zoomIn = (dpi === 120);
 
-      window.$('main').addClass('is-zoom-prep');
-      setTimeout(() => {
-        //window.$('main').removeClass('is-zooming');
-      }, settings.TRANSITION_TIME_MS);
-
-      const index = this.s.currentIndex;
-      const h = this.s.samples[index].image.h;
-      const w = this.s.samples[index].image.w;
-
+      const $main       = window.$('main');
       const $slider     = window.$(`.slider.dpi80`);
       const $frame      = $slider.find('.frame');
       const $sliderZoom = window.$(`.slider.dpi120`);
+      const $frameZoom  = $sliderZoom.find('.frame');
 
-      const xScroll = window.scrollX;
+      // ensure no transitions are in effect to delay prep layout
+      $main.addClass('no-transition');
+
+      const index = this.s.currentIndex;
+      //const w = this.s.samples[index].image.w;
+      const h = this.s.samples[index].image.h;
+
+      //const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      const xDiff = (w / 2) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetLeft;
-      const yDiff = (h / 2) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetTop;
+      //const xDiff = Math.round((w * elX) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetLeft);
+      const yDiff = Math.round((h * elY) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetTop);
 
-      $sliderZoom.css({'position': (zoomIn ? 'absolute' : 'fixed')});
+      const yScrollTo = yScroll + yDiff;
 
-      console.log('scroll top:', window.scrollY, yScroll, yDiff, $frame[0].offsetTop);
+      if (zoomIn) {
+        // position the zoom slider to trigger layout
+        $sliderZoom.css({position: 'absolute'});
 
-      $frame.css({'transform': `translate(0, ${Math.max(yDiff, 0)}px)`});
-      window.scroll({left: xScroll + xDiff, top: yScroll + yDiff});
+        // position view to compensate for new layout
+        window.scroll({top: yScrollTo});
 
-      console.log(`toggleDpi() to ${dpi} @ [${elX}, ${elY}] in [${viewX}, ${viewY}] delta [ , ${yDiff}]`);
+        // when pre-zoom frame is contained within view, desired scroll position may not be possible
+        const yScrollAdj = window.scrollY - yScrollTo;
+        const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
 
-      /*
-      const $slides = $slider.find('.slides');
-      const $slide  = $slider.find(`.slide[data-index="${index}"]`);
+        // adjust non-zoom frame to original screen position
+        $frame.css({transform: `translate(0, ${yFrame}px)`});
 
-      const hFrom = Math.ceil($slide.height());
-      const wFrom = Math.ceil($slide.width());
+        const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
 
-      const availH = document.documentElement.clientHeight;
+        console.log('transform-origin:', $frame.css('transform-origin'));
 
-      const hTo = this.s.samples[index].image.h * this.s.dpi;
-      const wTo = this.s.samples[index].image.w * this.s.dpi;
+        // synchronize the tandem frames
+        const tOrigin = {'transform-origin': `center ${yOrigin * 100}%`};
+        $frame.css(tOrigin);
+        $frameZoom.css(Object.assign(tOrigin, {transform: `scale(${zoomIn ? 80 / 120 : 1})`, opacity: 0}));
 
-      let vOrigin = (.5 - ((hTo - availH) / hFrom)) * 100;
+        // ensure dom is updated before running zoom transition
+        this.$nextTick(() => {
+          $main.removeClass('no-transition');
+          $frame.css({transform: `translate(0, ${yFrame}px) scale(${zoomIn ? 1.5 : 1})`, opacity: 0});
+          $frameZoom.css({transform: 'scale(1)', opacity: 1});
 
-      const margin = -Math.floor(($slides.height() - hTo) / 2);
+          // cleanup after transition
+          setTimeout(() => {
+            $frame.css({transform: 'unset'});
 
-      $frame.css({
-        'transform-origin': availH > hTo ? 'center' : `center ${vOrigin > 0 ? vOrigin : 0}%`,
-      });
+            // TODO
+            $frame.css({opacity: .5});
+          }, settings.TRANSITION_TIME_MS);
+        });
 
-      let {x, y, z} = this.getTranslate($slides);
+        console.log(`scrollTop: ${window.scrollY} - ${yScrollTo} =`, yScrollAdj, 'elY:', elY, 'yOrigin:', yOrigin);
 
-      x -= ((wTo - wFrom) * index) + (15 / 2 * index * (this.s.dpi === 120 ? 1 : -1));
-      //*/
-
-      //console.log('...', this.s.dpi, '@', index, `availH: ${availH} h: ${hFrom} -> ${hTo}`, `w: ${wFrom} -> ${wTo}`, 'transform:', x, y, z);
-
-      // autosize
-      /*
-      $frame.css({
-        height: `${hTo}px`,
-        width:  `${wTo}px`,
-      }).toggleClass('show-pagefades', w < document.body.clientWidth);
-
-      $slides.css({
-        'transform-origin': 'left',
-        transform: `translate3d(${x}px, ${y}px, ${z}px)` + (this.s.dpi === 120 ? ' scale(1.5)' : ''),
-      });
-      //*/
+      // zoom out
+      } else {
+        console.log('zoom out');
+      }
 
     }, // toggleDpi()
 
@@ -390,6 +381,9 @@ $layer-buttons: $layer-hover + 1;
   }
   &.dpi120 {
     position: fixed; // TODO
+    .frame {
+      opacity: 0.2;
+    }
   }
 
   .frame {
@@ -411,13 +405,8 @@ $layer-buttons: $layer-hover + 1;
       font-size: 0;
       transition: none;
     }
-
-    @at-root .is-zoom-prep & {
+    @at-root .no-transition & {
       transition: none;
-    }
-
-    @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
-      //transform: scale(1.5);
     }
 
     /* [2018-06-14] pointless when mouse sliding is off
@@ -589,10 +578,6 @@ $layer-buttons: $layer-hover + 1;
     cursor: pointer;
     outline: none;
     @include short-transition;
-
-    @at-root [data-dpi="120"].is-zooming .dpi80#{&} {
-      transform: translateY(-50%) scale(1 / $zoomRatio);
-    }
 
     /*
     @include below-sheet-music-min {
