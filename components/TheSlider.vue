@@ -210,11 +210,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample, dpi = 80) {
-      //*
       const xdpi     = sample.image ? dpi : 1;
-      /*/
-      const xdpi     = sample.image ? this.s.dpi : 1;
-      //*/
       const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
       const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
@@ -240,28 +236,22 @@ export default {
     onclickSlide(e) {
       if (!window.$('main.has-mouse').length || !this.s.hasZoom) return;
 
-      const asDec = (el, x) => {
-        const dim = (x === 'X' ? 'Width' : 'Height');
-        if (el === 'el') return e[`offset${x}`] / e.target.getBoundingClientRect()[dim.toLowerCase()];
-        else             return e[`client${x}`] / document.documentElement[`client${dim}`];
-      };
+      const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
 
       this.toggleDpi({
-        elX:   asDec('el',   'X'),
-        elY:   asDec('el',   'Y'),
-        viewX: asDec('view', 'X'),
-        viewY: asDec('view', 'Y'),
+        elX: asDec('X'),
+        elY: asDec('Y'),
       });
     }, // onclickSlide()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async toggleDpi({elX = .5, elY = .5, viewX = .5, viewY = .5} = {}) {
+    async toggleDpi({elY = 0.5} = {}) {
+
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
       const dpi = (this.s.dpi === 80 ? 120 : 80);
       this.$store.commit('set', {dpi});
-
-      console.log(`toggleDpi() to ${dpi} @ el[${elX}, ${elY}] in view[${viewX}, ${viewY}]`);
 
       const zoomIn = (dpi === 120);
 
@@ -275,15 +265,11 @@ export default {
       $main.addClass('no-transition');
 
       const index = this.s.currentIndex;
-      //const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      //const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
       if (zoomIn) {
-
-        //const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left);
         const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
 
         const yScrollTo = yScroll + yDiff;
@@ -292,7 +278,7 @@ export default {
         $sliderZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
-        window.scroll({top: yScrollTo});
+        window.scroll(0, yScrollTo);
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
         const yScrollAdj = window.scrollY - yScrollTo;
@@ -306,33 +292,30 @@ export default {
         $slider.css({'z-index': 1});
         $sliderZoom.css({opacity: 0});
         $frame.css({'transform-origin': `center ${yOrigin * 100}%`});
-        //$slider.find('button').css({display:'none'}); // TODO
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $main.removeClass('no-transition');
-        $frame.css({transform: `translate(0, ${yFrame}px) scale(${120 / 80})`});
+        $frame.addClass('is-zooming').css({transform: `translate(0, ${yFrame}px) scale(${120 / 80})`});
+
+        await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        setTimeout(() => {
-          $slider.css({'z-index': ''});
-          $sliderZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $slider.css({'z-index': ''});
+        $sliderZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
-          // cleanup
-          setTimeout(() => {
-            $main.addClass('no-transition');
-            $slider.css({opacity: 0, 'pointer-events': 'none'});
-            $frame.css({transform: ''});
+        await sleep(settings.TRANSITION_TIME_MS);
 
-            this.forceRepaint();
-            $main.removeClass('no-transition');
-          }, settings.TRANSITION_TIME_MS);
-        }, settings.TRANSITION_TIME_MS);
+        // cleanup
+        $main.addClass('no-transition');
+        $slider.css({opacity: 0, 'pointer-events': 'none'});
+        $frame.removeClass('is-zooming').css({transform: ''});
+
+        this.forceRepaint();
+        $main.removeClass('no-transition');
 
       // zoom out
       } else {
-        console.log('zoom out:');
-
         const yTop = $frame.offset().top;
 
         const yDiff = Math.round((h * elY * (120 - 80)) - (yTop - $frameZoom.offset().top));
@@ -343,14 +326,9 @@ export default {
 
         const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop + yDiff + $frame.height());
 
-        console.log(`yScroll:${yScroll} + clientHeight:${document.documentElement.clientHeight} - (yTop:${yTop} + yDiff:${yDiff} + frame.height:${$frame.height()})`);
-
         const yScrollAdj = (yMargin > 0
           ? yScroll - (yTop + yDiff) + Math.max(yMargin / 2, 0)
           : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
-
-        console.log(`yMarginTop:${yMarginTop} yMarginBottom:${yMarginBottom}
-        `);
 
         // position non-zoom frame in the desired relative location
         const yFrame = yDiff + yScrollAdj;
@@ -365,28 +343,29 @@ export default {
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $main.removeClass('no-transition');
-        $frameZoom.css({transform: `scale(${80 / 120})`});
+        $frameZoom.addClass('is-zooming').css({transform: `scale(${80 / 120})`});
+
+        await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        setTimeout(() => {
-          $sliderZoom.css({'z-index': ''});
-          $slider.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $sliderZoom.css({'z-index': ''});
+        $slider.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
-          // cleanup
-          setTimeout(() => {
-            const yScrollTo = Math.max(window.scrollY - $frame.offset().top, 0);
+        await sleep(settings.TRANSITION_TIME_MS);
 
-            $main.addClass('no-transition');
-            $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
-            $frameZoom.css({transform: ''});
-            $frame.css({transform: ''});
-            $sliderZoom.css({position: 'fixed'});
-            window.scroll({top: yScrollTo});
-            this.forceRepaint();
-            $main.removeClass('no-transition');
-          }, settings.TRANSITION_TIME_MS);
-        }, settings.TRANSITION_TIME_MS);
-      }
+        // cleanup
+        const yScrollTo = Math.max(window.scrollY - $frame.offset().top, 0);
+
+        $main.addClass('no-transition');
+        $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
+        $frameZoom.removeClass('is-zooming').css({transform: ''});
+        $frame.css({transform: ''});
+        $sliderZoom.css({position: 'fixed'});
+        window.scroll(0, yScrollTo);
+
+        this.forceRepaint();
+        $main.removeClass('no-transition');
+      } // zoom out
 
     }, // toggleDpi()
 
@@ -394,9 +373,7 @@ export default {
     // see <https://gist.github.com/paulirish/5d52fb081b3570c81e3a>
 
     forceRepaint($el = null) {
-      console.time('forceRepaint');
       ($el || window.$('body')).offset();
-      console.timeEnd('forceRepaint');
     }, // forceRepaint()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -475,12 +452,10 @@ $layer-buttons: $layer-hover + 1;
       transition: none;
     }
 
-    /* [2018-06-14] pointless when mouse sliding is off
     cursor: grab;
     @at-root [aria-grabbed]#{&} {
       cursor: grabbing;
     }
-    //*/
 
     // [2018-06-12] hack to fix sizing bug
     html[data-browser*="Firefox"] & {
@@ -546,6 +521,7 @@ $layer-buttons: $layer-hover + 1;
       cursor: zoom-out;
     }
 
+    // TODO
     @include below-sheet-music-min {
       height: 100vmin;
     }
@@ -565,15 +541,8 @@ $layer-buttons: $layer-hover + 1;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
-      //width: 100vw;
-      //min-height: 50vh;
       height: 100%;
       overflow: hidden;
-
-      @include sheet-music-min {
-        //width: auto;
-        //min-width: $sheet-music-width;
-      }
 
       &::after {
         position: absolute;
@@ -621,15 +590,10 @@ $layer-buttons: $layer-hover + 1;
   }
 
   .btn svg {
-    width: 2.4em;
-    height: 4.8em;
+    width: 3em;
+    height: 6em;
     fill: currentColor;
     @include absolute-center();
-
-    @include sheet-music-min {
-      width: 3em;
-      height: 6em;
-    }
   }
 
   .show-pagefades .slider-button {
@@ -645,17 +609,12 @@ $layer-buttons: $layer-hover + 1;
     outline: none;
     @include short-transition;
 
-    /*
-    @include below-sheet-music-min {
-      position: fixed;
-      box-shadow: $list-shadow;
+    @at-root .dpi80 .is-zooming .slider-button {
+      transform: translateY(-50%) scale(1 / $zoomRatio);
     }
-
-    @include sheet-music-min {
-      width: 4em;
-      height: 8em;
+    @at-root .dpi120 .is-zooming .slider-button {
+      transform: translateY(-50%) scale($zoomRatio);
     }
-    //*/
 
     &[disabled] {
       pointer-events: none;
@@ -669,20 +628,6 @@ $layer-buttons: $layer-hover + 1;
       }
       border-radius: 1em 0 0 1em;
       transform-origin: right;
-
-      /*
-      @include below-sheet-music-min {
-        padding-right: 1em;
-        transition: all .2s ease-in-out, transform 1s ease-in-out;
-        @at-root main:not(.options-mode) & {
-          transform: translate(-110%, -50%);
-        }
-      }
-      @include sheet-music-min {
-        left: 0;
-        border-radius: 1em 0 0 1em;
-      }
-      //*/
     }
     &.next {
       right: 0;
@@ -691,22 +636,8 @@ $layer-buttons: $layer-hover + 1;
       }
       border-radius: 0 1em 1em 0;
       transform-origin: left;
-
-      /*
-      @include below-sheet-music-min {
-        padding-left: 1em;
-        transition: all .2s ease-in-out, transform 1s ease-in-out;
-        @at-root main:not(.options-mode) & {
-          transform: translate(110%, -50%);
-        }
-      }
-      @include sheet-music-min {
-        right: 0;
-        border-radius: 0 1em 1em 0;
-      }
-      //*/
     }
-  }
+  } // .slider-button
 } // .slider
 
 </style>
