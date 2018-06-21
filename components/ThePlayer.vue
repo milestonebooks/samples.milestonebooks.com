@@ -301,8 +301,8 @@ export default {
 
 .audio-player {
   z-index: $layer-the-nav - 1;
-  position: fixed;
-  align-self: center;
+  @include absolute-center(x); // `align-self: center` doesn't work with IE 11 and early iPhones
+  position: fixed; // override @include
   bottom: 0;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   background-color: $controls-bg-color;

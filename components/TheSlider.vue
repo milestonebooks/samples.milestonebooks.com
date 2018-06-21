@@ -198,7 +198,7 @@ export default {
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
-      }).toggleClass('show-pagefades', w + 20 /* margin gaps */ < document.documentElement.clientWidth);
+      }).toggleClass('show-pagefades', w + 20 /* margin gaps */ < this.viewWidth);
 
       $slides.css({
         marginTop: `${margin}px`,
@@ -210,9 +210,16 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample, dpi = 80) {
-      const xdpi     = sample.image ? dpi : 1;
-      const width    = sample.image ? `${Math.ceil(sample.image.w * xdpi)}px` : '100vmin';
-      const height   = sample.image ? `${Math.ceil(sample.image.h * xdpi)}px` : '';
+      const xdpi = sample.image ? dpi : 1;
+      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : null;
+      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
+      if (w > this.viewWidth) {
+        const hRatio = h / w;
+        w = this.viewWidth;
+        h = w * hRatio;
+      }
+      const width    = sample.image ? `${w}px` : '100vmin';
+      const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
       return {width, height, maxWidth};
@@ -500,6 +507,10 @@ $layer-buttons: $layer-hover + 1;
     align-items: center;
     font-size: 1rem;
     line-height: 1;
+    // [2018-06-21] IE11 still has about 5% usage
+    html[data-browser*="Trident"] & {
+      display: inline-block;
+    }
   }
 
   .slide {

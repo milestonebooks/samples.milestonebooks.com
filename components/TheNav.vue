@@ -286,10 +286,10 @@ $nav-top: 0;
 
 .the-nav {
   z-index: $layer-the-nav;
-  position: fixed;
+  @include absolute-center(x); // `align-self: center` doesn't work with IE 11 and early iPhones
+  position: fixed; // override @include
   top: $nav-top;
   box-sizing: border-box;
-  align-self: center;
   background-color: white;
   border-radius: 0 0 $radius $radius;
   @include drop-shadow;
