@@ -256,7 +256,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    toggleDpi({elX = .5, elY = .5, viewX = .5, viewY = .5} = {}) {
+    async toggleDpi({elX = .5, elY = .5, viewX = .5, viewY = .5} = {}) {
 
       const dpi = (this.s.dpi === 80 ? 120 : 80);
       this.$store.commit('set', {dpi});
@@ -267,8 +267,8 @@ export default {
 
       const $main       = window.$('main');
       const $slider     = window.$(`.slider.dpi80`);
-      const $frame      = $slider.find('.frame');
       const $sliderZoom = window.$(`.slider.dpi120`);
+      const $frame      = $slider.find('.frame');
       const $frameZoom  = $sliderZoom.find('.frame');
 
       // ensure no transitions are in effect to delay prep layout
@@ -281,19 +281,20 @@ export default {
       //const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      //const xDiff = Math.round((w * elX) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetLeft);
-      const yDiff = Math.round((h * elY) * (120 - 80) * (zoomIn ? 1 : -1) - $frame[0].offsetTop);
-
-      const yScrollTo = yScroll + yDiff;
-
       if (zoomIn) {
+
+        //const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left);
+        const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
+
+        const yScrollTo = yScroll + yDiff;
+
         // position the zoom slider to trigger layout
         $sliderZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
         window.scroll({top: yScrollTo});
 
-        // when pre-zoom frame is contained within view, desired scroll position may not be possible
+        // when non-zoom frame is contained within view, desired scroll position may not be possible
         const yScrollAdj = window.scrollY - yScrollTo;
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
 
@@ -302,36 +303,101 @@ export default {
 
         const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
 
-        console.log('transform-origin:', $frame.css('transform-origin'));
-
-        // synchronize the tandem frames
-        const tOrigin = {'transform-origin': `center ${yOrigin * 100}%`};
-        $frame.css(tOrigin);
-        $frameZoom.css(Object.assign(tOrigin, {transform: `scale(${zoomIn ? 80 / 120 : 1})`, opacity: 0}));
+        $slider.css({'z-index': 1});
+        $sliderZoom.css({opacity: 0});
+        $frame.css({'transform-origin': `center ${yOrigin * 100}%`});
+        //$slider.find('button').css({display:'none'}); // TODO
 
         // ensure dom is updated before running zoom transition
-        this.$nextTick(() => {
-          $main.removeClass('no-transition');
-          $frame.css({transform: `translate(0, ${yFrame}px) scale(${zoomIn ? 1.5 : 1})`, opacity: 0});
-          $frameZoom.css({transform: 'scale(1)', opacity: 1});
+        this.forceRepaint();
+        $main.removeClass('no-transition');
+        $frame.css({transform: `translate(0, ${yFrame}px) scale(${120 / 80})`});
 
-          // cleanup after transition
+        // fade
+        setTimeout(() => {
+          $slider.css({'z-index': ''});
+          $sliderZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+
+          // cleanup
           setTimeout(() => {
-            $frame.css({transform: 'unset'});
+            $main.addClass('no-transition');
+            $slider.css({opacity: 0, 'pointer-events': 'none'});
+            $frame.css({transform: ''});
 
-            // TODO
-            $frame.css({opacity: .5});
+            this.forceRepaint();
+            $main.removeClass('no-transition');
           }, settings.TRANSITION_TIME_MS);
-        });
-
-        console.log(`scrollTop: ${window.scrollY} - ${yScrollTo} =`, yScrollAdj, 'elY:', elY, 'yOrigin:', yOrigin);
+        }, settings.TRANSITION_TIME_MS);
 
       // zoom out
       } else {
-        console.log('zoom out');
+        console.log('zoom out:');
+
+        const yTop = $frame.offset().top;
+
+        const yDiff = Math.round((h * elY * (120 - 80)) - (yTop - $frameZoom.offset().top));
+
+        const yMargin = document.documentElement.clientHeight - $frame.height();
+
+        const yMarginTop = yTop + yDiff - yScroll;
+
+        const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop + yDiff + $frame.height());
+
+        console.log(`yScroll:${yScroll} + clientHeight:${document.documentElement.clientHeight} - (yTop:${yTop} + yDiff:${yDiff} + frame.height:${$frame.height()})`);
+
+        const yScrollAdj = (yMargin > 0
+          ? yScroll - (yTop + yDiff) + Math.max(yMargin / 2, 0)
+          : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
+
+        console.log(`yMarginTop:${yMarginTop} yMarginBottom:${yMarginBottom}
+        `);
+
+        // position non-zoom frame in the desired relative location
+        const yFrame = yDiff + yScrollAdj;
+        $frame.css({transform: `translate(0, ${yFrame}px)`});
+
+        const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
+
+        $sliderZoom.css({'z-index': 1});
+        $slider.css({opacity: 0});
+        $frameZoom.css({'transform-origin': `center ${yOrigin * 100}%`});
+
+        // ensure dom is updated before running zoom transition
+        this.forceRepaint();
+        $main.removeClass('no-transition');
+        $frameZoom.css({transform: `scale(${80 / 120})`});
+
+        // fade
+        setTimeout(() => {
+          $sliderZoom.css({'z-index': ''});
+          $slider.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+
+          // cleanup
+          setTimeout(() => {
+            const yScrollTo = Math.max(window.scrollY - $frame.offset().top, 0);
+
+            $main.addClass('no-transition');
+            $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
+            $frameZoom.css({transform: ''});
+            $frame.css({transform: ''});
+            $sliderZoom.css({position: 'fixed'});
+            window.scroll({top: yScrollTo});
+            this.forceRepaint();
+            $main.removeClass('no-transition');
+          }, settings.TRANSITION_TIME_MS);
+        }, settings.TRANSITION_TIME_MS);
       }
 
     }, // toggleDpi()
+
+    //------------------------------------------------------------------------------------------------------------------
+    // see <https://gist.github.com/paulirish/5d52fb081b3570c81e3a>
+
+    forceRepaint($el = null) {
+      console.time('forceRepaint');
+      ($el || window.$('body')).offset();
+      console.timeEnd('forceRepaint');
+    }, // forceRepaint()
 
     //------------------------------------------------------------------------------------------------------------------
     // adapted from <https://stackoverflow.com/questions/7982053/get-translate3d-values-of-a-div>
@@ -372,18 +438,18 @@ $layer-buttons: $layer-hover + 1;
   align-items: center;
   @include short-transition;
 
+  @at-root .no-transition & {
+    transition: none;
+  }
+
   &.is-init {
     opacity: 1;
   }
 
-  &.dpi80 {
-    z-index: 1;
-  }
   &.dpi120 {
-    position: fixed; // TODO
-    .frame {
-      opacity: 0.2;
-    }
+    position: fixed;
+    pointer-events: none;
+    opacity: 0;
   }
 
   .frame {

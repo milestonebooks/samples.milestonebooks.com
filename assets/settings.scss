@@ -51,7 +51,7 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
 // mixins
 
 @mixin short-transition() {
-  transition: all .2s ease-in-out;
+  transition: all $transition-time ease-in-out;
 }
 
 @mixin drop-shadow() {
