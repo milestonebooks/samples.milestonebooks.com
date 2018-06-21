@@ -2,23 +2,23 @@
   <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
-      <nuxt-link class="btn btn-prev" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-prev" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
-      <button ref="btnList" class="btn btn-list" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+      <button ref="btnList" class="btn btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
         </span>
       </button>
       <span class="btn-list-mask"></span>
-      <nuxt-link class="btn btn-next" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-next" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
       </nuxt-link>
     </div>
 
     <nav ref="list" :class="'list' + (p.isCompactList ? ' compact' : '')" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
-        <button v-for="sample in s.samples" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
           <span class="item-flex">
             <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
