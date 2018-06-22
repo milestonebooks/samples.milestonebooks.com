@@ -286,8 +286,7 @@ $nav-top: 0;
 
 .the-nav {
   z-index: $layer-the-nav;
-  @include absolute-center(x); // `align-self: center` doesn't work with IE 11 and early iPhones
-  position: fixed; // override @include
+  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
   top: $nav-top;
   box-sizing: border-box;
   background-color: white;
@@ -418,11 +417,8 @@ $nav-top: 0;
   display: none;
   pointer-events: none;
   user-select: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
   @include absolute-center(x);
+  top: 100%;
   width: 100vw;
   max-width: 10 * $unit;
   padding: $list-padding;

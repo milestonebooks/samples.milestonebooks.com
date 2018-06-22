@@ -1,48 +1,48 @@
 <template>
-  <div>
-    <article :class="sliderClass('dpi80')" :aria-grabbed="isGrabbing">
-      <div class="frame js_frame">
-        <div class="slides js_slides">
-          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
-            <div class="slide-liner">
-              <template v-if="sample.image">
-                <img                  data-dpi="80"       :src="imgSrc(sample,  80)" @load="imgLoaded(sample.index,  80)" draggable="false" />
-              </template>
-              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-            </div>
-          </section>
-        </div>
-        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-        </nuxt-link>
-        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link>
-      </div>
-    </article>
+  <div :class="containerClass" :aria-grabbed="isGrabbing">
+    <div class="frame-x"></div>
+    <div class="slider-wrap">
 
-    <article v-if="s.hasZoom" :class="sliderClass('dpi120')" :aria-grabbed="isGrabbing">
-      <div class="frame js_frame">
-        <div class="slides js_slides">
-          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
-            <div class="slide-liner">
-              <template v-if="sample.image">
-                <img data-dpi="120" :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
-              </template>
-              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-            </div>
-          </section>
+      <article :class="sliderClass(80)" data-dpi="80">
+        <div class="frame js_frame">
+          <div class="slides js_slides">
+            <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                     :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
+              <div class="slide-liner">
+                <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
+                <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
+              </div>
+            </section>
+          </div>
+          <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+            <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+          </nuxt-link>
+          <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+            <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+          </nuxt-link>
         </div>
-        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-        </nuxt-link>
-        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link>
-      </div>
-    </article>
+      </article>
+
+      <article v-if="s.hasZoom" :class="sliderClass(120)" data-dpi="120">
+        <div class="frame js_frame">
+          <div class="slides js_slides">
+            <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                     :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
+              <div class="slide-liner">
+                <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+              </div>
+            </section>
+          </div>
+          <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+            <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+          </nuxt-link>
+          <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+            <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+          </nuxt-link>
+        </div>
+      </article>
+
+    </div>
   </div>
 </template>
 
@@ -77,9 +77,12 @@ export default {
         ease: 'ease-in-out',
       },
 
-      isInit: false,
-      isGrabbing: false,
-      viewWidth: null,
+      isInit80:     false,
+      isInit120:    false,
+      isGrabbing:   false,
+      isResizing:   false,
+      noTransition: true,
+      viewWidth:    document.documentElement.clientWidth,
     }
   },
 
@@ -92,11 +95,31 @@ export default {
     s() {
       return this.$store.state;
     },
+
+    isInit() {
+      return this.isInit80 && (this.s.hasZoom ? this.isInit120 : true);
+    },
+
+    containerClass() {
+      return {
+        'slider-container': true,
+        'is-init':          this.isInit,
+        'is-resizing':      this.isResizing,
+        'no-transition':    this.noTransition,
+      }
+    }
   },
 
   watch: {
     samples: 'init',
     currentIndex: 'update',
+    isInit() {
+      // ensure that transitions are only enabled after init is complete
+      this.$nextTick(() => {
+        if (this.isInit) this.noTransition = false;
+        console.log('enable transitions');
+      });
+    }
   },
 
   beforeDestroy () {
@@ -111,8 +134,10 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      console.log('init', this.s.samples.length);
+
       this.$nextTick(() => {
-        this.$el.addEventListener('after.lory.init',    this.onInit);
+        this.$el.addEventListener('after.lory.init',    this.onLoryInit);
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
         this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
@@ -120,11 +145,11 @@ export default {
         window._resizeT = null;
         window.addEventListener('resize', () => {
           // this is needed to ensure that font-size = 0 when lory resize calculations occur
-          window.$('.slider').addClass('is-resizing');
+          this.isResizing = true;
           clearTimeout(window._resizeT);
 
           window._resizeT = setTimeout(() => {
-            window.$('.slider').removeClass('is-resizing');
+            this.isResizing = false;
           }, settings.TRANSITION_TIME_MS);
 
           if (document.documentElement.clientWidth !== this.viewWidth) this.update();
@@ -141,23 +166,26 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    sliderClass(dpiClass) {
-      return `${dpiClass} slider js_slider ${this.isInit ? 'is-init' : ''}`;
+    sliderClass(dpi) {
+      return `dpi${dpi} slider js_slider`;
     }, // sliderClass()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onInit() {
-      setTimeout(() => {
-        this.isInit = true;
-        this.update();
-      }, settings.TRANSITION_TIME_MS);
-    }, // onInit()
+    onLoryInit(e) {
+      const dpi = window.$(e.target).attr('data-dpi');
+      this[`isInit${dpi}`] = true;
+
+      this.update();
+    }, // onLoryInit()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      if (!this.isInit) return;
+
       this.$nextTick(() => {
+        console.log(`update: ${this.currentIndex}`);
         if (this.slider)     this.slider.slideTo(this.currentIndex);
         if (this.sliderZoom) this.sliderZoom.slideTo(this.currentIndex);
 
@@ -168,9 +196,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onSlideChange(/*e*/) {
-      console.log('onSlideChange()');
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
+      console.log(`onSlideChange(${index})`);
       if (this.isGrabbing) {
         window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
       }
@@ -194,6 +222,10 @@ export default {
 
       const margin = -Math.floor(($slides.height() - h) / 2);
 
+      console.log(`autosize(${dpi}) isInit:${this.isInit} h:${h} w:${w} margin:${margin}`);
+
+//      return;
+
       // autosize
       $frame.css({
         height: `${h}px`,
@@ -213,14 +245,19 @@ export default {
       const xdpi = sample.image ? dpi : 1;
       let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : null;
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
-      if (w > this.viewWidth) {
+
+      // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
+      if (w > this.viewWidth && !this.s.hasMouse) {
         const hRatio = h / w;
         w = this.viewWidth;
-        h = w * hRatio;
+        h = Math.floor(w * hRatio);
       }
+
       const width    = sample.image ? `${w}px` : '100vmin';
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
+
+      console.log(`sampleStyleSize(${sample.index}, ${dpi}): viewWidth:${this.viewWidth} w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -253,7 +290,11 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async toggleDpi({elY = 0.5} = {}) {
+    async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
+
+      if (this.s.isZooming) return;
+
+      this.$store.commit('set', {isZooming:true});
 
       const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -261,6 +302,9 @@ export default {
       this.$store.commit('set', {dpi});
 
       const zoomIn = (dpi === 120);
+
+      // zoom slider may not have been initialized to correct zoom where a mouse interaction is available
+      if (zoomIn) this.autosize(120);
 
       const $main       = window.$('main');
       const $slider     = window.$(`.slider.dpi80`);
@@ -272,27 +316,35 @@ export default {
       $main.addClass('no-transition');
 
       const index = this.s.currentIndex;
+      const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
+      const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
       if (zoomIn) {
+        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - ($frame.hasClass('show-pagefades') !== $frameZoom.hasClass('show-pagefades') ? 40 : 0);
         const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
+        //console.log(`zoomIn: xDiff:${xDiff} yDiff:${yDiff} $frame.offset().left:${$frame.offset().left}`);
 
+        const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
 
         // position the zoom slider to trigger layout
         $sliderZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
-        window.scroll(0, yScrollTo);
+        window.scroll(xScrollTo, yScrollTo);
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
+        const xScrollAdj = window.scrollX - xScrollTo;
         const yScrollAdj = window.scrollY - yScrollTo;
+        const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
 
         // adjust non-zoom frame to original screen position
-        $frame.css({transform: `translate(0, ${yFrame}px)`});
+        $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
+        //return;
 
         const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
 
@@ -368,11 +420,13 @@ export default {
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
         $sliderZoom.css({position: 'fixed'});
-        window.scroll(0, yScrollTo);
+        window.scroll(window.scrollX, yScrollTo);
 
         this.forceRepaint();
         $main.removeClass('no-transition');
       } // zoom out
+
+      this.$store.commit('set', {isZooming:false});
 
     }, // toggleDpi()
 
@@ -412,10 +466,32 @@ $layer-pagefades: 2; // raise above prev/next slides
 $layer-hover: $layer-pagefades + 1;
 $layer-buttons: $layer-hover + 1;
 
-.slider {
+.slider-container {
+  opacity: 0;
+  &.is-init {
+    opacity: 1;
+  }
+}
+
+/*
+// superimposed to match border of active slider frame
+.frame-x {
+  z-index: 1;
+  position: absolute;
+  pointer-events: none;
+}
+
+// container for visuals
+.slider-wrap {
   position: absolute;
   width: 100%;
-  opacity: 0;
+  height: 100vh;
+}
+//*/
+
+.slider {
+  position: absolute;
+  min-width: 100%;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -424,10 +500,6 @@ $layer-buttons: $layer-hover + 1;
 
   @at-root .no-transition & {
     transition: none;
-  }
-
-  &.is-init {
-    opacity: 1;
   }
 
   &.dpi120 {
@@ -448,10 +520,10 @@ $layer-buttons: $layer-hover + 1;
     font-size: 0; // lory setup has errors if font size is not 0
     @include short-transition;
 
-    @at-root .is-init#{&} {
+    @at-root .is-init & {
       font-size: inherit;
     }
-    @at-root .is-resizing#{&} {
+    @at-root .is-resizing & {
       font-size: 0;
       transition: none;
     }
@@ -459,10 +531,13 @@ $layer-buttons: $layer-hover + 1;
       transition: none;
     }
 
+    // TODO
+    /*
     cursor: grab;
-    @at-root [aria-grabbed]#{&} {
+    @at-root [aria-grabbed] & {
       cursor: grabbing;
     }
+    //*/
 
     // [2018-06-12] hack to fix sizing bug
     html[data-browser*="Firefox"] & {
@@ -482,7 +557,7 @@ $layer-buttons: $layer-hover + 1;
         padding-right: $frame-unit * $zoomRatio;
       }
 
-      @at-root .slider:not(.is-resizing) .show-pagefades::before { // mask for prev/next slide fades
+      @at-root .slider-container:not(.is-resizing) .show-pagefades::before { // mask for prev/next slide fades
         content: '';
         position: absolute;
         left: 0;
@@ -510,6 +585,9 @@ $layer-buttons: $layer-hover + 1;
     // [2018-06-21] IE11 still has about 5% usage
     html[data-browser*="Trident"] & {
       display: inline-block;
+    }
+    .no-transition & {
+      transition: none;
     }
   }
 
@@ -556,13 +634,12 @@ $layer-buttons: $layer-hover + 1;
       overflow: hidden;
 
       &::after {
-        position: absolute;
+        @include absolute-center(x);
         content: 'COPYRIGHTED MATERIAL';
         white-space: nowrap;
         bottom: .5em;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
-        @include absolute-center(x);
 
         @at-root .dpi120#{&} {
           font-size: 1.5em;

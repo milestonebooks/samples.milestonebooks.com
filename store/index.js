@@ -16,9 +16,13 @@ export const state = () => ({
   firstId:  '',
   lastId:   '',
 
-  dpi:      80, // 80 | 120
-  hasZoom:  false,
-  hasPrint: false,
+  hasTouch: false,
+  hasMouse: false,
+
+  dpi:       80, // 80 | 120
+  hasZoom:   false,
+  isZooming: false,
+  hasPrint:  false,
 
   alert:    '',
 });

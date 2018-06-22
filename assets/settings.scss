@@ -64,8 +64,8 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
   text-overflow: ellipsis;
 }
 
-@mixin absolute-center($axis:xy) {
-  position: if($axis == fixed, fixed, absolute);
+@mixin absolute-center($axis:xy, $position:absolute) {
+  position: if($axis == fixed, fixed, $position);
   @if ($axis == xy or $axis == fixed) {
     left: 50%;
     top: 50%;

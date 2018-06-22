@@ -52,9 +52,6 @@ export default {
 
   data () {
     return {
-      hasTouch: false,
-      hasMouse: false,
-      //optionsMode: true,
     };
   }, // data()
 
@@ -87,13 +84,12 @@ export default {
 
     mainClass() {
       return {
-        'is-init':      this.s.isInit,
-        'has-touch':    this.hasTouch,
-        'has-mouse':    this.hasMouse,
-        'has-zoom':     this.s.hasZoom,
-        'has-print':    this.s.hasPrint,
-        'show-title':   true,
-        //'options-mode': this.optionsMode,
+        'is-init':    this.s.isInit,
+        'has-touch':  this.s.hasTouch,
+        'has-mouse':  this.s.hasMouse,
+        'has-zoom':   this.s.hasZoom,
+        'has-print':  this.s.hasPrint,
+        'show-title': true,
       }
     },
 
@@ -112,13 +108,13 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     const _firstmouseover = () => {
-      this.hasMouse = true;
+      this.set({hasMouse:true});
       window.removeEventListener('mouseover', _firstmouseover, false);
     };
     window.addEventListener('mouseover', _firstmouseover, false);
 
     const _firsttouchstart = () => {
-      this.hasTouch = true;
+      this.set({hasTouch:true});
       window.removeEventListener('touchstart', _firsttouchstart, false);
     };
     window.addEventListener('touchstart', _firsttouchstart, false);
