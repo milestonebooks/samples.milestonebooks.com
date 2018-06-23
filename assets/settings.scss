@@ -10,6 +10,7 @@ $radius: .5em;
 $list-font-size: 1.6em;
 $list-padding: .5em;
 $sheet-music-width: 650px;
+$zoom-ratio: 120 / 80; // match settings.js > ZOOM_RATIO
 
 // colors
 $alert-color: hsl(0, 100%, 50%);
@@ -55,7 +56,7 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
 }
 
 @mixin drop-shadow() {
-  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
+  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .5);
 }
 
 @mixin one-line-ellipsis() {

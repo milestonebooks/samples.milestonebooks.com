@@ -1,48 +1,45 @@
 <template>
   <div :class="containerClass" :aria-grabbed="isGrabbing">
-    <div class="frame-x"></div>
-    <div class="slider-wrap">
 
-      <article :class="sliderClass(80)" data-dpi="80">
-        <div class="frame js_frame">
-          <div class="slides js_slides">
-            <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                     :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
-              <div class="slide-liner">
-                <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
-                <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-              </div>
-            </section>
-          </div>
-          <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-            <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-          </nuxt-link>
-          <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-            <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-          </nuxt-link>
+    <article :class="sliderClass(80)" data-dpi="80">
+      <div class="frame js_frame">
+        <div class="slides js_slides">
+          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
+            <div class="slide-liner">
+              <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
+              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
+            </div>
+          </section>
         </div>
-      </article>
+        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+        </nuxt-link>
+        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+        </nuxt-link>
+      </div>
+    </article>
 
-      <article v-if="s.hasZoom" :class="sliderClass(120)" data-dpi="120">
-        <div class="frame js_frame">
-          <div class="slides js_slides">
-            <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                     :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
-              <div class="slide-liner">
-                <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
-              </div>
-            </section>
-          </div>
-          <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-            <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-          </nuxt-link>
-          <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-            <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-          </nuxt-link>
+    <article v-if="s.hasZoom" :class="sliderClass(120)" data-dpi="120">
+      <div class="frame js_frame">
+        <div class="slides js_slides">
+          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
+            <div class="slide-liner">
+              <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+            </div>
+          </section>
         </div>
-      </article>
+        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+        </nuxt-link>
+        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+        </nuxt-link>
+      </div>
+    </article>
 
-    </div>
   </div>
 </template>
 
@@ -230,7 +227,7 @@ export default {
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
-      }).toggleClass('show-pagefades', w + 20 /* margin gaps */ < this.viewWidth);
+      }).toggleClass('show-pagefades', w + (settings.PAGEFADE_WIDTH * 2 * (dpi / 80)) /* TODO: margin gaps */ < this.viewWidth);
 
       $slides.css({
         marginTop: `${margin}px`,
@@ -247,11 +244,13 @@ export default {
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
+      /* TODO: recalculates on first hover, which can cause shifting
       if (w > this.viewWidth && !this.s.hasMouse) {
         const hRatio = h / w;
         w = this.viewWidth;
         h = Math.floor(w * hRatio);
       }
+      //*/
 
       const width    = sample.image ? `${w}px` : '100vmin';
       const height   = sample.image ? `${h}px` : '';
@@ -323,7 +322,7 @@ export default {
       const yScroll = window.scrollY;
 
       if (zoomIn) {
-        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - ($frame.hasClass('show-pagefades') !== $frameZoom.hasClass('show-pagefades') ? 40 : 0);
+        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - ($frame.hasClass('show-pagefades') !== $frameZoom.hasClass('show-pagefades') ? settings.PAGEFADE_WIDTH : 0);
         const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
         //console.log(`zoomIn: xDiff:${xDiff} yDiff:${yDiff} $frame.offset().left:${$frame.offset().left}`);
 
@@ -346,16 +345,17 @@ export default {
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
         //return;
 
+        const xOrigin = ($frame.offset().left - $frameZoom.offset().left) / ($frameZoom.width() - $frame.width());
         const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
 
         $slider.css({'z-index': 1});
         $sliderZoom.css({opacity: 0});
-        $frame.css({'transform-origin': `center ${yOrigin * 100}%`});
+        $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $main.removeClass('no-transition');
-        $frame.addClass('is-zooming').css({transform: `translate(0, ${yFrame}px) scale(${120 / 80})`});
+        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
@@ -402,7 +402,7 @@ export default {
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $main.removeClass('no-transition');
-        $frameZoom.addClass('is-zooming').css({transform: `scale(${80 / 120})`});
+        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
@@ -460,7 +460,6 @@ export default {
 @import "../assets/settings.scss";
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
-$zoomRatio: 120 / 80;
 
 $layer-pagefades: 2; // raise above prev/next slides
 $layer-hover: $layer-pagefades + 1;
@@ -468,26 +467,11 @@ $layer-buttons: $layer-hover + 1;
 
 .slider-container {
   opacity: 0;
+  transition: opacity .5s ease-in-out;
   &.is-init {
     opacity: 1;
   }
 }
-
-/*
-// superimposed to match border of active slider frame
-.frame-x {
-  z-index: 1;
-  position: absolute;
-  pointer-events: none;
-}
-
-// container for visuals
-.slider-wrap {
-  position: absolute;
-  width: 100%;
-  height: 100vh;
-}
-//*/
 
 .slider {
   position: absolute;
@@ -551,10 +535,10 @@ $layer-buttons: $layer-hover + 1;
       padding-right: $frame-unit;
 
       @at-root .dpi120#{&} {
-        margin-left:  -$frame-unit * $zoomRatio;
-        padding-left:  $frame-unit * $zoomRatio;
-        margin-right: -$frame-unit * $zoomRatio;
-        padding-right: $frame-unit * $zoomRatio;
+        margin-left:  -$frame-unit * $zoom-ratio;
+        padding-left:  $frame-unit * $zoom-ratio;
+        margin-right: -$frame-unit * $zoom-ratio;
+        padding-right: $frame-unit * $zoom-ratio;
       }
 
       @at-root .slider-container:not(.is-resizing) .show-pagefades::before { // mask for prev/next slide fades
@@ -599,7 +583,7 @@ $layer-buttons: $layer-hover + 1;
     background-color: white;
     margin-right: ($unit * 1/4);
     @at-root .dpi120#{&} {
-      margin-right: ($unit * 1/4 * $zoomRatio);
+      margin-right: ($unit * 1/4 * $zoom-ratio);
     }
     @include short-transition;
 
@@ -698,10 +682,10 @@ $layer-buttons: $layer-hover + 1;
     @include short-transition;
 
     @at-root .dpi80 .is-zooming .slider-button {
-      transform: translateY(-50%) scale(1 / $zoomRatio);
+      transform: translateY(-50%) scale(1 / $zoom-ratio);
     }
     @at-root .dpi120 .is-zooming .slider-button {
-      transform: translateY(-50%) scale($zoomRatio);
+      transform: translateY(-50%) scale($zoom-ratio);
     }
 
     &[disabled] {
