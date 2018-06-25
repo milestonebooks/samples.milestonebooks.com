@@ -101,6 +101,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      console.log('ThePlayer initSettings...');
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});

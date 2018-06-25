@@ -10,7 +10,6 @@ export const state = () => ({
   isListShown: false,
   isValidInputId: true,
 
-  isCompactList: true, // TODO: may want default `false` for audio where titles are available
   isAutoPlay: true,
   isAutoNext: true,
 
@@ -22,7 +21,7 @@ export const state = () => ({
     pctHandle: 0,
   },
 
-  persist: ['isCompactList', 'isAutoPlay', 'isAutoNext'],
+  persist: ['isAutoPlay', 'isAutoNext'],
 }); // state{}
 
 //======================================================================================================================

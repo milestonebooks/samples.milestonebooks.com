@@ -10,14 +10,17 @@ export const state = () => ({
   urlBase:  'https://samples.milestonebooks.com/',
 
   item:     '',
-  type:     'audio',
+  type:     'items', // 'items' | 'audio'
   samples:  [],
   currentIndex: null,
   firstId:  '',
   lastId:   '',
 
-  hasTouch: false,
-  hasMouse: false,
+  isCompactList: true,
+  isCompactListTitles: false,
+
+  hasTouch:  false,
+  hasMouse:  false,
 
   dpi:       80, // 80 | 120
   hasZoom:   false,
@@ -26,7 +29,7 @@ export const state = () => ({
 
   alert:    '',
 
-  persist: ['hasTouch', 'hasMouse'],
+  persist: ['isCompactList', 'isCompactListTitles', 'hasTouch', 'hasMouse'],
 });
 
 //======================================================================================================================
@@ -87,6 +90,7 @@ export const actions = {
     let v;
 
     for (const key of state.persist) {
+      console.log('initSettings()', key);
       if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
     }
 

@@ -16,7 +16,7 @@
       </nuxt-link>
     </div>
 
-    <nav ref="list" :class="'list' + (p.isCompactList ? ' compact' : '')" :aria-hidden="!isListShown" @keydown="onListKey">
+    <nav ref="list" :class="['list', listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
         <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
@@ -75,12 +75,17 @@ export default {
     btnListTitle() {
       return `${this.isListShown ? 'hide' : 'show'} sample list`;
     },
+    listClass() {
+      return {
+        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles))
+      };
+    },
     autoPlay: {
       get() {
         return this.p.isAutoPlay;
       },
       set(isAutoPlay) {
-        this.set({isAutoPlay});
+        this.setPlayer({isAutoPlay});
       },
     },
     autoNext: {
@@ -88,15 +93,16 @@ export default {
         return this.p.isAutoNext;
       },
       set(isAutoNext) {
-        this.set({isAutoNext});
+        this.setPlayer({isAutoNext});
       },
     },
     compactList: {
       get() {
-        return this.p.isCompactList;
+        console.log('compactList get()', this.s.type, this.s.isCompactListTitles);
+        return (this.s.type === 'audio' ?  this.s.isCompactListTitles : this.s.isCompactList);
       },
       set(isCompactList) {
-        this.set({isCompactList});
+        this.set({[this.s.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
       },
     },
   }, // computed {}
@@ -119,16 +125,16 @@ export default {
 
   methods: {
 
-    ...mapMutations('player',[
+    ...mapMutations([
       'set',
-      'setCurrent',
     ]),
+    ...mapMutations('player', {
+      'setPlayer': 'set',
+    }),
 
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
-      this.$store.dispatch('player/initSettings');
-      this.set({isInit:true});
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
