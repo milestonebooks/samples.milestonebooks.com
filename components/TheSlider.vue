@@ -243,6 +243,8 @@ export default {
       let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : null;
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
+      if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
+
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
       /* TODO: recalculates on first hover, which can cause shifting
       if (w > this.viewWidth && !this.s.hasMouse) {
@@ -281,6 +283,8 @@ export default {
 
       const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
 
+      console.log(`onclickSlide x:${e.offsetX} y:${e.offsetY}`);
+
       this.toggleDpi({
         elX: asDec('X'),
         elY: asDec('Y'),
@@ -303,16 +307,16 @@ export default {
       const zoomIn = (dpi === 120);
 
       // zoom slider may not have been initialized to correct zoom where a mouse interaction is available
-      if (zoomIn) this.autosize(120);
+      //TODO: if (zoomIn) this.autosize(120);
 
-      const $main       = window.$('main');
+      const $el         = window.$('.slider-container');
       const $slider     = window.$(`.slider.dpi80`);
       const $sliderZoom = window.$(`.slider.dpi120`);
       const $frame      = $slider.find('.frame');
       const $frameZoom  = $sliderZoom.find('.frame');
 
       // ensure no transitions are in effect to delay prep layout
-      $main.addClass('no-transition');
+      $el.addClass('no-transition');
 
       const index = this.s.currentIndex;
       const w = this.s.samples[index].image.w;
@@ -321,10 +325,11 @@ export default {
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
+      const xCompPagefades = $frame.hasClass('show-pagefades') && !$frameZoom.hasClass('show-pagefades');
+
       if (zoomIn) {
-        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - ($frame.hasClass('show-pagefades') !== $frameZoom.hasClass('show-pagefades') ? settings.PAGEFADE_WIDTH : 0);
+        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - (xCompPagefades ? settings.PAGEFADE_WIDTH : 0);
         const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
-        //console.log(`zoomIn: xDiff:${xDiff} yDiff:${yDiff} $frame.offset().left:${$frame.offset().left}`);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -338,15 +343,13 @@ export default {
         // when non-zoom frame is contained within view, desired scroll position may not be possible
         const xScrollAdj = window.scrollX - xScrollTo;
         const yScrollAdj = window.scrollY - yScrollTo;
+
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
-
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
-        //return;
 
-        const xOrigin = ($frame.offset().left - $frameZoom.offset().left) / ($frameZoom.width() - $frame.width());
-        const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
+        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'in');
 
         $slider.css({'z-index': 1});
         $sliderZoom.css({opacity: 0});
@@ -354,7 +357,7 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $main.removeClass('no-transition');
+        $el.removeClass('no-transition');
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
@@ -366,42 +369,53 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        $main.addClass('no-transition');
+        $el.addClass('no-transition');
         $slider.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
 
         this.forceRepaint();
-        $main.removeClass('no-transition');
+        $el.removeClass('no-transition');
 
       // zoom out
       } else {
-        const yTop = $frame.offset().top;
+        const xLeft = $frame.offset().left;
+        const yTop  = $frame.offset().top;
 
-        const yDiff = Math.round((h * elY * (120 - 80)) - (yTop - $frameZoom.offset().top));
+        const xDiff = Math.round((w * elX * (120 - 80)) - (xLeft - $frameZoom.offset().left));
+        const yDiff = Math.round((h * elY * (120 - 80)) - (yTop  - $frameZoom.offset().top));
 
-        const yMargin = document.documentElement.clientHeight - $frame.height();
+        const xMargin = document.documentElement.clientWidth  - $frame.width();
+        const yMargin = (xMargin > 0 ? window.innerHeight : document.documentElement.clientHeight) - $frame.height();
 
-        const yMarginTop = yTop + yDiff - yScroll;
+        const xMarginLeft = xLeft + xDiff - xScroll;
+        const yMarginTop  = yTop  + yDiff - yScroll;
 
-        const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop + yDiff + $frame.height());
+        const xMarginRight  = xScroll + document.documentElement.clientWidth  - (xLeft + xDiff + $frame.width());
+        const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop  + yDiff + $frame.height());
 
+        console.log(`\nx scrollbar... yMargin:${yMargin} yMarginTop:${yMarginTop} = yTop:${yTop} + yDiff:${yDiff} - yScroll:${yScroll}\n`);
+
+        const xScrollAdj = (xMargin > 0
+          ? xScroll - (xLeft + xDiff) + Math.max(xMargin / 2, 0)
+          : Math.min(-xMarginLeft, 0) + Math.max(xMarginRight, 0) );
         const yScrollAdj = (yMargin > 0
           ? yScroll - (yTop + yDiff) + Math.max(yMargin / 2, 0)
           : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
 
         // position non-zoom frame in the desired relative location
+        const xFrame = xDiff + xScrollAdj;
         const yFrame = yDiff + yScrollAdj;
-        $frame.css({transform: `translate(0, ${yFrame}px)`});
+        $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
+        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'out');
 
         $sliderZoom.css({'z-index': 1});
         $slider.css({opacity: 0});
-        $frameZoom.css({'transform-origin': `center ${yOrigin * 100}%`});
+        $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $main.removeClass('no-transition');
+        $el.removeClass('no-transition');
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
@@ -413,17 +427,19 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const yScrollTo = Math.max(window.scrollY - $frame.offset().top, 0);
+        const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
+        const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
+        //return;
 
-        $main.addClass('no-transition');
+        $el.addClass('no-transition');
         $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
         $sliderZoom.css({position: 'fixed'});
-        window.scroll(window.scrollX, yScrollTo);
+        window.scroll(xScrollTo, yScrollTo);
 
         this.forceRepaint();
-        $main.removeClass('no-transition');
+        $el.removeClass('no-transition');
       } // zoom out
 
       this.$store.commit('set', {isZooming:false});
@@ -438,14 +454,17 @@ export default {
     }, // forceRepaint()
 
     //------------------------------------------------------------------------------------------------------------------
-    // adapted from <https://stackoverflow.com/questions/7982053/get-translate3d-values-of-a-div>
 
-    getTranslate($el) {
-      const m = $el.css('-webkit-transform').match(/matrix(?:(3d)\(-{0,1}\d+\.?\d*(?:, -{0,1}\d+\.?\d*)*(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*)), -{0,1}\d+\.?\d*\)|\(-{0,1}\d+\.?\d*(?:, -{0,1}\d+\.?\d*)*(?:, (-{0,1}\d+\.?\d*))(?:, (-{0,1}\d+\.?\d*))\))/);
-      if (!m) return {x:0, y:0, z:0};
-      if (m[1] === '3d') return {x:+m[2], y:+m[3], z:+m[4]};
-      return {x:+m[5], y:+m[6], z:0};
-    }, // getTranslate()
+    getTransformOrigin($frame, $frameZoom, xCompPagefades, $zoom) {
+
+      const xOriginAdj = xCompPagefades ? settings.PAGEFADE_WIDTH * ($zoom === 'in' ? settings.ZOOM_RATIO : 1) : 0;
+
+      const xOrigin = ($frame.offset().left - ($frameZoom.offset().left - xOriginAdj)) / ($frameZoom.width() + (xOriginAdj * 2) - $frame.width());
+      const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
+
+      return {xOrigin, yOrigin};
+
+    }, // getTransformOrigin()
 
     //------------------------------------------------------------------------------------------------------------------
 

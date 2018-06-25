@@ -70,32 +70,6 @@ export default {
     btnPlayPath() {
       return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
-    /*
-    autoPlay: {
-      get() {
-        return this.p.isAutoPlay;
-      },
-      set(isAutoPlay) {
-        this.set({isAutoPlay});
-      },
-    },
-    autoNext: {
-      get() {
-        return this.p.isAutoNext;
-      },
-      set(isAutoNext) {
-        this.set({isAutoNext});
-      },
-    },
-    compactList: {
-      get() {
-        return this.p.isCompactList;
-      },
-      set(isCompactList) {
-        this.set({isCompactList});
-      },
-    },
-    //*/
   }, // computed {}
 
   mounted() {

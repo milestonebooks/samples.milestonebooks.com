@@ -101,34 +101,29 @@ export default {
 
   //====================================================================================================================
 
-  mounted() {
+  async mounted() {
     console.time('index');
     console.time('Player');
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    const _firstmouseover = () => {
-      this.set({hasMouse:true});
-      window.removeEventListener('mouseover', _firstmouseover, false);
-    };
-    window.addEventListener('mouseover', _firstmouseover, false);
+    await this.$store.dispatch('initSettings');
 
-    const _firsttouchstart = () => {
-      this.set({hasTouch:true});
-      window.removeEventListener('touchstart', _firsttouchstart, false);
-    };
-    window.addEventListener('touchstart', _firsttouchstart, false);
+    if (!this.s.hasMouse) {
+      const _firstmouseover = () => {
+        this.set({hasMouse: true});
+        window.removeEventListener('mouseover', _firstmouseover, false);
+      };
+      window.addEventListener('mouseover', _firstmouseover, false);
+    }
 
-    /* [2018-06-15] too complex
-    // toggle options visibility on touch screens
-    window.addEventListener('click', () => {
-      if (window.$('main.has-touch').length) this.optionsMode = !this.optionsMode;
-    });
-
-    setTimeout(() => {
-      this.optionsMode = false;
-    }, 2000);
-    //*/
+    if (!this.s.hasTouch) {
+      const _firsttouchstart = () => {
+        this.set({hasTouch: true});
+        window.removeEventListener('touchstart', _firsttouchstart, false);
+      };
+      window.addEventListener('touchstart', _firsttouchstart, false);
+    }
 
     this.initSamplesData();
   }, // mounted()

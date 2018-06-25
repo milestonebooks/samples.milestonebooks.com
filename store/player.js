@@ -192,6 +192,7 @@ export const mutations = {
 export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
+  // currently only handles boolean values
 
   async initSettings({commit, state}) {
 
