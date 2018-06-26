@@ -52,6 +52,8 @@ import settings from '~/assets/settings';
 
 import { mapGetters } from 'vuex';
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export default {
   components: {
     SvgIcon,
@@ -114,9 +116,8 @@ export default {
       // ensure that transitions are only enabled after init is complete
       this.$nextTick(() => {
         if (this.isInit) this.noTransition = false;
-        console.log('enable transitions');
       });
-    }
+    },
   },
 
   beforeDestroy () {
@@ -145,16 +146,16 @@ export default {
           this.isResizing = true;
           clearTimeout(window._resizeT);
 
-          window._resizeT = setTimeout(() => {
-            this.isResizing = false;
-          }, settings.TRANSITION_TIME_MS);
+          this.viewWidth = document.documentElement.clientWidth;
 
-          if (document.documentElement.clientWidth !== this.viewWidth) this.update();
-          this.autosize();
+          window._resizeT = setTimeout(async () => {
+            this.autosize();
+            this.isResizing = false;
+            this.update();
+          }, settings.TRANSITION_TIME_MS);
         });
 
         if (!this.slider && this.samples.length) {
-          //this.slider = lory(this.$el, Object.assign(this.defaultOptions, this.options));
           this.slider = lory(document.getElementsByClassName('dpi80')[0],  Object.assign(this.defaultOptions, this.options));
           if (this.s.hasZoom) this.sliderZoom = lory(document.getElementsByClassName('dpi120')[0], Object.assign(this.defaultOptions, this.options));
         }
@@ -182,11 +183,9 @@ export default {
       if (!this.isInit) return;
 
       this.$nextTick(() => {
-        console.log(`update: ${this.currentIndex}`);
+        console.log(`update: ${this.currentIndex} w:${document.documentElement.clientWidth - this.viewWidth}`);
         if (this.slider)     this.slider.slideTo(this.currentIndex);
         if (this.sliderZoom) this.sliderZoom.slideTo(this.currentIndex);
-
-        this.viewWidth = document.documentElement.clientWidth;
       });
     }, // update()
 
@@ -214,16 +213,18 @@ export default {
       const $slides = $slider.find('.slides');
       const $slide  = $slider.find(`.slide[data-index="${index}"]`);
 
-      const h = Math.ceil($slide.height());
+      const h = Math.ceil($slide.height() / 2) * 2; // ensure even number to handle margin rounding
       const w = Math.ceil($slide.width());
 
       const margin = -Math.floor(($slides.height() - h) / 2);
 
-      console.log(`autosize(${dpi}) isInit:${this.isInit} h:${h} w:${w} margin:${margin}`);
-
-//      return;
+      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${margin}`);
 
       // autosize
+      $slider.css({
+        'min-height': `${document.documentElement.clientHeight}px`
+      });
+
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
@@ -240,7 +241,7 @@ export default {
 
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
-      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : null;
+      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.viewWidth, document.documentElement.clientHeight);
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
@@ -254,11 +255,11 @@ export default {
       }
       //*/
 
-      const width    = sample.image ? `${w}px` : '100vmin';
+      const width    = `${w}px`;
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      console.log(`sampleStyleSize(${sample.index}, ${dpi}): viewWidth:${this.viewWidth} w:${width} h:${height}`);
+      console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -279,11 +280,16 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onclickSlide(e) {
-      if (!window.$('main.has-mouse').length || !this.s.hasZoom) return;
+      const index = Number(e.target.getAttribute('data-index'));
+
+      if (index !== this.s.currentIndex) {
+        return this.$router.replace(`#${this.s.samples[index].id}`);
+      }
+
+      // abort zoom if not available or no mouse detected
+      if (!this.s.hasZoom || !window.$('main.has-mouse').length) return;
 
       const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
-
-      console.log(`onclickSlide x:${e.offsetX} y:${e.offsetY}`);
 
       this.toggleDpi({
         elX: asDec('X'),
@@ -295,11 +301,10 @@ export default {
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
+      // TODO: cancel zoom action
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
-
-      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
       const dpi = (this.s.dpi === 80 ? 120 : 80);
       this.$store.commit('set', {dpi});
@@ -589,6 +594,7 @@ $layer-buttons: $layer-hover + 1;
     html[data-browser*="Trident"] & {
       display: inline-block;
     }
+    .is-resizing &,
     .no-transition & {
       transition: none;
     }
@@ -606,16 +612,16 @@ $layer-buttons: $layer-hover + 1;
     }
     @include short-transition;
 
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide {
+    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.active {
       cursor: zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide {
+    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide.active {
       cursor: zoom-out;
     }
 
     // TODO
     @include below-sheet-music-min {
-      height: 100vmin;
+      height: calc(100vh - 10em);
     }
 
     &::before {

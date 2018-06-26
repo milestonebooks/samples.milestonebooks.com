@@ -114,6 +114,7 @@ export default {
 
   watch: {
     $route() {
+      if (this.isListShown) this.hideList();
       // [2018-06-13] Firefox doesn't automatically blur prev/next buttons
       this.$nextTick(() => {
         if (document.activeElement.hasAttribute('disabled')) document.activeElement.blur();
@@ -310,10 +311,9 @@ $nav-top: 0;
 
   &::before {
     content: '';
-    position: fixed;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    @include absolute-center(x);
+    width: 100vw;
+    height: 100vh;
     background: white;
     opacity: 0;
     pointer-events: none;
@@ -424,15 +424,17 @@ $nav-top: 0;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);
+  box-sizing: border-box;
   top: 100%;
   width: 100vw;
   max-width: 10 * $unit;
+  max-height: calc(100vh - 6em);
   padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
   border-radius: $radius;
   opacity: 0;
-  overflow: hidden;
+  overflow: auto;
   @include short-transition;
 }
 
