@@ -12,12 +12,12 @@
             </div>
           </section>
         </div>
-        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+        <!--nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
           <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
         </nuxt-link>
         <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
           <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link>
+        </nuxt-link-->
       </div>
     </article>
 
@@ -31,14 +31,21 @@
             </div>
           </section>
         </div>
-        <nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+        <!--nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
           <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
         </nuxt-link>
         <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
           <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link>
+        </nuxt-link-->
       </div>
     </article>
+
+    <nuxt-link class="btn slider-button prev" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
+      <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+    </nuxt-link>
+    <nuxt-link class="btn slider-button next" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
+      <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+    </nuxt-link>
 
   </div>
 </template>
@@ -575,6 +582,9 @@ $layer-buttons: $layer-hover + 1;
         z-index: $layer-pagefades;
         pointer-events: none;
         background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit}), $background-color);
+        @at-root .slider-container:not(.is-resizing) .dpi120 .show-pagefades::before {
+          background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit * $zoom-ratio}), $background-color);
+        }
         // [2018-05-29] IE11 and Edge cannot handle calc()
         html[data-browser*="Trident"] &,
         html[data-browser*="Edge"] & {
@@ -611,6 +621,10 @@ $layer-buttons: $layer-hover + 1;
       margin-right: ($unit * 1/4 * $zoom-ratio);
     }
     @include short-transition;
+
+    &:not(.active) {
+      opacity: 0.5;
+    }
 
     @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.active {
       cursor: zoom-in;
@@ -680,61 +694,62 @@ $layer-buttons: $layer-hover + 1;
     }
 
   } // .slide
-
-  .btn:not(:disabled):focus,
-  .btn:not(:disabled):hover {
-    color: $focus-color;
-  }
-
-  .btn svg {
-    width: 3em;
-    height: 6em;
-    fill: currentColor;
-    @include absolute-center();
-  }
-
-  .show-pagefades .slider-button {
-    position: absolute;
-    z-index: $layer-buttons;
-    top: 50%;
-    margin-top: 0;
-    transform: translateY(-50%);
-    height: 8em;
-    width: 4em;
-    background: no-repeat center white;
-    cursor: pointer;
-    outline: none;
-    @include short-transition;
-
-    @at-root .dpi80 .is-zooming .slider-button {
-      transform: translateY(-50%) scale(1 / $zoom-ratio);
-    }
-    @at-root .dpi120 .is-zooming .slider-button {
-      transform: translateY(-50%) scale($zoom-ratio);
-    }
-
-    &[disabled] {
-      pointer-events: none;
-      opacity: 0 !important;
-    }
-
-    &.prev {
-      left: 0;
-      @at-root .dpi120#{&} {
-        left: 2em;
-      }
-      border-radius: 1em 0 0 1em;
-      transform-origin: right;
-    }
-    &.next {
-      right: 0;
-      @at-root .dpi120#{&} {
-        right: 2em;
-      }
-      border-radius: 0 1em 1em 0;
-      transform-origin: left;
-    }
-  } // .slider-button
 } // .slider
+
+.btn:not(:disabled):focus,
+.btn:not(:disabled):hover {
+  color: $focus-color;
+}
+
+.btn svg {
+  width: 3em;
+  height: 6em;
+  fill: currentColor;
+  @include absolute-center();
+}
+
+.slider-button {
+  position: fixed;
+  z-index: $layer-buttons;
+  top: 50%;
+  margin-top: 0;
+  transform: translateY(-50%);
+  height: 8em;
+  width: 4em;
+  background: no-repeat center white;
+  @include drop-shadow;
+  cursor: pointer;
+  outline: none;
+  @include short-transition;
+
+  @at-root .dpi80 .is-zooming .slider-button {
+    transform: translateY(-50%) scale(1 / $zoom-ratio);
+  }
+  @at-root .dpi120 .is-zooming .slider-button {
+    transform: translateY(-50%) scale($zoom-ratio);
+  }
+
+  &[disabled] {
+    pointer-events: none;
+    opacity: 0 !important;
+  }
+
+  &.prev {
+    left: 0;
+    @at-root .dpi120#{&} {
+      //left: 2em;
+    }
+    border-radius: 0 $radius $radius 0;
+    transform-origin: right;
+  }
+  &.next {
+    right: 0;
+    @at-root .dpi120#{&} {
+      //right: 2em;
+    }
+    border-radius: $radius 0 0 $radius;
+    transform-origin: left;
+  }
+} // .slider-button
 
 </style>
