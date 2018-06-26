@@ -23,7 +23,6 @@ import { mapMutations } from 'vuex';
 import axios from 'axios';
 
 // TODO: print option
-// TODO: enable IE 11 (can't understand flexbox)
 
 export default {
   components: {

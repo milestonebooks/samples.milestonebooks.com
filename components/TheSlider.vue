@@ -149,6 +149,7 @@ export default {
             this.autosize();
             this.isResizing = false;
             this.update();
+            // TODO: not always correct slide position after resizing
           }, settings.TRANSITION_TIME_MS);
         });
 
