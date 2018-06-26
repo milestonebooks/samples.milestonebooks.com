@@ -12,12 +12,6 @@
             </div>
           </section>
         </div>
-        <!--nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-        </nuxt-link>
-        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 80 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link-->
       </div>
     </article>
 
@@ -31,12 +25,6 @@
             </div>
           </section>
         </div>
-        <!--nuxt-link class="btn slider-button prev" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-          <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
-        </nuxt-link>
-        <nuxt-link class="btn slider-button next" :tabindex="s.dpi === 120 ? 0 : -1" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-          <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
-        </nuxt-link-->
       </div>
     </article>
 
@@ -78,6 +66,7 @@ export default {
       sliderZoom: null,
 
       defaultOptions: {
+        enableMouseEvents: true,
         rewindOnResize: false,
         slideSpeed: settings.TRANSITION_TIME_MS,
         ease: 'ease-in-out',
@@ -145,6 +134,7 @@ export default {
         this.$el.addEventListener('after.lory.init',    this.onLoryInit);
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
+        this.$el.addEventListener('before.lory.slide',  this.beforeSlideChange);
         this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
 
         window._resizeT = null;
@@ -172,7 +162,10 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     sliderClass(dpi) {
-      return `dpi${dpi} slider js_slider`;
+      return `dpi${dpi} slider js_slider` + (!this.getSample ? '' :
+          (this.getSample(-1) ? ' has-prev' : '')
+        + (this.getSample(+1) ? ' has-next' : '')
+      );
     }, // sliderClass()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -190,7 +183,6 @@ export default {
       if (!this.isInit) return;
 
       this.$nextTick(() => {
-        console.log(`update: ${this.currentIndex} w:${document.documentElement.clientWidth - this.viewWidth}`);
         if (this.slider)     this.slider.slideTo(this.currentIndex);
         if (this.sliderZoom) this.sliderZoom.slideTo(this.currentIndex);
       });
@@ -223,11 +215,16 @@ export default {
       const h = Math.ceil($slide.height() / 2) * 2; // ensure even number to handle margin rounding
       const w = Math.ceil($slide.width());
 
-      const margin = -Math.floor(($slides.height() - h) / 2);
+      const yMargin = -Math.floor(($slides.height() - h) / 2);
 
-      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${margin}`);
+      const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
 
-      // autosize
+      const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
+
+      const showPagefades = wMargin >= wPagefades;
+
+      //console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
+
       $slider.css({
         'min-height': `${document.documentElement.clientHeight}px`
       });
@@ -235,10 +232,14 @@ export default {
       $frame.css({
         height: `${h}px`,
         width:  `${w}px`,
-      }).toggleClass('show-pagefades', w + (settings.PAGEFADE_WIDTH * 2 * (dpi / 80)) /* TODO: margin gaps */ < this.viewWidth);
+        marginLeft:   !wMargin ? null : `${-wMargin / 2}px`,
+        paddingLeft:  !wMargin ? null : `${ wMargin / 2}px`,
+        marginRight:  `${-wMargin / 2}px`,
+        paddingRight: `${ wMargin / 2}px`,
+      }).toggleClass('show-pagefades', showPagefades);
 
       $slides.css({
-        marginTop: `${margin}px`,
+        marginTop: `${yMargin}px`,
       });
 
       if (dpi === 80 && this.s.hasZoom) this.autosize(120);
@@ -249,7 +250,7 @@ export default {
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
       let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.viewWidth, document.documentElement.clientHeight);
-      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
+      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null; //Math.ceil(window.$(`.slide[data-index="${sample.index}"] .slide-liner`).height());
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
@@ -266,7 +267,7 @@ export default {
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
+      //console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -286,12 +287,26 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onclickSlide(e) {
-      const index = Number(e.target.getAttribute('data-index'));
+    beforeSlideChange(e) {
+      console.log(`beforeSlideChange(${e.target.getAttribute('data-dpi')})`, e.detail, e);
+    }, // beforeSlideChange()
 
-      if (index !== this.s.currentIndex) {
-        return this.$router.replace(`#${this.s.samples[index].id}`);
+    //------------------------------------------------------------------------------------------------------------------
+
+    onclickSlide(e) {
+      const index = e.target.getAttribute('data-index');
+
+      if (index === null) return;
+
+      console.log('onclickSlide()', `index:${index} active:${this.s.currentIndex} target:${e.target.getAttribute('data-index')}`, e);
+
+      if (Number(index) !== this.s.currentIndex) {
+        console.log(`go to:#${this.s.samples[index].id}`);
+        return;
+        //return this.$router.replace(`#${this.s.samples[index].id}`);
       }
+
+      // TODO: abort zoom if panning instead of clicking
 
       // abort zoom if not available or no mouse detected
       if (!this.s.hasZoom || !window.$('main.has-mouse').length) return;
@@ -404,8 +419,6 @@ export default {
 
         const xMarginRight  = xScroll + document.documentElement.clientWidth  - (xLeft + xDiff + $frame.width());
         const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop  + yDiff + $frame.height());
-
-        console.log(`\nx scrollbar... yMargin:${yMargin} yMarginTop:${yMarginTop} = yTop:${yTop} + yDiff:${yDiff} - yScroll:${yScroll}\n`);
 
         const xScrollAdj = (xMargin > 0
           ? xScroll - (xLeft + xDiff) + Math.max(xMargin / 2, 0)
@@ -546,15 +559,12 @@ $layer-buttons: $layer-hover + 1;
       transition: none;
     }
 
-    // TODO
-    /*
     cursor: grab;
     @at-root [aria-grabbed] & {
       cursor: grabbing;
     }
-    //*/
 
-    // [2018-06-12] hack to fix sizing bug
+    // [2018-06-12] hack to fix rendering bug at odd sizes (but sometimes doesn't fix anyway)
     html[data-browser*="Firefox"] & {
       padding-bottom: 1px;
     }
@@ -722,13 +732,6 @@ $layer-buttons: $layer-hover + 1;
   outline: none;
   @include short-transition;
 
-  @at-root .dpi80 .is-zooming .slider-button {
-    transform: translateY(-50%) scale(1 / $zoom-ratio);
-  }
-  @at-root .dpi120 .is-zooming .slider-button {
-    transform: translateY(-50%) scale($zoom-ratio);
-  }
-
   &[disabled] {
     pointer-events: none;
     opacity: 0 !important;
@@ -736,19 +739,11 @@ $layer-buttons: $layer-hover + 1;
 
   &.prev {
     left: 0;
-    @at-root .dpi120#{&} {
-      //left: 2em;
-    }
     border-radius: 0 $radius $radius 0;
-    transform-origin: right;
   }
   &.next {
     right: 0;
-    @at-root .dpi120#{&} {
-      //right: 2em;
-    }
     border-radius: $radius 0 0 $radius;
-    transform-origin: left;
   }
 } // .slider-button
 
