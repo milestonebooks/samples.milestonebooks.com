@@ -41,6 +41,7 @@ module.exports = {
     'no-extra-boolean-cast':   ['warn'],
     'no-unused-vars':          ['warn'],
     'no-unreachable':          ['warn'],
+    'no-unexpected-multiline': ['warn'],
     "no-console": (process.env.NODE_ENV === 'production' ? ["warn"] : ['off']),
     "no-empty":   (process.env.NODE_ENV === 'production' ? ["warn"] : ['off']),
   },

@@ -1,13 +1,21 @@
 <template>
-  <svg :width="width * scale" :viewBox="`0 0 ${width} ${width}`"><path :d="d"></path></svg>
+  <svg :viewBox="viewBox"><path :d="d"></path></svg>
 </template>
 
 <script>
   export default {
     props: {
-      'width': {type: Number, default: 28},
-      'scale': {type: Number, default: 1},
-      'd': String,
+      view: String,
+      d: String,
+    },
+
+    computed: {
+      viewBox() {
+        return this.WxH ? `0 0 ${this.WxH}` : false;
+      },
+      WxH() {
+        return this.view && !this.view.match(' ') ? `${this.view} ${this.view}` : this.view;
+      }
     },
   };
 </script>

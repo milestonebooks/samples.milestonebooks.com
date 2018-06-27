@@ -1,40 +1,22 @@
 <template>
   <aside :class="['audio-player', uiClass]">
+
     <div class="controls">
-      <button class="btn-play" tabindex="1" :title="playTitle" @click="$store.commit('player/togglePlay')">
-        <SvgIcon :width="28" :d="btnPlayPath"></SvgIcon>
+      <button class="btn btn-play" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+        <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
       </button>
-      <nuxt-link class="btn-prev opt-multi" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
-        <SvgIcon :width="28" :scale=".5" :d="btnPrevPath"></SvgIcon>
-      </nuxt-link>
-      <button class="btn-list opt-multi" :title="listTitle" @click="toggleListShown">
-        <SvgIcon :width="28" :scale=".5" :d="btnListPath"></SvgIcon>
-      </button>
-      <nuxt-link class="btn-next opt-multi" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
-        <SvgIcon :width="28" :scale=".5" :d="btnNextPath"></SvgIcon>
-      </nuxt-link>
     </div>
-    <nav :class="{list: true, show: p.isListShown}">
-      <ul>
-        <li v-for="sample in $store.state.samples" :key="sample.index" :class="{item: true, sequential: sample.sequential, current: sample.index === p.current.index}" @click="onListClick(sample.index)">
-          <div class="track"><span>{{ sample.id }}</span></div>
-          <div class="title"><span>{{ sample.title }}</span></div>
-        </li>
-      </ul>
-      <ul class="settings">
-        <li><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-        <li><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
-      </ul>
-    </nav>
+
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a href="#" class="bar-handle" ref="handle" :style="barHandleStyle" tabindex="2" @keydown="onHandleKey" @click.prevent="">
+          <a ref="handle" class="bar-handle" tabindex="0" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
       </div>
     </div>
+
   </aside>
 </template>
 
@@ -43,11 +25,10 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters, mapMutations } from 'vuex';
 
-import NuxtLink from '../.nuxt/components/nuxt-link'
+import settings from '~/assets/settings';
 
 export default {
   components: {
-    NuxtLink,
     SvgIcon,
   },
 
@@ -57,7 +38,6 @@ export default {
 
   data () {
     return {
-      baseSize: '10px',
       selSlider: '.bar-seek',
       $slider: null,
       selHandle: '.bar-handle',
@@ -68,6 +48,10 @@ export default {
   }, // data()
 
   computed: {
+    ...mapGetters([
+      'getSample',
+      'listItemClass',
+    ]),
     ...mapGetters('player',[
       'isPlayable',
       'uiClass',
@@ -84,35 +68,7 @@ export default {
       return this.$store.state.player;
     },
     btnPlayPath() {
-      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24 z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12' : ''));
-    },
-    btnPrevPath() {
-      return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
-    },
-    btnNextPath() {
-      return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
-    },
-    btnListPath() {
-      return 'M0,2 l 4,4 -4,4z m8,2 h18 v4 h-18z m0,8 h18 v4 h-18z m0,8 h18 v4 h-18z';
-    },
-    listTitle() {
-      return 'Toggle List';
-    },
-    autoPlay: {
-      get () {
-        return this.p.isAutoPlay;
-      },
-      set (isAutoPlay) {
-        this.$store.commit('player/set',{isAutoPlay})
-      },
-    },
-    autoNext: {
-      get () {
-        return this.p.isAutoNext;
-      },
-      set (isAutoNext) {
-        this.$store.commit('player/set',{isAutoNext})
-      },
+      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
   }, // computed {}
 
@@ -145,6 +101,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      console.log('ThePlayer initSettings...');
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
@@ -183,30 +140,31 @@ export default {
 
     async load(index) {
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$store.commit('set', {alert:`Error loading audio [${err_code}]`});
+        this.$store.commit('set', {alert: `Error loading audio [${err_code}]`});
+        //TODO: this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
       });
       this.refresh();
     }, // load()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getSample(dir = 0, key) {
-      const i = this.s.currentIndex + dir;
-      const sample = (this.s.samples[i] ? this.s.samples[i] : null);
-      return sample && key ? sample[key] : sample;
-    }, // getSample()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onHandleKey(e) {
-      // throttle
-      if (this.keyActive) return;
+    throttleKey(e) {
+      if (this.keyActive) {
+        e.preventDefault();
+        return true;
+      }
 
       this.keyActive = true;
 
       setTimeout(() => {
         this.keyActive = false;
-      }, 100);
+      }, settings.TRANSITION_TIME_MS);
+    }, // throttleKey()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onHandleKey(e) {
+      if (this.throttleKey(e)) return;
 
       // see <https://stackoverflow.com/questions/8584902/get-closest-number-out-of-array>
       const getClosest = (num, arr) => {
@@ -228,9 +186,9 @@ export default {
 
       switch (e.key) {
       case 'Backspace':
-      case 'ArrowLeft':
+      case 'ArrowLeft': case 'Left':
         newPct = (Math.ceil( Math.round(len * pct / 100) / secIntv) - 1) * secIntv / len * 100; break;
-      case 'ArrowRight':
+      case 'ArrowRight': case 'Right':
         newPct = (Math.floor(Math.round(len * pct / 100) / secIntv) + 1) * secIntv / len * 100; break;
       case 'Home':
         newPct =   0; break;
@@ -300,21 +258,6 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    toggleListShown() {
-
-      this.set({isListShown: !this.p.isListShown});
-
-    }, // toggleListShown()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onListClick(index) {
-      this.toggleListShown();
-      this.$router.replace('#' + this.s.samples[index].id);
-    }, // onListClick()
-
-    //------------------------------------------------------------------------------------------------------------------
-
     refresh() {
       this.setCurrent({pctPixel: 100 / this.$slider.width()});
     }, // refresh()
@@ -332,79 +275,55 @@ export default {
 @import "../assets/settings.scss";
 
 .audio-player {
-  position: relative;
+  z-index: $layer-the-nav - 1;
+  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
+  bottom: 0;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
-  background-color: $player-bg-color;
+  background-color: $controls-bg-color;
+  @include drop-shadow;
   box-sizing: border-box;
-  font-size: $base-size;
   height: $unit;
-  border-radius: $radius;
-}
-
-.audio-player * {
-  position: absolute;
-}
-.audio-player :focus {
-  outline: none;
-}
-
-.audio-player:not(.is-multi) .opt-multi {
-  opacity: 0;
-  @include short-transition;
-}
-
-.controls {
   width: 100%;
-  height: 100%;
+
+  @include sheet-music-min {
+    border-radius: $radius $radius 0 0;
+    width: 10 * $unit;
+  }
+
+  * {
+    position: absolute;
+  }
+  :focus {
+    outline: none;
+  }
 }
 
-button {
-  background: none;
-  border: none;
-  box-sizing: content-box;
-  padding: 0;
-  width: $unit;
-  height: $unit;
-  overflow: hidden;
-  @include absolute-center(y);
-  @include short-transition;
-  color: $disabled-color;
-}
-button:not(:disabled) {
-  cursor: pointer;
-  color: $player-color;
-}
-button:not(:disabled):focus,
-button:not(:disabled):hover {
-  color: $focus-color;
-}
-
-button svg {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.btn svg {
+  width: 2.8em;
+  height: 2.8em;
   fill: currentColor;
+  @include absolute-center();
 }
 
-.audio-player.is-loading .btn-play {
-  cursor: wait;
-}
 .btn-play {
   left: 0;
-  border-radius: 50%;
 }
 
-.is-loading .btn-play::before {
-  position: absolute;
-  content: '';
-  left: 50%;
-  top: 50%;
-  margin: -.5 * $unit;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-color: $player-color;
-  animation: a-scaleout 1.0s infinite ease-in-out;
+.is-loading .btn-play {
+  cursor: wait;
+
+  &::before {
+    position: absolute;
+    content: '';
+    left: 50%;
+    top: 50%;
+    margin: -.5 * $unit;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: $controls-color;
+    animation: a-scaleout 1.0s infinite ease-in-out;
+  }
 }
 
 @keyframes a-scaleout {
@@ -417,174 +336,6 @@ button svg {
   }
 }
 
-.opt-multi {
-  opacity: 0;
-  right: 0;
-  @include short-transition;
-}
-.is-multi .opt-multi {
-  opacity: 1;
-}
-
-.is-multi .btn-prev {
-  right: 2 * $unit;
-}
-
-.is-multi .btn-list {
-  right: 1 * $unit;
-}
-
-.btn-prev,
-.btn-next {
-  z-index: 2; /* raise above .btn-list shadow */
-}
-
-.btn-list {
-  z-index: 1; /* raise above .list shadow */
-  padding: 1em 1em 0 1em;
-  transform: translateY(calc(-50% - .5em)) translateX(1em);
-}
-
-.btn-list::before {
-  position: absolute;
-  content: '';
-  left: 50%;
-  top: calc(50% + .5em);
-  margin: -.5 * $unit;
-  width: $unit;
-  height: $unit;
-  opacity: 0;
-  border-radius: $radius $radius 0 0;
-  background-color: $list-background-color;
-  @include short-transition;
-}
-
-.btn-list svg {
-  top: calc(50% + .5em);
-}
-
-.is-list-shown .btn-list::before {
-  box-shadow: $list-shadow;
-  opacity: 1;
-}
-
-.is-multi .btn-next {
-  right: 0;
-}
-
-.list {
-  pointer-events: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 0em);
-  padding: .5em;
-  background-color: $list-background-color;
-  box-shadow: $list-shadow;
-  border-radius: $radius;
-  opacity: 0;
-  overflow: hidden;
-  @include short-transition;
-}
-
-.list.show {
-  pointer-events: all;
-  opacity: 1;
-}
-
-.list * {
-  position: relative;
-}
-
-.list ul, .list ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.list .item {
-  display: flex;
-  align-items: center;
-  height: 0;
-  cursor: pointer;
-  background-color: change-color($disabled-color, $lightness: 100%);
-  @include short-transition;
-}
-
-.list.show .item {
-  height: 1 * $unit;
-  border-bottom: 1px solid $disabled-color;
-}
-
-.list .item:hover,
-.list .item.current {
-  background-color: white;
-  color: $focus-color;
-}
-
-.list .item.current {
-  cursor: default;
-  font-weight: bold;
-}
-
-.list .item:not(.sequential) {
-  margin-top: 1.5em;
-  border-top: 1px solid $disabled-color;
-}
-.list .item:not(.sequential)::before {
-  pointer-events: none;
-  content: 'Some tracks omitted';
-  position: absolute;
-  bottom: calc(100% + 1px);
-  line-height: 1.5em;
-  padding-left: 6em;
-  color: darken($disabled-color, 25%);
-  font-weight: normal;
-  font-style: italic;
-}
-
-.list .item > * {
-  display: inline-block;
-  box-sizing: border-box;
-}
-
-.list .item span {
-  font-size: 1.8em;
-}
-
-.list .track {
-  width: 1 * $unit;
-  text-align: right;
-  padding-right: .5em;
-}
-
-.list .title {
-  margin-left: .5 * $unit;
-  flex: 1;
-  @include one-line-ellipsis;
-}
-
-.list .settings {
-  padding: .5em 0;
-}
-
-.list .settings li {
-  display: inline-block;
-  margin-left: 2em;
-}
-
-.list .settings label {
-  display: inline-block;
-  font-size: 1.5em;
-  padding: .5em 0;
-  cursor: pointer;
-}
-
-.list .settings input {
-  vertical-align: middle;
-  margin-right: .25em;
-}
-
 .bar-progress {
   left: 1.5 * $unit;
   right: .5 * $unit;
@@ -594,9 +345,6 @@ button svg {
   transform: translateY(-50%);
   @include short-transition;
 }
-.is-multi .bar-progress {
-  right: 3.5 * $unit;
-}
 
 .bar-seek {
   height: 0;
@@ -605,7 +353,7 @@ button svg {
   width: 100%;
   box-sizing: content-box;
   cursor: pointer;
-  background-color: lighten($player-color, 75%);
+  background-color: lighten($controls-color, 75%);
   transition: height .5s ease, background-color .5s ease;
 }
 
@@ -629,7 +377,7 @@ button svg {
   height: 100%;
   width: 0;
   box-sizing: content-box;
-  border-right: 1px solid $player-bg-color;
+  border-right: 1px solid $controls-bg-color;
   cursor: pointer;
   background-color: $focus-color;
 }
@@ -640,19 +388,19 @@ button svg {
   height: 0;
   background-color: inherit;
   cursor: ew-resize;
-}
 
-.bar-handle::before,
-.bar-handle::after {
-  background-color: inherit;
-  border-radius: 50%;
-  opacity: 0;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  transform: translate(-50%, -50%);
-  @include short-transition;
+  &::before,
+  &::after {
+    background-color: inherit;
+    border-radius: 50%;
+    opacity: 0;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    transform: translate(-50%, -50%);
+    @include short-transition;
+  }
 }
 
 .bar-seek::before,
@@ -691,6 +439,10 @@ button svg {
   border: 0.2em solid white;
   border-radius: .5em;
   @include short-transition;
+
+  &::after {
+    content: attr(title);
+  }
 }
 
 .bar-seek.captured .bar-tip,
@@ -699,9 +451,5 @@ button svg {
   font-size: 11px;
   line-height: 11px;
   padding: .2em;
-}
-
-.bar-tip::after {
-  content: attr(title);
 }
 </style>

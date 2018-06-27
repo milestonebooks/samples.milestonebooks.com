@@ -1,23 +1,36 @@
 // layers
-$layer-alerts: 90;
-$layer-header: 10;
+$layer-alerts: 99;
+$layer-the-nav: 90;
+$layer-title: 50;
 
 // sizes
 $base-size: 10px;
 $unit: 4em;
 $radius: .5em;
+$list-font-size: 1.6em;
+$list-padding: .5em;
+$sheet-music-width: 650px;
+$zoom-ratio: 120 / 80; // match settings.js > ZOOM_RATIO
 
 // colors
-$alert-color: #f00;
+$alert-color: hsl(0, 100%, 50%);
+$alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
-$theme-color: #c51;
-$player-bg-color: white;
-$player-color: black;
-$disabled-color: lighten($player-color, 90%);
-$focus-color: hsla(22, 85%, 43%, 1);
-$list-background-color: lighten($disabled-color, 5%);
+$controls-color: black;
+$controls-bg-color: white;
+$disabled-color: lighten($controls-color, 90%);
+$theme-color: hsl(22, 85%, 43%);
+$focus-color: $theme-color;
+$focus-bg-color: lighten($disabled-color, 5%);
+$list-bg-color: lighten($disabled-color, 5%);
+$list-current-bg-color: $list-bg-color; // hsl(60, 100%, 95%);
+$list-item-border-color: $disabled-color;
+$list-item-border-focus-color: darken($list-item-border-color, 15%);
 
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
+
+// timings
+$transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
 
 // functions
 
@@ -39,11 +52,11 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 // mixins
 
 @mixin short-transition() {
-  transition: all .2s ease;
+  transition: all $transition-time ease-in-out;
 }
 
 @mixin drop-shadow() {
-  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .75);
+  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .5);
 }
 
 @mixin one-line-ellipsis() {
@@ -52,9 +65,9 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
   text-overflow: ellipsis;
 }
 
-@mixin absolute-center($axis:xy) {
-  position: absolute;
-  @if ($axis == xy) {
+@mixin absolute-center($axis:xy, $position:absolute) {
+  position: if($axis == fixed, fixed, $position);
+  @if ($axis == xy or $axis == fixed) {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
@@ -67,4 +80,78 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
     top: 50%;
     transform: translateY(-50%);
   }
+}
+
+@mixin below-sheet-music-min() {
+  @media (max-width: #{$sheet-music-width - 1px}) {
+    @content;
+  }
+}
+
+@mixin sheet-music-min {
+  @media (min-width: #{$sheet-music-width}) {
+    @content;
+  }
+}
+
+@mixin base_styling() {
+  html {
+    font-size: $base-size;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    min-height: 100%;
+    background-color: $background-color;
+    overflow-y: scroll; // always on to avoid possible jank when toggling playlist
+  }
+
+  .btn {
+    background: none;
+    border: none;
+    box-sizing: content-box;
+    padding: 0;
+    width: $unit;
+    height: $unit;
+    overflow: hidden;
+    @include absolute-center(y);
+    @include short-transition;
+
+    &:disabled {
+      color: $disabled-color;
+    }
+  }
+
+
+  .controls {
+    width: 100%;
+    height: 100%;
+
+    .btn {
+      &::before {
+        content: '';
+        position: absolute;
+        background-color: $focus-bg-color;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        @include short-transition;
+        transform: translate(-50%, -50%) scale(0);
+
+        @at-root .controls .btn:focus::before {
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+
+      &:not(:disabled) {
+        cursor: pointer;
+        color: $controls-color;
+
+        &:focus,
+        &:hover {
+          color: $focus-color;
+        }
+      }
+    }
+  } // .controls
+
 }

@@ -1,5 +1,3 @@
-import {Howl} from 'howler';
-
 import storage from '../plugins/storage';
 
 export const state = () => ({
@@ -10,6 +8,7 @@ export const state = () => ({
   interrupted: false,
   interrupt_t: null,
   isListShown: false,
+  isValidInputId: true,
 
   isAutoPlay: true,
   isAutoNext: true,
@@ -22,7 +21,7 @@ export const state = () => ({
     pctHandle: 0,
   },
 
-  persist: ['isAutoPlay','isAutoNext'],
+  persist: ['isAutoPlay', 'isAutoNext'],
 }); // state{}
 
 //======================================================================================================================
@@ -105,7 +104,7 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   set(state, o) {
-    Object.keys(o).map((key) => {
+    Object.keys(o).map(key => {
       state[key] = typeof o[key] === 'object' ? {...state[key], ...o[key]} : o[key];
 
       if (state.persist && state.persist.includes(key)) storage.setItem(key, o[key]);
@@ -192,12 +191,13 @@ export const mutations = {
 export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
+  // currently only handles boolean values
 
-  async initSettings({commit}) {
+  async initSettings({commit, state}) {
 
     let v;
 
-    for (const key of ['isAutoPlay', 'isAutoNext']) {
+    for (const key of state.persist) {
       if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
     }
 
@@ -217,7 +217,7 @@ export const actions = {
     if (!window.howls[index] && rootState.samples[index].audio) {
 
       await new Promise((resolve, reject) => {
-        window.howls[index] = new Howl({
+        window.howls[index] = new window.Howl({
           src: [rootState.urlBase + rootState.samples[index].audio],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },

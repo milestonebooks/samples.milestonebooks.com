@@ -1,56 +1,46 @@
 <template>
-  <main :class="mainClass" @click="toggleListShown">
+  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
 
-    <header>
-      <h1 class="item-title">{{headerTitle}}</h1>
-      <Player ref="player" :currentIndex="$store.state.currentIndex" />
-    </header>
+    <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <article v-swiper:swiper="swiperOption" class="swiper-container">
-      <div class="swiper-wrapper">
-        <section v-for="sample in $store.state.samples" :key="sample.id" class="swiper-slide" :data-hash="sample.id">
-          <div class="swiper-zoom-container">
-            <img v-if="sample.image" :src="imgSrc(sample)" :style="`height:${sample.image.h}px; width:${sample.image.w}px`" />
-            <h1 v-else class="sample-title">{{sample.title}}</h1>
-          </div>
-        </section>
-      </div>
-      <div class="swiper-pagination" slot="pagination"></div>
-      <div class="swiper-button-prev swiper-button" slot="button-prev"></div>
-      <div class="swiper-button-next swiper-button" slot="button-next"></div>
-    </article>
+    <TheNav v-if="s.samples.length > 1" />
+
+    <ThePlayer ref="player" v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
 
 <script>
-import Player from '~/components/Player.vue';
+import TheSlider from '~/components/TheSlider';
+import TheNav    from '~/components/TheNav';
+import ThePlayer from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
 // TODO: print option
-// TODO: pagination
 
 export default {
   components: {
-    Player,
+    TheSlider,
+    TheNav,
+    ThePlayer,
   },
 
   head () {
-    const s = this.$store.state;
-    const i = s.samples[s.currentIndex];
+    const i = this.s.samples[this.s.currentIndex];
 
     return {
-      title: (!i ? s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${s.title}`),
+      title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
 
       link: [
         // audio speaker favicon
-        {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
+        this.s.type !== 'audio' ? {} :
+          {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
       ],
     }
   },
@@ -61,32 +51,26 @@ export default {
 
   data () {
     return {
-      swiperOption: {
-        autoHeight: true,
-        spaceBetween: 15, /*pixels*/
-        zoom: true,
-        a11y: {
-          prevSlideMessage:  'Previous sample',
-          nextSlideMessage:  'Next sample',
-          firstSlideMessage: 'This is the first sample',
-          lastSlideMessage:  'This is the last sample',
-        },
-        navigation: {
-          nextEl: '.swiper-button-next',
-          prevEl: '.swiper-button-prev',
-        },
-        hashNavigation: {
-          watchState: true,
-          replaceState: true,
-        },
-        on: {
-          slideChange() {
-            window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[this.activeIndex].id}`);
-          },
-        }
-      }, // swiperOption {}
     };
   }, // data()
+
+  async asyncData({params, store, error}) {
+    const data = {
+      data: null
+    };
+    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`; // TODO dev mode
+
+    try {
+      const res = await axios.get(url);
+      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples found.'};
+      data.data = res.data;
+    } catch (err) {
+      console.log('error:',err);
+      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: (err.message ? err.message : 'Oops! This page has a problem. :-('), url })
+    }
+
+    return data;
+  }, // asyncData()
 
   computed: {
     s() {
@@ -99,28 +83,50 @@ export default {
 
     mainClass() {
       return {
-        'is-init':       this.$store.state.isInit,
-        'is-loaded':     this.p.title,
-        'is-list-shown': this.p.isListShown,
+        'is-init':    this.s.isInit,
+        'has-touch':  this.s.hasTouch,
+        'has-mouse':  this.s.hasMouse,
+        'has-zoom':   this.s.hasZoom,
+        'has-print':  this.s.hasPrint,
+        'show-title': true,
       }
     },
 
-    headerTitle() {
-      const s = this.$store.state;
-      return !s.samples[s.currentIndex] ? 'loading...' : s.title;
-    },
-
     alerts() {
-      return this.$store.state.alert ? [this.$store.state.alert] : [];
+      return this.s.alert ? [this.s.alert] : [];
     },
 
   }, // computed{}
 
   //====================================================================================================================
 
-  mounted() {
+  async mounted() {
+    console.time('index');
+    console.time('Player');
+    console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
-    this.init();
+
+    /* TODO (disabled for debugging)
+    await this.$store.dispatch('initSettings');
+    //*/
+
+    if (!this.s.hasMouse) {
+      const _firstmouseover = () => {
+        this.set({hasMouse: true});
+        window.removeEventListener('mouseover', _firstmouseover, false);
+      };
+      window.addEventListener('mouseover', _firstmouseover, false);
+    }
+
+    if (!this.s.hasTouch) {
+      const _firsttouchstart = () => {
+        this.set({hasTouch: true});
+        window.removeEventListener('touchstart', _firsttouchstart, false);
+      };
+      window.addEventListener('touchstart', _firsttouchstart, false);
+    }
+
+    this.initSamplesData();
   }, // mounted()
 
   //====================================================================================================================
@@ -133,52 +139,56 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    init() {
-      this.initSamples();
-    }, // init()
+    async initSamplesData() {
+      const d = this.data;
+      const samples = d.samples;
 
-    //------------------------------------------------------------------------------------------------------------------
-
-    async initSamples() {
-      const res = await axios.get(`${this.$store.state.urlBase}${this.$route.params.item}/?action=Samples`);
-      if (!res.data.response.success) {
-        return this.set({alert: res.data.response.message});
+      // create object to monitor loaded state
+      for (const i of samples) {
+        if (!i.image) continue;
+        i.image.loaded = {};
       }
 
-      const samples = res.data.samples;
-
       this.set({
-        title:   res.data.title,
-        item:    this.$route.params.item,
-        type:    res.data.type,
-        samples: samples,
-        firstId: samples[0].id,
-        lastId:  samples[samples.length - 1].id,
+        isInit:   true,
+        title:    d.title,
+        item:     this.$route.params.item,
+        type:     d.type,
+        hasZoom:  d.hasZoom  || false,
+        hasPrint: d.hasPrint || false,
+        samples:  samples,
+        firstId:  samples[0].id,
+        lastId:   samples[samples.length - 1].id,
       });
 
-      this.update();
+      console.timeEnd('index');
 
-      this.set({isInit:true});
-    }, // initSamples()
+      this.update();
+    }, // initSamplesData()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      //console.log('update() route...', this.$route.hash);
+      // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
+      const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
 
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$store.state.firstId])[0];
+      // replace url with the sample id
+      if (seq) {
+        const i = this.s.samples.find(i => i.index === seq - 1);
+        if (i) return this.$router.replace(`./#${i.id}`);
+      }
 
-      const index = this.$store.state.samples.findIndex(i => i.id === id);
+      // if id is not given in the hash, select the first in the samples list
+      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 
+      const index = this.s.samples.findIndex(i => i.id === id);
+
+      // if id is not found, return to default
       if (index === -1) {
         return this.$router.replace('./');
       }
 
       this.set({currentIndex: index});
-
-      if (this.swiper.activeIndex !== index) {
-        this.swiper.slideTo(index);
-      }
 
     }, // update()
 
@@ -187,16 +197,6 @@ export default {
     imgSrc(sample) {
       return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}.${sample.image.ext}`;
     }, // imgSrc()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    toggleListShown(e) {
-
-      if (e.target === window.$('.is-list-shown')[0]) {
-        this.$store.commit('player/set', {isListShown: false});
-      }
-
-    }, // toggleListShown()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -209,43 +209,55 @@ export default {
 <style lang="scss">
 @import "../../assets/settings.scss";
 
-html {
-  font-size: $base-size;
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  min-height: 100%;
-  background-color: $background-color;
-  overflow-y: scroll; // always on to avoid possible jank when toggling playlist
-}
+@include base_styling;
 
 main {
+  user-select: none; // expected to be more hindrance than useful in this app
   position: relative;
   display: flex;
   flex-direction: column;
-  max-width: 650px; // based on sheet music size: 25 + 600 + 25
   margin: auto;
+  @include short-transition;
+
+  &::before {
+    content: attr(data-title);
+    z-index: $layer-title;
+    @include absolute-center(fixed);
+    max-width: 100vw;
+    text-align: center;
+    font-size: 3em;
+    font-weight: bold;
+    padding: 1em;
+    border-radius: $radius / 3;
+    background-color: white;
+    color: $theme-color;
+    box-shadow: 0 0 1em transparentize($theme-color, 0.5);
+    pointer-events: none;
+  }
+
+  &.show-title::before {
+    animation: a-titlefade 3s 1 forwards ease-in-out;
+  }
 }
 
-main:not(.is-init) .audio-player,
-main:not(.is-init) .swiper-container {
-  pointer-events: none;
-  opacity: 0;
+@keyframes a-titlefade {
+  from {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  10%, 75% {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.0);
+    opacity: 0;
+  }
 }
 
-main::before {
-  content: '';
-  position: fixed;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
-  z-index: $layer-header - 1; /* below header, above swiper */
-  opacity: 0;
-  transition: all .2s ease;
+main:not(.is-init) {
   pointer-events: none;
-}
-main.is-list-shown::before {
-  opacity: .5;
-  pointer-events: auto;
+  opacity: 0;
 }
 
 .glue {
@@ -254,6 +266,7 @@ main.is-list-shown::before {
 
 .alerts {
   z-index: $layer-alerts;
+  pointer-events: none; // continue to allow interaction
   position: fixed;
   left: 0;
   top: 0;
@@ -263,7 +276,7 @@ main.is-list-shown::before {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  transition: all .2s ease-in-out;
+  @include short-transition;
 }
 .alerts:not([data-length="0"]) {
   height: 100%;
@@ -276,121 +289,12 @@ main.is-list-shown::before {
   margin: .5em;
   border: 1px solid $alert-color;
   box-shadow: 0 .25em 1em #999;
-  background-color: lighten($alert-color, 40%);
+  background-color: $alert-bg-color;
   font-size: 2rem;
   padding: .5em;
   min-width: 10em;
   max-width: 30em;
-  transition: all .2s ease;
-}
-
-header {
-  z-index: $layer-header;
-  background-color: white;
-  border-radius: 0 0 $radius $radius;
-  @include drop-shadow;
-}
-
-.item-title {
-  font-size: 1.8em;
-  margin: 0;
-  padding: 0.5em;
-  text-align: center;
-  color: $theme-color;
-  @include one-line-ellipsis;
-}
-
-.swiper-container {
-  margin-top: $unit/4;
-  width: 100%;
-  margin-left: -$unit;
-  padding-left: $unit;
-  margin-right: -$unit;
-  padding-right: $unit;
   @include short-transition;
-}
-
-.swiper-container::before { // mask for prev/next slide fades
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 2; // raise above prev/next slides
-  pointer-events: none;
-  background: linear-gradient(to right, $background-color, transparent $unit, transparent calc(100% - #{$unit}), $background-color);
-  html[data-browser*="Edge"] & { // [2018-05-11] Edge cannot handle calc()
-    background: linear-gradient(to right, $background-color, transparent 5%, transparent 94.5%, $background-color);
-  }
-}
-
-.swiper-slide {
-  user-select: none;
-  cursor: default;
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: white;
-  min-height: 25vh;
-}
-
-.swiper-slide::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  border: 1px solid hsl(0, 0%, 60%);
-}
-
-.swiper-slide img {
-  //min-width: 200px; // to display background loading message
-  //background: white url('https://samples.milestonebooks.com/_img/loading.gif') no-repeat center;
-  object-position: top;
-}
-
-.swiper-slide-active {
-  overflow: hidden;
-}
-
-.swiper-zoom-container::after {
-  position: absolute;
-  content: 'COPYRIGHTED MATERIAL';
-  bottom: .5em;
-  color: darken($alert-color, 25%);
-  text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
-}
-
-.swiper-button {
-  margin-top: 0;
-  transform: translateY(-50%);
-  height: 7em;
-  width: 3.5em;
-  background-color: hsla(0, 100%, 100%, .9);
-  @include short-transition;
-}
-.swiper-button:hover {
-  background-color: hsla(0, 100%, 100%, .9);
-}
-
-.swiper-button-prev, .swiper-container-rtl .swiper-button-next {
-  left: .5em;
-  border-radius: 1em 0 0 1em;
-}
-.swiper-button-next, .swiper-container-rtl .swiper-button-prev {
-  right: .5em;
-  border-radius: 0 1em 1em 0;
-}
-
-.swiper-button-disabled {
-  opacity: .1 !important;
-}
-
-.sample-title {
-  font-size: 2.5em;
 }
 
 </style>
