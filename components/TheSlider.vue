@@ -78,6 +78,8 @@ export default {
       isResizing:   false,
       noTransition: true,
       viewWidth:    document.documentElement.clientWidth,
+      slideHeight:  null,
+      slideWidth:   null,
     }
   },
 
@@ -146,7 +148,7 @@ export default {
           this.viewWidth = document.documentElement.clientWidth;
 
           window._resizeT = setTimeout(async () => {
-            this.autosize();
+            this.autosize({resize:true});
             this.isResizing = false;
             this.update();
             // TODO: not always correct slide position after resizing
@@ -204,7 +206,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize(dpi = 80) {
+    autosize({resize = false, dpi = 80} = {}) {
       const index = this.s.currentIndex;
 
       const $slider = window.$(`.slider.dpi${dpi}`);
@@ -213,18 +215,27 @@ export default {
       const $slides = $slider.find('.slides');
       const $slide  = $slider.find(`.slide[data-index="${index}"]`);
 
-      const h = Math.ceil($slide.height() / 2) * 2; // ensure even number to handle margin rounding
-      const w = Math.ceil($slide.width());
+      const height = $slide.height();
+      const width  = $slide.width();
+
+      if (!resize && height === this.slideHeight && width === this.slideWidth) return;
+
+      this.slideHeight = height;
+      this.slideWidth  = width;
+
+      const h = Math.ceil(height / 2) * 2; // ensure even number to handle margin rounding
+      const w = Math.ceil(width);
 
       const yMargin = -Math.floor(($slides.height() - h) / 2);
 
-      const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
+      //const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
 
-      const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
+      //const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
+      const wMargin = Math.max(this.viewWidth - w, 0);
 
-      const showPagefades = wMargin >= wPagefades;
+      //const showPagefades = wMargin >= wPagefades;
 
-      //console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
+      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
 
       $slider.css({
         'min-height': `${document.documentElement.clientHeight}px`
@@ -237,13 +248,13 @@ export default {
         paddingLeft:  !wMargin ? null : `${ wMargin / 2}px`,
         marginRight:  `${-wMargin / 2}px`,
         paddingRight: `${ wMargin / 2}px`,
-      }).toggleClass('show-pagefades', showPagefades);
+      }); //.toggleClass('show-pagefades', showPagefades);
 
       $slides.css({
         marginTop: `${yMargin}px`,
       });
 
-      if (dpi === 80 && this.s.hasZoom) this.autosize(120);
+      if (dpi === 80 && this.s.hasZoom) this.autosize({dpi:120});
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -570,6 +581,7 @@ $layer-buttons: $layer-hover + 1;
       padding-bottom: 1px;
     }
 
+    /*
     &.show-pagefades {
       margin-left:  -$frame-unit;
       padding-left:  $frame-unit;
@@ -603,6 +615,7 @@ $layer-buttons: $layer-hover + 1;
         }
       }
     } // margin fades
+    //*/
   } // .frame
 
   .slides {
@@ -634,7 +647,7 @@ $layer-buttons: $layer-hover + 1;
     @include short-transition;
 
     &:not(.active) {
-      opacity: 0.5;
+      opacity: 0.25;
     }
 
     @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.active {
