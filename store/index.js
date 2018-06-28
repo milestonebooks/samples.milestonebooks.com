@@ -27,9 +27,17 @@ export const state = () => ({
   isZooming: false,
   hasPrint:  false,
 
-  alert:    '',
+  scrollbarWidth: 0,
 
-  persist: ['isCompactList', 'isCompactListTitles', 'hasTouch', 'hasMouse'],
+  alert: '',
+
+  persist: [
+    {key:'isCompactList',       type:Boolean},
+    {key:'isCompactListTitles', type:Boolean},
+    {key:'hasTouch',            type:Boolean},
+    {key:'hasMouse',            type:Boolean},
+    {key:'scrollbarWidth',      type:Number},
+  ],
 });
 
 //======================================================================================================================
@@ -70,7 +78,7 @@ export const mutations = {
       state[key] = Array.isArray(o[key]) ? [...state[key], ...o[key]]
         : (typeof o[key] === 'object'    ? {...state[key], ...o[key]} : o[key]);
 
-      if (state.persist && state.persist.includes(key)) storage.setItem(key, o[key]);
+      if (state.persist && state.persist.find(p => p.key === key)) storage.setItem(key, o[key]);
     });
   }, // set()
 
@@ -83,15 +91,13 @@ export const mutations = {
 export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
-  // currently only handles boolean values
 
   async initSettings({commit, state}) {
 
     let v;
 
-    for (const key of state.persist) {
-      console.log('initSettings()', key);
-      if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
+    for (const p of state.persist) {
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.type(v)});
     }
 
   }, // initSettings()

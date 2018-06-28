@@ -21,7 +21,10 @@ export const state = () => ({
     pctHandle: 0,
   },
 
-  persist: ['isAutoPlay', 'isAutoNext'],
+  persist: [
+    {key:'isAutoPlay', type:Boolean},
+    {key:'isAutoNext', type:Boolean},
+  ],
 }); // state{}
 
 //======================================================================================================================
@@ -191,14 +194,13 @@ export const mutations = {
 export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
-  // currently only handles boolean values
 
   async initSettings({commit, state}) {
 
     let v;
 
-    for (const key of state.persist) {
-      if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
+    for (const p of state.persist) {
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.type(v)});
     }
 
   }, // initSettings()

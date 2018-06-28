@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import TheSlider from '~/components/TheSlider';
+import TheSlider from '~/components/TheSliderX';
 import TheNav    from '~/components/TheNav';
 import ThePlayer from '~/components/ThePlayer';
 
@@ -106,9 +106,15 @@ export default {
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    /* TODO (disabled for debugging)
+    console.log('initSettings...');
+    //* TODO (disabled for debugging)
     await this.$store.dispatch('initSettings');
     //*/
+
+    const s = this.s.scrollbarWidth;
+    console.log('scrollbarWidth:', s,'=', typeof s);
+
+    this.set({scrollbarWidth: this.getScrollbarWidth() });
 
     if (!this.s.hasMouse) {
       const _firstmouseover = () => {
@@ -165,6 +171,34 @@ export default {
 
       this.update();
     }, // initSamplesData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getScrollbarWidth() {
+      const i = document.createElement('p');
+      i.style.width = "100%";
+      i.style.height = "200px";
+
+      const o = document.createElement('div');
+      o.style.position = "absolute";
+      o.style.top = "0px";
+      o.style.left = "0px";
+      o.style.visibility = "hidden";
+      o.style.width = "200px";
+      o.style.height = "150px";
+      o.style.overflow = "hidden";
+      o.appendChild(i);
+
+      document.body.appendChild(o);
+      const wI = i.offsetWidth;
+      o.style.overflow = 'scroll';
+      let wO = i.offsetWidth;
+      if (wI === wO) wO = o.clientWidth;
+
+      document.body.removeChild(o);
+
+      return (wI - wO);
+    }, // getScrollbarWidth()
 
     //------------------------------------------------------------------------------------------------------------------
 
