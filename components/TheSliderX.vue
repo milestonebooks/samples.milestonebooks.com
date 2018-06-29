@@ -1,10 +1,14 @@
 <template>
   <article :class="sliderClass" :aria-grabbed="isGrabbing">
+    <div class="frame-mask end prev"></div>
+    <div class="frame-mask end next"></div>
+    <div class="frame-mask side above"></div>
+    <div class="frame-mask side below"></div>
 
-    <div class="frame js_frame" data-dpi="80">
+    <div class="frame" data-dpi="80">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -13,10 +17,10 @@
       </div>
     </div>
 
-    <div v-if="s.hasZoom" class="frame js_frame" data-dpi="120">
+    <div v-if="s.hasZoom" class="frame" data-dpi="120">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
           <div class="slide-liner">
             <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
           </div>
@@ -24,11 +28,11 @@
       </div>
     </div>
 
-    <nuxt-link class="btn slider-button prev" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-      <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+    <nuxt-link class="btn btn-slider prev" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
+      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
-    <nuxt-link class="btn slider-button next" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-      <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+    <nuxt-link class="btn btn-slider next" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
+      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
 
   </article>
@@ -39,9 +43,9 @@ import SvgIcon from './SvgIcon.vue';
 
 import settings from '~/assets/settings';
 
-import { mapGetters } from 'vuex';
+import sleep from '~/plugins/sleep';
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { mapGetters } from 'vuex';
 
 export default {
   components: {
@@ -56,16 +60,21 @@ export default {
 
   data () {
     return {
-      isInit80:     false,
-      isInit120:    false,
+      isInit:       false,
+      //isInit80:     false,
+      //isInit120:    false,
       isGrabbing:   false,
       isResizing:   false,
       noTransition: true,
+      viewHeight:   document.documentElement.clientHeight,
       viewWidth:    document.documentElement.clientWidth,
       slideHeight:  null,
       slideWidth:   null,
+      groupHeight:  null,
     }
   },
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
     ...mapGetters([
@@ -77,11 +86,23 @@ export default {
       return this.$store.state;
     },
 
+    isFirst() {
+      return this.getSample && !this.getSample(-1);
+    },
+
+    isLast() {
+      return this.getSample && !this.getSample(+1);
+    },
+
+    btnSliderPath() {
+      return 'M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z'; // right-pointing: 'M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z'
+    },
+
+    /* obsolete?
     isInit() {
       return this.isInit80 && (this.s.hasZoom ? this.isInit120 : true);
     },
-
-    //------------------------------------------------------------------------------------------------------------------
+    //*/
 
     sliderClass() {
       return {
@@ -89,16 +110,23 @@ export default {
         'is-init': this.isInit,
         'is-resizing': this.isResizing,
         'no-transition': this.noTransition,
-        'has-prev': this.getSample && this.getSample(-1),
-        'has-next': this.getSample && this.getSample(+1),
+        'has-prev': !this.isFirst,
+        'has-next': !this.isLast,
       }
     }, // sliderClass()
 
-  },
+  }, // computed {}
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   watch: {
-    samples: 'init',
-    currentIndex: 'update',
+    samples() { this.init() },
+    currentIndex() {
+      // defer to ensure dom is updated
+      this.$nextTick(() => {
+        this.update();
+      });
+    },
     isInit() {
       // ensure that transitions are only enabled after init is complete
       this.$nextTick(() => {
@@ -107,7 +135,14 @@ export default {
     },
   },
 
+  //====================================================================================================================
+
+  mounted() {
+    window.addEventListener('resize', this.onResize);
+  },
+
   beforeDestroy () {
+    window.removeEventListener('resize', this.onResize);
   },
 
   //====================================================================================================================
@@ -119,51 +154,59 @@ export default {
     init() {
       console.log('init', this.s.samples.length);
 
+      const style = document.createElement('style');
+      document.head.appendChild(style);
+
+      this.stylesheet = style.sheet;
+
+      console.log(`stylesheet @ ${this.viewWidth}w X ${this.viewHeight}h:`, this.stylesheet.cssRules);
+
+      // TODO
       this.$nextTick(() => {
-        this.$el.addEventListener('after.lory.init',    this.onLoryInit);
         this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
         this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
-        this.$el.addEventListener('before.lory.slide',  this.beforeSlideChange);
-        this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
-
-        window._resizeT = null;
-        window.addEventListener('resize', () => {
-          // this is needed to ensure that font-size = 0 when lory resize calculations occur
-          this.isResizing = true;
-          clearTimeout(window._resizeT);
-
-          this.viewWidth = document.documentElement.clientWidth;
-
-          window._resizeT = setTimeout(async () => {
-            this.autosize({resize:true});
-            this.isResizing = false;
-            this.update();
-            // TODO: not always correct slide position after resizing
-          }, settings.TRANSITION_TIME_MS);
-        });
-
       });
+
+      this.isInit = true;
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onLoryInit(e) {
-      const dpi = window.$(e.target).attr('data-dpi');
-      this[`isInit${dpi}`] = true;
+    onResize() {
+      // this is needed to ensure that font-size = 0 when lory resize calculations occur
+      this.isResizing = true;
 
-      this.update();
-    }, // onLoryInit()
+      this.viewHeight = document.documentElement.clientHeight;
+      this.viewWidth  = document.documentElement.clientWidth;
+
+      console.log(`onresize: ${this.viewWidth}w X ${this.viewHeight}h`);
+
+      clearTimeout(window._resizeT);
+
+      window._resizeT = setTimeout(async () => {
+        this.autosize({resize:true});
+        this.isResizing = false;
+        console.log('resize delay');
+        return;
+        this.update();
+        // TODO: not always correct slide position after resizing
+      }, settings.TRANSITION_TIME_MS);
+
+    }, // onResize()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
       // position active slide
+
+      this.autosize();
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
-
+    // TODO: remove
     onSlideChange(/*e*/) {
       // update route only when initiated "internally"
       const index = this.slider.returnIndex();
@@ -178,54 +221,64 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false, dpi = 80} = {}) {
-      const index = this.s.currentIndex;
+      const index = this.currentIndex;
 
-      const $slider = window.$(`.slider.dpi${dpi}`);
+      const $slider = window.$('.slider');
 
-      const $frame  = $slider.find('.frame');
-      const $slides = $slider.find('.slides');
-      const $slide  = $slider.find(`.slide[data-index="${index}"]`);
+      const $frame  = $slider.find(`.frame[data-dpi="${dpi}"]`);
+      const $slides = $frame.find('.slides');
+      const $slide  = $slides.find(`.slide[data-index="${index}"]`);
 
-      const height = $slide.height();
-      const width  = $slide.width();
+      const height = Math.ceil($slide.height());
+      const width  = Math.ceil($slide.width());
 
-      if (!resize && height === this.slideHeight && width === this.slideWidth) return;
+      const $slidePrev = $slide.prev();
+      const $slideNext = $slide.next();
 
-      this.slideHeight = height;
-      this.slideWidth  = width;
+      const frameHeight = Math.ceil(Math.max(height, this.viewHeight));
+      const frameWidth  = Math.ceil(Math.max(width,  this.viewWidth));
 
-      const h = Math.ceil(height / 2) * 2; // ensure even number to handle margin rounding
-      const w = Math.ceil(width);
+      // this determines how much gutter space is masked from being grabbable for sliding
+      const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
-      const yMargin = -Math.floor(($slides.height() - h) / 2);
+      if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
-      //const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
+        this.slideHeight = height;
+        this.slideWidth  = width;
+        this.groupHeight = groupHeight;
 
-      //const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
-      const wMargin = Math.max(this.viewWidth - w, 0);
+        const xMargin = Math.max(this.viewWidth - width, 0) / 2;
+        const yMargin = Math.max(this.viewHeight - groupHeight, 0) / 2;
 
-      //const showPagefades = wMargin >= wPagefades;
+        $slider.css({
+          'min-height': `${this.viewHeight}px`
+        });
 
-      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
+        $frame.css({
+          height: `${frameHeight}px`,
+          width:  `${frameWidth}px`,
+          'margin-left':   `${-xMargin}px`,
+          'padding-left':  `${ xMargin}px`,
+          'margin-right':  `${-xMargin}px`,
+          'padding-right': `${ xMargin}px`,
+        });
 
-      $slider.css({
-        'min-height': `${document.documentElement.clientHeight}px`
-      });
+        if (dpi === this.s.dpi) {
+          window.$('.frame-mask.end').css({width: `${xMargin}px`});
+          window.$('.frame-mask.side').css({height: `${yMargin}px`});
+        }
+      }
 
-      $frame.css({
-        height: `${h}px`,
-        width:  `${w}px`,
-        marginLeft:   !wMargin ? null : `${-wMargin / 2}px`,
-        paddingLeft:  !wMargin ? null : `${ wMargin / 2}px`,
-        marginRight:  `${-wMargin / 2}px`,
-        paddingRight: `${ wMargin / 2}px`,
-      }); //.toggleClass('show-pagefades', showPagefades);
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
+      const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
+      const yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
       $slides.css({
-        marginTop: `${yMargin}px`,
+        'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
       });
 
-      if (dpi === 80 && this.s.hasZoom) this.autosize({dpi:120});
+      if (dpi === 80 && this.s.hasZoom) this.autosize({resize, dpi:120});
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -267,12 +320,6 @@ export default {
       console.log('imgLoaded', i, dpi);
       // TODO: multiple size images; lazy loading; fadein when first image has loaded
     }, // imgLoaded()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    beforeSlideChange(e) {
-      console.log(`beforeSlideChange(${e.target.getAttribute('data-dpi')})`, e.detail, e);
-    }, // beforeSlideChange()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -505,30 +552,61 @@ $layer-buttons:   $layer-hover + 1;
     transition: none;
   }
 
-  &.dpi120 {
+  .frame-mask {
     position: fixed;
-    pointer-events: none;
-    opacity: 0;
+    z-index: 1; // above .frame to mask grab zones
+
+    &.end {
+      top: 0;
+      bottom: 0;
+    }
+
+    &.side {
+      left: 0;
+      right: 0;
+      &.above {
+        top: 0;
+      }
+      &.below {
+        bottom: 0;
+      }
+    }
+
+    @at-root
+    [data-dir="ltr"] .frame-mask.prev,
+    [data-dir="rtl"] .frame-mask.next {
+      left: 0;
+    }
+    @at-root
+    [data-dir="ltr"] .frame-mask.next,
+    [data-dir="rtl"] .frame-mask.prev {
+      right: 0;
+    }
+
+    @at-root
+    .slider.has-prev .frame-mask.prev,
+    .slider.has-next .frame-mask.next {
+      display: none;
+    }
   }
 
   .frame {
     position: relative;
+    box-sizing: border-box;
     overflow: hidden;
     white-space: nowrap;
-
-    line-height: 0;
-    font-size: 0; // lory setup has errors if font size is not 0
     @include short-transition;
 
-    @at-root .is-init & {
-      font-size: inherit;
-    }
-    @at-root .is-resizing & {
-      font-size: 0;
+    @at-root
+    .is-resizing &,
+    .no-transition & {
       transition: none;
     }
-    @at-root .no-transition & {
-      transition: none;
+
+    &[data-dpi="120"] {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0;
     }
 
     cursor: grab;
@@ -553,6 +631,8 @@ $layer-buttons:   $layer-hover + 1;
     html[data-browser*="Trident"] & {
       display: inline-block;
     }
+    @include short-transition;
+
     .is-resizing &,
     .no-transition & {
       transition: none;
@@ -565,20 +645,20 @@ $layer-buttons:   $layer-hover + 1;
     vertical-align: text-top;
     text-align: center;
     background-color: white;
-    margin-right: ($unit * 1/4);
-    @at-root .dpi120#{&} {
-      margin-right: ($unit * 1/4 * $zoom-ratio);
+    margin: 0 ($unit * 1/8);
+    @at-root .frame[data-dpi="120"] .slide {
+      margin: 0 ($unit * 1/8 * $zoom-ratio);
     }
     @include short-transition;
 
-    &:not(.active) {
+    &:not(.current) {
       opacity: 0.25;
     }
 
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.active {
+    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.current {
       cursor: zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide.active {
+    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide.current {
       cursor: zoom-out;
     }
 
@@ -657,7 +737,7 @@ $layer-buttons:   $layer-hover + 1;
   @include absolute-center();
 }
 
-.slider-button {
+.btn-slider {
   position: fixed;
   z-index: $layer-buttons;
   top: 50%;
@@ -676,14 +756,21 @@ $layer-buttons:   $layer-hover + 1;
     opacity: 0 !important;
   }
 
-  &.prev {
+  @at-root
+  [data-dir="ltr"] &.prev,
+  [data-dir="rtl"] &.next {
     left: 0;
     border-radius: 0 $radius $radius 0;
   }
-  &.next {
+  @at-root
+  [data-dir="ltr"] &.next,
+  [data-dir="rtl"] &.prev {
     right: 0;
     border-radius: $radius 0 0 $radius;
+    svg {
+      transform: translate(-50%, -50%) rotate(180deg);
+    }
   }
-} // .slider-button
+} // .btn-slider
 
 </style>

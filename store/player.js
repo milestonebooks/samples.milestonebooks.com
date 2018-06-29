@@ -1,4 +1,4 @@
-import storage from '../plugins/storage';
+import storage from '~/plugins/storage';
 
 export const state = () => ({
   isInit:      false,
@@ -22,8 +22,8 @@ export const state = () => ({
   },
 
   persist: [
-    {key:'isAutoPlay', type:Boolean},
-    {key:'isAutoNext', type:Boolean},
+    {key:'isAutoPlay', extract: v => v === 'true'},
+    {key:'isAutoNext', extract: v => v === 'true'},
   ],
 }); // state{}
 
@@ -200,7 +200,8 @@ export const actions = {
     let v;
 
     for (const p of state.persist) {
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.type(v)});
+      console.log('initSettings', p.key, storage.getItem(p.key), p.type);
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.extract(v)});
     }
 
   }, // initSettings()

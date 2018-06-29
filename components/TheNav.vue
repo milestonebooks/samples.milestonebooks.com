@@ -2,17 +2,16 @@
   <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
-      <nuxt-link class="btn btn-prev" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
-        <SvgIcon view="28" :d="btnPrevPath"></SvgIcon>
+      <nuxt-link class="btn btn-nav prev" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
-      <button ref="btnList" class="btn btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+      <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
         <span class="id-indicator-frame">
-          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="`transform: translateX(-${100 * s.currentIndex}%)`">{{ sample.id }}</span>
+          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="idStyle">{{ sample.id }}</span>
         </span>
       </button>
-      <span class="btn-list-mask"></span>
-      <nuxt-link class="btn btn-next" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
-        <SvgIcon view="28" :d="btnNextPath"></SvgIcon>
+      <nuxt-link class="btn btn-nav next" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
     </div>
 
@@ -55,6 +54,8 @@ export default {
     }
   }, // data()
 
+  //--------------------------------------------------------------------------------------------------------------------
+
   computed: {
     ...mapGetters([
       'getSample',
@@ -66,11 +67,8 @@ export default {
     p() {
       return this.$store.state.player;
     },
-    btnPrevPath() {
-      return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z';
-    },
-    btnNextPath() {
-      return 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z';
+    btnNavPath() {
+      return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z'; // right-pointing: 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z'
     },
     btnListTitle() {
       return `${this.isListShown ? 'hide' : 'show'} sample list`;
@@ -79,6 +77,10 @@ export default {
       return {
         'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles))
       };
+    },
+    idStyle() {
+      console.log('idStyle() nav transform...');
+      return `transform: translateX(${100 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}%)`;
     },
     autoPlay: {
       get() {
@@ -98,7 +100,6 @@ export default {
     },
     compactList: {
       get() {
-        console.log('compactList get()', this.s.type, this.s.isCompactListTitles);
         return (this.s.type === 'audio' ?  this.s.isCompactListTitles : this.s.isCompactList);
       },
       set(isCompactList) {
@@ -106,6 +107,8 @@ export default {
       },
     },
   }, // computed {}
+
+  //====================================================================================================================
 
   mounted() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
@@ -289,12 +292,12 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-$nav-top: 0;
+//$nav-top: 0; obsolete
 
 .the-nav {
   z-index: $layer-the-nav;
   @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
-  top: $nav-top;
+  top: 0;
   box-sizing: border-box;
   background-color: white;
   border-radius: 0 0 $radius $radius;
@@ -343,18 +346,29 @@ $nav-top: 0;
   @include absolute-center();
 }
 
-.btn-prev {
-  left: 0;
+.btn-nav:not(.btn-list) {
+  z-index: 2; // raise above .btn-list shadow
+
+  @at-root
+  [data-dir="ltr"] &.prev,
+  [data-dir="rtl"] &.next {
+    left: 0;
+  }
+  @at-root
+  [data-dir="ltr"] &.next,
+  [data-dir="rtl"] &.prev {
+    right: 0;
+    svg {
+      transform: translate(-50%, -50%) rotate(180deg);
+    }
+  }
 }
 
 .btn-list {
-  left: 1 * $unit;
+  left: 50%;
 }
 
-.btn-next {
-  left: 2 * $unit;
-}
-
+/* [2018-06-29] obsolete
 // this element is used to prevent clicking on the .btn-list outside the visible ui
 // not necessary as long as btn is at top of page
 @if $nav-top != 0 {
@@ -364,19 +378,15 @@ $nav-top: 0;
     width: 6em;
     height: 1em;
     top: -1em;
-    z-index: 2; /* raise above .btn-list shadow */
+    z-index: 2; // raise above .btn-list shadow
   }
 }
-
-.btn-prev,
-.btn-next {
-  z-index: 2; /* raise above .btn-list shadow */
-}
+//*/
 
 .btn-list {
   z-index: 1; /* raise above .list shadow */
   padding: 1em 1em 0 1em;
-  transform: translateY(calc(-50% - .5em)) translateX(-1em);
+  transform: translateY(calc(-50% - .5em)) translateX(-50%);
 
   & .id-indicator-frame {
     width: 3em;
@@ -413,7 +423,7 @@ $nav-top: 0;
 
   .is-list-shown & {
     margin: -.5 * $unit;
-    border-radius: $radius $radius 0 0;
+    border-radius: 0; //$radius $radius 0 0;
     box-shadow: $list-shadow;
     transform: translate(0%, 0%) scale(1); // translate(0%, 0%) ensures expected transition when removing .is-list-shown
   }
@@ -436,96 +446,215 @@ $nav-top: 0;
   opacity: 0;
   overflow: auto;
   @include short-transition;
-}
 
-.list:not([aria-hidden]) {
-  pointer-events: all;
-  opacity: 1;
-}
-
-.list * {
-  position: relative;
-}
-
-.list .pages {
-  display: flex;
-  flex-direction: column;
-}
-.list.compact .pages {
-  flex-direction: row;
-  flex-wrap: wrap;
-  padding: $list-padding;
-}
-
-.list button {
-  margin: 0;
-  padding: 0;
-  border: none;
-  text-align: inherit;
-}
-
-.list ul, .list ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.list .item { // .item is a <button> which cannot be flex (see child .item-flex)
-  height: 1 * $unit;
-  cursor: pointer;
-  background-color: white;
-  border: 1px solid $list-bg-color; // $list-item-border-color;
-  transition: all .2s ease-in-out, margin 0s ease-in-out; // transitioning margins (row vs column) looks weird
-
-  &.current {
-    border-color: $list-item-border-color;
+  &:not([aria-hidden]) {
+    pointer-events: all;
+    opacity: 1;
   }
-}
 
-.list.compact .item {
-  width: 1 * $unit;
-  margin-bottom: ($list-padding * 2);
-}
-.list.compact .pages {
-  margin-bottom: -($list-padding * 2);
-}
-
-.list:not(.compact) .item:not(:first-child).sequential-before {
-  margin-top: -1px;
-}
-// adjusting right margin avoids flex-wrap alignment issues
-.list.compact .item:not(:last-child).sequential-after {
-  margin-right: -1px;
-}
-
-.list .item.non-sequential-after::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  background-color: darken($list-item-border-color, 10%);
-  border-radius: 50%;
-}
-
-.list:not(.compact) .item.non-sequential-after {
-  margin-bottom: calc(#{$list-padding * 2} - 1px) !important;
-
-  &::after {
-    left: 50%;
-    transform: translateX(-50%);
-    top: calc(100% + #{$list-padding} - 1px);
+  * {
+    position: relative;
   }
-}
-.list.compact .item.non-sequential-after {
-  margin-right: calc(#{$list-padding * 2} - 1px) !important;
 
-  &::after {
-    top: 50%;
-    transform: translateY(-50%);
-    left: calc(100% + #{$list-padding} - 1px);
+  .pages {
+    display: flex;
+    flex-direction: column;
   }
-}
+  &.compact .pages {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: $list-padding;
+  }
+
+  button {
+    margin: 0;
+    padding: 0;
+    border: none;
+    text-align: inherit;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item { // .item is a <button> which cannot be flex (see child .item-flex)
+    height: 1 * $unit;
+    cursor: pointer;
+    background-color: white;
+    border: 1px solid $list-bg-color; // $list-item-border-color;
+    transition: all .2s ease-in-out, margin 0s ease-in-out; // transitioning margins (row vs column) looks weird
+
+    &.current {
+      border-color: $list-item-border-color;
+    }
+  }
+
+  &.compact .item {
+    width: 1 * $unit;
+    margin-bottom: ($list-padding * 2);
+  }
+  &.compact .pages {
+    margin-bottom: -($list-padding * 2);
+  }
+
+  &:not(.compact) .item:not(:first-child).sequential-before {
+    margin-top: -1px;
+  }
+
+  @at-root [data-dir="ltr"] &.compact .item:not(:last-child).sequential-after {
+    margin-right: -1px;
+  }
+  @at-root [data-dir="rtl"] &.compact .item:not(:last-child).sequential-after {
+    margin-left: -1px;
+  }
+
+  .item.non-sequential-after::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background-color: darken($list-item-border-color, 10%);
+    border-radius: 50%;
+  }
+
+  &:not(.compact) .item.non-sequential-after {
+    margin-bottom: calc(#{$list-padding * 2} - 1px) !important;
+
+    &::after {
+      left: 50%;
+      transform: translateX(-50%);
+      top: calc(100% + #{$list-padding} - 1px);
+    }
+  }
+  &.compact .item.non-sequential-after {
+    @at-root [data-dir="ltr"] & {
+      margin-right: calc(#{$list-padding * 2} - 1px) !important;
+    }
+    @at-root [data-dir="rtl"] & {
+      margin-left: calc(#{$list-padding * 2} - 1px) !important;
+    }
+
+    &::after {
+      top: 50%;
+      transform: translateY(-50%);
+      @at-root [data-dir="ltr"] & {
+        left: calc(100% + #{$list-padding} - 1px);
+      }
+      @at-root [data-dir="rtl"] & {
+        right: calc(100% + #{$list-padding} - 1px);
+      }
+    }
+  }
+
+  .item.current,
+  .item:focus {
+    color: $focus-color;
+  }
+
+  .item.current {
+    cursor: default;
+    font-weight: bold;
+    background-color: $list-current-bg-color;
+  }
+
+  .item:focus {
+    border-color: $list-item-border-focus-color;
+  }
+  &:not(.compact) .item:focus + .sequential-before {
+    border-top-color: $list-item-border-focus-color;
+  }
+  // looks a little tacky on flex-wrap row break
+  @at-root [data-dir="ltr"] &.compact .item:focus + .sequential-before {
+    border-left-color: $list-item-border-focus-color;
+  }
+  @at-root [data-dir="rtl"] &.compact .item:focus + .sequential-before {
+    border-right-color: $list-item-border-focus-color;
+  }
+
+  .item-flex {
+    width: 100%;
+    height: 100%;
+    display: flex;
+
+    > * {
+      display: flex;
+      align-items: center;
+
+      > * {
+        flex: 1 1 auto;
+      }
+    }
+  } // .item-flex
+
+  .track {
+    flex: 0 0 auto; // no resizing
+    box-sizing: border-box;
+    width: 1 * $unit;
+    @at-root [data-dir="ltr"] & {
+      text-align: right;
+      padding-right: .5em;
+    }
+    @at-root [data-dir="rtl"] & {
+      text-align: left;
+      padding-left: .5em;
+    }
+  }
+  &.compact .track {
+    width: 100%;
+    padding: 0;
+    text-align: center;
+  }
+
+  .title {
+    @at-root [data-dir="ltr"] & {
+      margin-left: .5 * $unit;
+    }
+    @at-root [data-dir="rtl"] & {
+      margin-right: .5 * $unit;
+    }
+    overflow: hidden;
+  }
+  &.compact .title {
+    display: none;
+  }
+
+  .font-resize {
+    margin-bottom: -1px; // compromise between Chrome and Firefox vertical alignment
+  }
+
+  .title .font-resize {
+    @include one-line-ellipsis;
+  }
+
+  .item .font-resize {
+    font-size: $list-font-size;
+  }
+
+  .settings {
+    padding: .5em 0;
+
+    li {
+      display: inline-block;
+      margin: 0 1em;
+    }
+
+    label {
+      display: inline-block;
+      font-size: 1.5em;
+      padding: .5em 0;
+      cursor: pointer;
+    }
+
+    input {
+      vertical-align: middle;
+      margin: 0 .25em;
+    }
+  } // .settings
+
+} // .list
 
 /* [2018-05-25] hack to fix Edge rendering bug
 html[data-browser*="Trident"],
@@ -546,95 +675,5 @@ html[data-browser*="Edge"] {
   }
 }
 //*/
-
-.list .item.current,
-.list .item:focus {
-  color: $focus-color;
-}
-
-.list .item.current {
-  cursor: default;
-  font-weight: bold;
-  background-color: $list-current-bg-color;
-}
-
-.list .item:focus {
-  border-color: $list-item-border-focus-color;
-}
-.list:not(.compact) .item:focus + .sequential-before {
-  border-top-color: $list-item-border-focus-color;
-}
-.list.compact .item:focus + .sequential-before { // looks a little tacky on flex-wrap row break
-  border-left-color: $list-item-border-focus-color;
-}
-
-.list .item-flex {
-  width: 100%;
-  height: 100%;
-  display: flex;
-}
-
-.list .item-flex > * {
-  display: flex;
-  align-items: center;
-}
-
-.list .item-flex > * > * {
-  flex: 1 1 auto;
-}
-
-.list .track {
-  flex: 0 0 auto; // no resizing
-  box-sizing: border-box;
-  width: 1 * $unit;
-  text-align: right;
-  padding-right: .5em;
-}
-.list.compact .track {
-  width: 100%;
-  padding-right: 0;
-  text-align: center;
-}
-
-.list .title {
-  margin-left: .5 * $unit;
-  overflow: hidden;
-}
-.list.compact .title {
-  display: none;
-}
-
-.list .font-resize {
-  margin-bottom: -1px; // compromise between Chrome and Firefox vertical alignment
-}
-
-.list .title .font-resize {
-  @include one-line-ellipsis;
-}
-
-.list .item .font-resize {
-  font-size: $list-font-size;
-}
-
-.list .settings {
-  padding: .5em 0;
-}
-
-.list .settings li {
-  display: inline-block;
-  margin-left: 2em;
-}
-
-.list .settings label {
-  display: inline-block;
-  font-size: 1.5em;
-  padding: .5em 0;
-  cursor: pointer;
-}
-
-.list .settings input {
-  vertical-align: middle;
-  margin-right: .25em;
-}
 
 </style>

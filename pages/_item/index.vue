@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi">
+  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
@@ -8,7 +8,7 @@
 
     <TheNav v-if="s.samples.length > 1" />
 
-    <ThePlayer ref="player" v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+    <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
@@ -106,13 +106,10 @@ export default {
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    console.log('initSettings...');
     //* TODO (disabled for debugging)
+    console.log('initSettings...');
     await this.$store.dispatch('initSettings');
     //*/
-
-    const s = this.s.scrollbarWidth;
-    console.log('scrollbarWidth:', s,'=', typeof s);
 
     this.set({scrollbarWidth: this.getScrollbarWidth() });
 
@@ -252,6 +249,10 @@ main {
   flex-direction: column;
   margin: auto;
   @include short-transition;
+
+  &[data-dir="rtl"] {
+    direction: rtl;
+  }
 
   &::before {
     content: attr(data-title);

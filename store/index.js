@@ -16,6 +16,8 @@ export const state = () => ({
   firstId:  '',
   lastId:   '',
 
+  direction: 'rtl', // 'ltr' | 'rtl' | 'ttb'
+
   isCompactList: true,
   isCompactListTitles: false,
 

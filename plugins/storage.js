@@ -13,3 +13,5 @@ const storage = (function() {
 }());
 
 export default storage;
+
+// TODO: implement get() conversion from string to boolean, number, etc
