@@ -103,6 +103,11 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
     overflow-y: scroll; // always on to avoid possible jank when toggling playlist
   }
 
+  // applied to certain elements (e.g. buttons with translated contents) to make Edge consistent with Chrome & Firefox, i.e., avoid flipping translate() values
+  .ltr {
+    direction: ltr;
+  }
+
   .btn {
     background: none;
     border: none;

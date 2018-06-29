@@ -28,10 +28,10 @@
       </div>
     </div>
 
-    <nuxt-link class="btn btn-slider prev" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
+    <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
       <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
-    <nuxt-link class="btn btn-slider next" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
+    <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
       <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
 
@@ -272,7 +272,8 @@ export default {
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
-      const yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+      // [2018-06-29] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
+      const yOffset = navigator.userAgent.match(/Trident/) ? 0 : Math.floor(($slides.height() - frameHeight) / 2);
 
       $slides.css({
         'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,

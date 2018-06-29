@@ -2,15 +2,15 @@
   <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
-      <nuxt-link class="btn btn-nav prev" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
       <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
-        <span class="id-indicator-frame">
-          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator" :style="idStyle">{{ sample.id }}</span>
-        </span>
+        <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
+          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
+        </span></span>
       </button>
-      <nuxt-link class="btn btn-nav next" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
         <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
     </div>
@@ -79,8 +79,7 @@ export default {
       };
     },
     idStyle() {
-      console.log('idStyle() nav transform...');
-      return `transform: translateX(${100 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}%)`;
+      return `transform: translateX(${2.8 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}rem)`;
     },
     autoPlay: {
       get() {
@@ -386,7 +385,7 @@ export default {
 .btn-list {
   z-index: 1; /* raise above .list shadow */
   padding: 1em 1em 0 1em;
-  transform: translateY(calc(-50% - .5em)) translateX(-50%);
+  transform: translateY(-50%) translateY(-.5em) translateX(-50%); // sequential because IE11 doesn't support calc() here
 
   & .id-indicator-frame {
     width: 3em;
@@ -399,20 +398,27 @@ export default {
     background-color: white;
     white-space: nowrap;
     overflow: hidden;
+    //@include short-transition;
+  }
+
+  & .id-indicator-tray {
+    position: relative;
+    display: inline-block;
+    height: 100%;
     @include short-transition;
   }
 
   & .id-indicator {
     position: relative;
     display: inline-block;
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
     font-size: $list-font-size;
     line-height: 1.2em; // 16 * 1.2 = 19.2 (best compromise between Chrome and Firefox alignment)
     font-weight: bold;
     text-align: center;
-    transition: transform $transition-time ease-in-out; // match slide transition time
+    width: 2.8rem;
+    height: 1.8rem;
+    overflow: hidden;
+    //transition: transform $transition-time ease-in-out; // match slide transition time
   }
 } // .btn-list
 
