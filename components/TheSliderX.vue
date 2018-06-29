@@ -154,12 +154,14 @@ export default {
     init() {
       console.log('init', this.s.samples.length);
 
+      /* experimental
       const style = document.createElement('style');
       document.head.appendChild(style);
 
       this.stylesheet = style.sheet;
 
       console.log(`stylesheet @ ${this.viewWidth}w X ${this.viewHeight}h:`, this.stylesheet.cssRules);
+      //*/
 
       // TODO
       this.$nextTick(() => {
@@ -185,11 +187,8 @@ export default {
 
       window._resizeT = setTimeout(async () => {
         this.autosize({resize:true});
+        await this.forceRepaint();
         this.isResizing = false;
-        console.log('resize delay');
-        return;
-        this.update();
-        // TODO: not always correct slide position after resizing
       }, settings.TRANSITION_TIME_MS);
 
     }, // onResize()
@@ -367,7 +366,7 @@ export default {
       // zoom slider may not have been initialized to correct zoom where a mouse interaction is available
       //TODO: if (zoomIn) this.autosize(120);
 
-      const $el         = window.$('.slider-container');
+      const $el         = window.$('.slider');
       const $slider     = window.$(`.slider.dpi80`);
       const $sliderZoom = window.$(`.slider.dpi120`);
       const $frame      = $slider.find('.frame');
@@ -549,7 +548,8 @@ $layer-buttons:   $layer-hover + 1;
   align-items: center;
   @include short-transition;
 
-  @at-root .no-transition & {
+  &.is-resizing,
+  &.no-transition {
     transition: none;
   }
 
@@ -599,8 +599,8 @@ $layer-buttons:   $layer-hover + 1;
     @include short-transition;
 
     @at-root
-    .is-resizing &,
-    .no-transition & {
+    .is-resizing#{&},
+    .no-transition#{&} {
       transition: none;
     }
 
@@ -610,14 +610,10 @@ $layer-buttons:   $layer-hover + 1;
       opacity: 0;
     }
 
+    /* TODO: wait until sliding is enabled
     cursor: grab;
     @at-root [aria-grabbed] & {
       cursor: grabbing;
-    }
-
-    /* [2018-06-12] hack to fix rendering bug at odd sizes (but sometimes doesn't fix anyway)
-    html[data-browser*="Firefox"] & {
-      padding-bottom: 1px;
     }
     //*/
   } // .frame
