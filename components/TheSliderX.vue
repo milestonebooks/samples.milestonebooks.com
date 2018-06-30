@@ -5,7 +5,7 @@
     <div class="frame-mask side above"></div>
     <div class="frame-mask side below"></div>
 
-    <div class="frame" data-dpi="80">
+    <div class="frame dpi80">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <div v-if="s.hasZoom" class="frame" data-dpi="120">
+    <div v-if="s.hasZoom" class="frame dpi120">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
@@ -64,7 +64,7 @@ export default {
       //isInit80:     false,
       //isInit120:    false,
       isGrabbing:   false,
-      isResizing:   false,
+      //isResizing:   false,
       noTransition: true,
       viewHeight:   document.documentElement.clientHeight,
       viewWidth:    document.documentElement.clientWidth,
@@ -108,7 +108,7 @@ export default {
       return {
         'slider': true,
         'is-init': this.isInit,
-        'is-resizing': this.isResizing,
+        //'is-resizing': this.isResizing,
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
@@ -176,7 +176,7 @@ export default {
 
     onResize() {
       // this is needed to ensure that font-size = 0 when lory resize calculations occur
-      this.isResizing = true;
+      //this.isResizing = true;
 
       this.viewHeight = document.documentElement.clientHeight;
       this.viewWidth  = document.documentElement.clientWidth;
@@ -187,8 +187,8 @@ export default {
 
       window._resizeT = setTimeout(async () => {
         this.autosize({resize:true});
-        await this.forceRepaint();
-        this.isResizing = false;
+        //await this.forceRepaint();
+        //this.isResizing = false;
       }, settings.TRANSITION_TIME_MS);
 
     }, // onResize()
@@ -199,23 +199,8 @@ export default {
       console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
-      // position active slide
-
       this.autosize();
     }, // update()
-
-    //------------------------------------------------------------------------------------------------------------------
-    // TODO: remove
-    onSlideChange(/*e*/) {
-      // update route only when initiated "internally"
-      const index = this.slider.returnIndex();
-      console.log(`onSlideChange(${index})`);
-      if (this.isGrabbing) {
-        window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
-      }
-
-      this.autosize();
-    }, // onSlideChange()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -223,8 +208,7 @@ export default {
       const index = this.currentIndex;
 
       const $slider = window.$('.slider');
-
-      const $frame  = $slider.find(`.frame[data-dpi="${dpi}"]`);
+      const $frame  = $slider.find(`.frame.dpi${dpi}`);
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${index}"]`);
 
@@ -234,11 +218,15 @@ export default {
       const $slidePrev = $slide.prev();
       const $slideNext = $slide.next();
 
-      const frameHeight = Math.ceil(Math.max(height, this.viewHeight));
+      const frameHeight = Math.ceil(Math.max(height, this.viewHeight - (width > this.viewWidth ? this.s.scrollbarWidth : 0)));
       const frameWidth  = Math.ceil(Math.max(width,  this.viewWidth));
+
+      console.log(`width:${width} this.viewWidth:${this.viewWidth}`);
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+
+      if (dpi === 80) console.log(`autosize(${dpi}) viewHeight:${this.viewHeight} height:${height} frameHeight:${frameHeight} groupHeight:${groupHeight} this.s.scrollbarWidth:${this.s.scrollbarWidth}`);
 
       if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
@@ -249,23 +237,24 @@ export default {
         const xMargin = Math.max(this.viewWidth - width, 0) / 2;
         const yMargin = Math.max(this.viewHeight - groupHeight, 0) / 2;
 
-        $slider.css({
-          'min-height': `${this.viewHeight}px`
-        });
+        if (dpi === this.s.dpi) {
+          $slider.css({
+            height: `${frameHeight}px`,
+            width:  `${frameWidth}px`,
+          });
+          window.$('.frame-mask.end').css({width: `${xMargin}px`});
+          window.$('.frame-mask.side').css({height: `${yMargin}px`});
+        }
 
         $frame.css({
           height: `${frameHeight}px`,
           width:  `${frameWidth}px`,
+          left:            `${ xMargin}px`,
           'margin-left':   `${-xMargin}px`,
           'padding-left':  `${ xMargin}px`,
           'margin-right':  `${-xMargin}px`,
           'padding-right': `${ xMargin}px`,
         });
-
-        if (dpi === this.s.dpi) {
-          window.$('.frame-mask.end').css({width: `${xMargin}px`});
-          window.$('.frame-mask.side').css({height: `${yMargin}px`});
-        }
       }
 
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
@@ -332,8 +321,7 @@ export default {
 
       if (Number(index) !== this.s.currentIndex) {
         console.log(`go to:#${this.s.samples[index].id}`);
-        return;
-        //return this.$router.replace(`#${this.s.samples[index].id}`);
+        return this.$router.replace(`#${this.s.samples[index].id}`);
       }
 
       // TODO: abort zoom if panning instead of clicking
@@ -353,6 +341,8 @@ export default {
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
+      console.log('toggleDpi', elX, elY);
+
       // TODO: cancel zoom action
       if (this.s.isZooming) return;
 
@@ -367,10 +357,8 @@ export default {
       //TODO: if (zoomIn) this.autosize(120);
 
       const $el         = window.$('.slider');
-      const $slider     = window.$(`.slider.dpi80`);
-      const $sliderZoom = window.$(`.slider.dpi120`);
-      const $frame      = $slider.find('.frame');
-      const $frameZoom  = $sliderZoom.find('.frame');
+      const $frame      = $el.find('.frame.dpi80');
+      const $frameZoom  = $el.find('.frame.dpi120');
 
       // ensure no transitions are in effect to delay prep layout
       $el.addClass('no-transition');
@@ -382,17 +370,16 @@ export default {
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      const xCompPagefades = $frame.hasClass('show-pagefades') && !$frameZoom.hasClass('show-pagefades');
-
       if (zoomIn) {
-        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - (xCompPagefades ? settings.PAGEFADE_WIDTH : 0);
+        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left);
         const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
 
         // position the zoom slider to trigger layout
-        $sliderZoom.css({position: 'absolute'});
+        $frameZoom.css({position: 'absolute'});
+        this.autosize({dpi:120, resize:true});
 
         // position view to compensate for new layout
         window.scroll(xScrollTo, yScrollTo);
@@ -406,10 +393,16 @@ export default {
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'in');
+        /*>>> TODO debug
+        console.log(`zoomIn xDiff:${xDiff} yDiff:${yDiff} xFrame:${xFrame} yFrame:${yFrame}`);
+        $frameZoom.css({opacity: .5});
+        return;
+        //<<<*/
 
-        $slider.css({'z-index': 1});
-        $sliderZoom.css({opacity: 0});
+        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, 'in');
+
+        $frame.css({'z-index': 1});
+        $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
@@ -420,14 +413,14 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        $slider.css({'z-index': ''});
-        $sliderZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $frame.css({'z-index': ''});
+        $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
         $el.addClass('no-transition');
-        $slider.css({opacity: 0, 'pointer-events': 'none'});
+        $frame.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
 
         this.forceRepaint();
@@ -462,10 +455,10 @@ export default {
         const yFrame = yDiff + yScrollAdj;
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'out');
+        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, 'out');
 
-        $sliderZoom.css({'z-index': 1});
-        $slider.css({opacity: 0});
+        $frameZoom.css({'z-index': 1});
+        $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
@@ -476,21 +469,21 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        $sliderZoom.css({'z-index': ''});
-        $slider.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $frameZoom.css({'z-index': ''});
+        $frame.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
         const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
         const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
-        //return;
 
         $el.addClass('no-transition');
-        $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
+        $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
-        $sliderZoom.css({position: 'fixed'});
+        $frameZoom.css({position: 'fixed'});
+        this.autosize({dpi:80, resize:true});
         window.scroll(xScrollTo, yScrollTo);
 
         this.forceRepaint();
@@ -510,9 +503,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getTransformOrigin($frame, $frameZoom, xCompPagefades, $zoom) {
+    getTransformOrigin($frame, $frameZoom, $zoom) {
 
-      const xOriginAdj = xCompPagefades ? settings.PAGEFADE_WIDTH * ($zoom === 'in' ? settings.ZOOM_RATIO : 1) : 0;
+      const xOriginAdj = 0;
 
       const xOrigin = ($frame.offset().left - ($frameZoom.offset().left - xOriginAdj)) / ($frameZoom.width() + (xOriginAdj * 2) - $frame.width());
       const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
@@ -535,20 +528,17 @@ export default {
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
-$layer-pagefades: 2; // raise above prev/next slides
-$layer-hover:     $layer-pagefades + 1;
-$layer-buttons:   $layer-hover + 1;
-
 .slider {
   position: absolute;
-  min-width: 100%;
-  min-height: 100vh;
+  //min-width: 100%;
+  //min-height: 100vh;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
   @include short-transition;
 
-  &.is-resizing,
+  //&.is-resizing,
   &.no-transition {
     transition: none;
   }
@@ -592,19 +582,20 @@ $layer-buttons:   $layer-hover + 1;
   }
 
   .frame {
-    position: relative;
+    position: relative; // TODO
+    position: absolute;
     box-sizing: border-box;
     overflow: hidden;
     white-space: nowrap;
     @include short-transition;
 
     @at-root
-    .is-resizing#{&},
+    //.is-resizing#{&},
     .no-transition#{&} {
       transition: none;
     }
 
-    &[data-dpi="120"] {
+    &.dpi120 {
       position: fixed;
       pointer-events: none;
       opacity: 0;
@@ -630,7 +621,7 @@ $layer-buttons:   $layer-hover + 1;
     }
     @include short-transition;
 
-    .is-resizing &,
+    //.is-resizing &,
     .no-transition & {
       transition: none;
     }
@@ -643,7 +634,7 @@ $layer-buttons:   $layer-hover + 1;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
-    @at-root .frame[data-dpi="120"] .slide {
+    @at-root .frame.dpi120 .slide {
       margin: 0 ($unit * 1/8 * $zoom-ratio);
     }
     @include short-transition;
@@ -736,7 +727,7 @@ $layer-buttons:   $layer-hover + 1;
 
 .btn-slider {
   position: fixed;
-  z-index: $layer-buttons;
+  z-index: 1;
   top: 50%;
   margin-top: 0;
   transform: translateY(-50%);
