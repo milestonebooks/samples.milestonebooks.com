@@ -77,7 +77,7 @@ export default {
       isGrabbing:   false,
       isResizing:   false,
       noTransition: true,
-      viewWidth:    document.documentElement.clientWidth,
+      availWidth:    document.documentElement.clientWidth,
       slideHeight:  null,
       slideWidth:   null,
     }
@@ -230,12 +230,12 @@ export default {
 
       //const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
 
-      //const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
-      const wMargin = Math.max(this.viewWidth - w, 0);
+      //const wMargin = Math.min(wPagefades, Math.max(this.availWidth - w, 0));
+      const wMargin = Math.max(this.availWidth - w, 0);
 
       //const showPagefades = wMargin >= wPagefades;
 
-      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
+      console.log(`autosize(${dpi}) h:${h} w:${w} ${this.availWidth - document.documentElement.clientWidth} margin:${wMargin}`);
 
       $slider.css({
         'min-height': `${document.documentElement.clientHeight}px`
@@ -261,16 +261,16 @@ export default {
 
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
-      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.viewWidth, document.documentElement.clientHeight);
+      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null; //Math.ceil(window.$(`.slide[data-index="${sample.index}"] .slide-liner`).height());
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
       /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.viewWidth && !this.s.hasMouse) {
+      if (w > this.availWidth && !this.s.hasMouse) {
         const hRatio = h / w;
-        w = this.viewWidth;
+        w = this.availWidth;
         h = Math.floor(w * hRatio);
       }
       //*/
@@ -279,7 +279,7 @@ export default {
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      //console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
+      //console.log(`sampleStyleSize(): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()

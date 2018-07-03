@@ -100,7 +100,7 @@ $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
     font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
     min-height: 100%;
     background-color: $background-color;
-    overflow-y: scroll; // always on to avoid possible jank when toggling playlist
+    //overflow-y: scroll; // always on to avoid possible jank when toggling playlist
   }
 
   // applied to certain elements (e.g. buttons with translated contents) to make Edge consistent with Chrome & Firefox, i.e., avoid flipping translate() values

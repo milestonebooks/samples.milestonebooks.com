@@ -66,8 +66,8 @@ export default {
       isGrabbing:   false,
       //isResizing:   false,
       noTransition: true,
-      viewHeight:   document.documentElement.clientHeight,
-      viewWidth:    document.documentElement.clientWidth,
+      availHeight:  document.documentElement.clientHeight,
+      availWidth:   document.documentElement.clientWidth,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
@@ -160,7 +160,7 @@ export default {
 
       this.stylesheet = style.sheet;
 
-      console.log(`stylesheet @ ${this.viewWidth}w X ${this.viewHeight}h:`, this.stylesheet.cssRules);
+      console.log(`stylesheet @ ${this.availWidth}w X ${this.availHeight}h:`, this.stylesheet.cssRules);
       //*/
 
       // TODO
@@ -178,10 +178,10 @@ export default {
       // this is needed to ensure that font-size = 0 when lory resize calculations occur
       //this.isResizing = true;
 
-      this.viewHeight = document.documentElement.clientHeight;
-      this.viewWidth  = document.documentElement.clientWidth;
+      this.availHeight = document.documentElement.clientHeight;
+      this.availWidth  = document.documentElement.clientWidth;
 
-      console.log(`onresize: ${this.viewWidth}w X ${this.viewHeight}h`);
+      console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
 
       clearTimeout(window._resizeT);
 
@@ -218,15 +218,19 @@ export default {
       const $slidePrev = $slide.prev();
       const $slideNext = $slide.next();
 
-      const frameHeight = Math.ceil(Math.max(height, this.viewHeight - (width > this.viewWidth ? this.s.scrollbarWidth : 0)));
-      const frameWidth  = Math.ceil(Math.max(width,  this.viewWidth));
+      // scrollbars can sometimes be present that won't actually be needed for the actual slide size
+      const hasScrollbarX = this.availHeight < window.innerHeight;
+      const hasScrollbarY = this.availWidth  < window.innerWidth;
+      if (hasScrollbarX && width <= this.availWidth ) this.availWidth  = window.innerWidth;
+      if (hasScrollbarY && width <= this.availHeight) this.availHeight = window.innerHeight;
 
-      console.log(`width:${width} this.viewWidth:${this.viewWidth}`);
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+      const frameWidth  = Math.ceil(Math.max(width,  this.availWidth));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
-      if (dpi === 80) console.log(`autosize(${dpi}) viewHeight:${this.viewHeight} height:${height} frameHeight:${frameHeight} groupHeight:${groupHeight} this.s.scrollbarWidth:${this.s.scrollbarWidth}`);
+      console.log(`autosize(${dpi}) availHeight:${this.availHeight} window.innerHeight:${window.innerHeight} height:${height} frameHeight:${frameHeight} groupHeight:${groupHeight} this.s.scrollbarWidth:${this.s.scrollbarWidth}`);
 
       if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
@@ -234,8 +238,8 @@ export default {
         this.slideWidth  = width;
         this.groupHeight = groupHeight;
 
-        const xMargin = Math.max(this.viewWidth - width, 0) / 2;
-        const yMargin = Math.max(this.viewHeight - groupHeight, 0) / 2;
+        const xMargin = Math.max(this.availWidth - width, 0) / 2;
+        const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -267,23 +271,23 @@ export default {
         'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
       });
 
-      if (dpi === 80 && this.s.hasZoom) this.autosize({resize, dpi:120});
+      //TODO (not needed?) if (dpi === 80 && this.s.hasZoom) this.autosize({resize, dpi:120});
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
-      const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.viewWidth, document.documentElement.clientHeight);
+      const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
       let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null; //Math.ceil(window.$(`.slide[data-index="${sample.index}"] .slide-liner`).height());
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
       /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.viewWidth && !this.s.hasMouse) {
+      if (w > this.availWidth && !this.s.hasMouse) {
         const hRatio = h / w;
-        w = this.viewWidth;
+        w = this.availWidth;
         h = Math.floor(w * hRatio);
       }
       //*/
@@ -292,7 +296,7 @@ export default {
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      //console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
+      //console.log(`sampleStyleSize(): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -353,17 +357,17 @@ export default {
 
       const zoomIn = (dpi === 120);
 
-      // zoom slider may not have been initialized to correct zoom where a mouse interaction is available
-      //TODO: if (zoomIn) this.autosize(120);
+      const index = this.s.currentIndex;
 
-      const $el         = window.$('.slider');
-      const $frame      = $el.find('.frame.dpi80');
-      const $frameZoom  = $el.find('.frame.dpi120');
+      const $el        = window.$('.slider');
+      const $frame     = $el.find('.frame.dpi80');
+      const $frameZoom = $el.find('.frame.dpi120');
+      const $slide     = $frame.find(`[data-index="${index}"]`);
+      const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
 
       // ensure no transitions are in effect to delay prep layout
       $el.addClass('no-transition');
 
-      const index = this.s.currentIndex;
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
@@ -371,15 +375,22 @@ export default {
       const yScroll = window.scrollY;
 
       if (zoomIn) {
-        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left);
-        const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
+        const xOffset = $slide.offset().left;
+        const yOffset = $slide.offset().top;
+
+        const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
+        const yDiff = Math.round((h * elY * (120 - 80)) - yOffset);
+
+        //*>>> TODO debug
+        console.log(`zoomIn h:${h} elY:${elY} yOffset:${yOffset}`);
+        //<<<*/
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
 
         // position the zoom slider to trigger layout
-        $frameZoom.css({position: 'absolute'});
         this.autosize({dpi:120, resize:true});
+        $frameZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
         window.scroll(xScrollTo, yScrollTo);
@@ -390,16 +401,16 @@ export default {
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
+
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        /*>>> TODO debug
-        console.log(`zoomIn xDiff:${xDiff} yDiff:${yDiff} xFrame:${xFrame} yFrame:${yFrame}`);
-        $frameZoom.css({opacity: .5});
-        return;
-        //<<<*/
+        // find origin that will scale to final position
+        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
+        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, 'in');
+        const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
+        const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
 
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
@@ -535,7 +546,6 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
   overflow: hidden;
   display: flex;
   justify-content: center;
-  align-items: center;
   @include short-transition;
 
   //&.is-resizing,
@@ -622,7 +632,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     @include short-transition;
 
     //.is-resizing &,
-    .no-transition & {
+    @at-root .no-transition#{&} {
       transition: none;
     }
   }

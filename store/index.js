@@ -29,16 +29,16 @@ export const state = () => ({
   isZooming: false,
   hasPrint:  false,
 
-  scrollbarWidth: 0,
+  scrollbarWidth: 0, // TODO: [2018-07-03] not used
 
   alert: '',
 
   persist: [
-    {key:'isCompactList',       type:Boolean},
-    {key:'isCompactListTitles', type:Boolean},
-    {key:'hasTouch',            type:Boolean},
-    {key:'hasMouse',            type:Boolean},
-    {key:'scrollbarWidth',      type:Number},
+    {key:'isCompactList',       extract: v => v === 'true'},
+    {key:'isCompactListTitles', extract: v => v === 'true'},
+    {key:'hasTouch',            extract: v => v === 'true'},
+    {key:'hasMouse',            extract: v => v === 'true'},
+    {key:'scrollbarWidth',      extract: v => Number(v)},
   ],
 });
 
@@ -99,7 +99,7 @@ export const actions = {
     let v;
 
     for (const p of state.persist) {
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.type(v)});
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.extract(v)});
     }
 
   }, // initSettings()
