@@ -204,8 +204,10 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({resize = false, dpi = 80} = {}) {
+    autosize({resize = false, dpi = null} = {}) {
       const index = this.currentIndex;
+
+      if (!dpi) dpi = this.s.dpi;
 
       const $slider = window.$('.slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
@@ -219,10 +221,10 @@ export default {
       const $slideNext = $slide.next();
 
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
-      const hasScrollbarX = this.availHeight < window.innerHeight;
-      const hasScrollbarY = this.availWidth  < window.innerWidth;
-      if (hasScrollbarX && width <= this.availWidth ) this.availWidth  = window.innerWidth;
-      if (hasScrollbarY && width <= this.availHeight) this.availHeight = window.innerHeight;
+      const {needsScrollbar} = this.checkScrollbars({width, height});
+
+      this.availWidth  = window.innerWidth  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+      this.availHeight = window.innerHeight - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
       const frameHeight = Math.ceil(Math.max(height, this.availHeight));
       const frameWidth  = Math.ceil(Math.max(width,  this.availWidth));
@@ -230,7 +232,7 @@ export default {
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
-      console.log(`autosize(${dpi}) availHeight:${this.availHeight} window.innerHeight:${window.innerHeight} height:${height} frameHeight:${frameHeight} groupHeight:${groupHeight} this.s.scrollbarWidth:${this.s.scrollbarWidth}`);
+      console.log(`autosize(${dpi})`);
 
       if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
@@ -270,9 +272,21 @@ export default {
       $slides.css({
         'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
       });
-
-      //TODO (not needed?) if (dpi === 80 && this.s.hasZoom) this.autosize({resize, dpi:120});
     }, // autosize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    checkScrollbars({width, height}) {
+      const hasScrollbarX = this.availHeight < window.innerHeight;
+      const hasScrollbarY = this.availWidth  < window.innerWidth;
+      const needsScrollbarX = width  > window.innerWidth  || (width  > this.availWidth  && height > window.innerHeight);
+      const needsScrollbarY = height > window.innerHeight || (height > this.availHeight && width  > window.innerWidth);
+
+      return {
+        hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
+        needsScrollbar: {x:needsScrollbarX, y:needsScrollbarY},
+      };
+    }, // checkScrollbars()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -389,7 +403,7 @@ export default {
         const yScrollTo = yScroll + yDiff;
 
         // position the zoom slider to trigger layout
-        this.autosize({dpi:120, resize:true});
+        this.autosize({resize:true});
         $frameZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
@@ -439,38 +453,55 @@ export default {
 
       // zoom out
       } else {
-        const xLeft = $frame.offset().left;
-        const yTop  = $frame.offset().top;
+        const xOffset = $slide.offset().left;
+        const yOffset = $slide.offset().top;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - (xLeft - $frameZoom.offset().left));
-        const yDiff = Math.round((h * elY * (120 - 80)) - (yTop  - $frameZoom.offset().top));
+        const xDiff = Math.round((w * elX * (120 - 80)) - (xOffset - $slideZoom.offset().left));
+        const yDiff = Math.round((h * elY * (120 - 80)) - (yOffset - $slideZoom.offset().top));
 
-        const xMargin = document.documentElement.clientWidth  - $frame.width();
-        const yMargin = (xMargin > 0 ? window.innerHeight : document.documentElement.clientHeight) - $frame.height();
+        const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
-        const xMarginLeft = xLeft + xDiff - xScroll;
-        const yMarginTop  = yTop  + yDiff - yScroll;
+        this.availWidth  = window.innerWidth  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+        this.availHeight = window.innerHeight - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
-        const xMarginRight  = xScroll + document.documentElement.clientWidth  - (xLeft + xDiff + $frame.width());
-        const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop  + yDiff + $frame.height());
+        const xMargin = this.availWidth  - $slide.width();
+        const yMargin = this.availHeight - $slide.height();
+
+        const xMarginLeft = xOffset + xDiff - xScroll;
+        const yMarginTop  = yOffset + yDiff - yScroll;
+
+        const xMarginRight  = xScroll + this.availWidth  - (xOffset + xDiff + $slide.width());
+        const yMarginBottom = yScroll + this.availHeight - (yOffset + yDiff + $slide.height());
 
         const xScrollAdj = (xMargin > 0
-          ? xScroll - (xLeft + xDiff) + Math.max(xMargin / 2, 0)
+          ? xScroll - (xOffset + xDiff) + Math.max(xMargin / 2, 0)
           : Math.min(-xMarginLeft, 0) + Math.max(xMarginRight, 0) );
         const yScrollAdj = (yMargin > 0
-          ? yScroll - (yTop + yDiff) + Math.max(yMargin / 2, 0)
+          ? yScroll - (yOffset + yDiff) + Math.max(yMargin / 2, 0)
           : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
 
         // position non-zoom frame in the desired relative location
         const xFrame = xDiff + xScrollAdj;
         const yFrame = yDiff + yScrollAdj;
+
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, 'out');
+        // find origin that will scale to final position
+        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
+        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
+
+        const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
+        const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
 
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
+
+        /* TODO
+        $frameZoom.css({opacity: .25});
+        $frame.css({opacity: .5});
+        return;
+        //*/
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
@@ -494,7 +525,7 @@ export default {
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
-        this.autosize({dpi:80, resize:true});
+        this.autosize({resize:true});
         window.scroll(xScrollTo, yScrollTo);
 
         this.forceRepaint();
@@ -684,6 +715,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       overflow: hidden;
 
       &::after {
+        pointer-events: none;
         @include absolute-center(x);
         content: 'COPYRIGHTED MATERIAL';
         white-space: nowrap;
@@ -691,7 +723,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
 
-        @at-root .dpi120#{&} {
+        @at-root .dpi120 .slide-liner::after {
           font-size: 1.5em;
         }
       }
