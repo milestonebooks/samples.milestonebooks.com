@@ -165,6 +165,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
+      console.log('onResize()');
       this.availHeight = document.documentElement.clientHeight;
       this.availWidth  = document.documentElement.clientWidth;
 
@@ -173,6 +174,7 @@ export default {
       clearTimeout(window._resizeT);
 
       window._resizeT = setTimeout(async () => {
+        console.log('onResize() timeout');
         this.autosize({resize:true});
       }, settings.TRANSITION_TIME_MS);
 
@@ -382,16 +384,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onTouchend(e) {
-      const duration = Date.now() - this.touchPoint.time;
-      const diffX = Math.abs(this.touchPoint.deltaX);
-      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
-
-      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
-
-      // greater than half the slide width or a fast flick
-      const isValidSwipe = diffX > slideWidth / 2
-       || (duration < 300 && diffX > 25);
-
+      // cleanup
       const el = this.touchPoint.el;
       el.removeEventListener('touchmove', this.onTouchmove);
       el.removeEventListener('mousemove', this.onTouchmove);
@@ -408,23 +401,40 @@ export default {
 
       this.forceRepaint();
 
+      // decide what the interaction means
+      let action = 'click';
+      const duration = Date.now() - this.touchPoint.time;
+      const diffX = Math.abs(this.touchPoint.deltaX);
+      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+
+      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+
+      // greater than a third the slide width or a fast flick
+      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25)) {
+        action = 'swipe';
+      }
+
       let index = this.currentIndex;
+      let elIndex = null;
 
-      if (isValidSwipe) {
+      if (action === 'swipe') {
         index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
-      } else {
-        if (duration < 300) {
-          const elIndex = e.target.getAttribute('data-index');
-          if (elIndex !== null) index = Number(elIndex);
-
-          if (index === this.currentIndex && this.s.hasZoom) {
-            this.onClickZoom(e);
-          }
+      } else if (duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null) {
+        index = Number(elIndex);
+        if (index === this.currentIndex && this.s.hasZoom) {
+          action = 'zoom';
         }
       }
 
-      if (index !== this.currentIndex && this.s.samples[index]) {
+      if (action === 'zoom') {
+        this.toggleDpi({
+          elX: e.offsetX / e.target.getBoundingClientRect().width,
+          elY: e.offsetY / e.target.getBoundingClientRect().height,
+        });
+
+      } else if (index !== this.currentIndex && this.s.samples[index]) {
         this.$router.replace(`#${this.s.samples[index].id}`);
+
       } else {
         this.autosize();
       }
@@ -445,17 +455,6 @@ export default {
 
       return {xOffset, yOffset};
     }, // getSlideOffset()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onClickZoom(e) {
-      const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
-
-      this.toggleDpi({
-        elX: asDec('X'),
-        elY: asDec('Y'),
-      });
-    }, // onClickZoom()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -551,7 +550,6 @@ export default {
 
       // zoom out
       } else {
-        // TODO: bug on zoom out (see item 1-15411)
         const xOffset = $slide.offset().left;
         const yOffset = $slide.offset().top;
 
@@ -679,7 +677,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
   .frame-mask {
     position: fixed;
-    z-index: 1; // above .frame to mask grab zones
+    z-index: 2; // above both <.frame>s to mask grab zones
 
     &.end {
       top: 0;
