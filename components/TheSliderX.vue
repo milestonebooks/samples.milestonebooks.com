@@ -8,7 +8,7 @@
     <div class="frame dpi80">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
             <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
@@ -20,7 +20,7 @@
     <div v-if="s.hasZoom" class="frame dpi120">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
             <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
           </div>
@@ -61,16 +61,15 @@ export default {
   data () {
     return {
       isInit:       false,
-      //isInit80:     false,
-      //isInit120:    false,
       isGrabbing:   false,
-      //isResizing:   false,
+      isScrolling:  null,
       noTransition: true,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
+      touchPoint:   null,
     }
   },
 
@@ -98,17 +97,10 @@ export default {
       return 'M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z'; // right-pointing: 'M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z'
     },
 
-    /* obsolete?
-    isInit() {
-      return this.isInit80 && (this.s.hasZoom ? this.isInit120 : true);
-    },
-    //*/
-
     sliderClass() {
       return {
         'slider': true,
         'is-init': this.isInit,
-        //'is-resizing': this.isResizing,
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
@@ -139,10 +131,14 @@ export default {
 
   mounted() {
     window.addEventListener('resize', this.onResize);
+    this.$el.addEventListener('touchstart', this.onTouchstart);
+    this.$el.addEventListener('mousedown',  this.onTouchstart);
   },
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
+    this.$el.removeEventListener('touchstart', this.onTouchstart);
+    this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
   //====================================================================================================================
@@ -163,21 +159,12 @@ export default {
       console.log(`stylesheet @ ${this.availWidth}w X ${this.availHeight}h:`, this.stylesheet.cssRules);
       //*/
 
-      // TODO
-      this.$nextTick(() => {
-        this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
-        this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
-      });
-
       this.isInit = true;
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
-      // this is needed to ensure that font-size = 0 when lory resize calculations occur
-      //this.isResizing = true;
-
       this.availHeight = document.documentElement.clientHeight;
       this.availWidth  = document.documentElement.clientWidth;
 
@@ -187,8 +174,6 @@ export default {
 
       window._resizeT = setTimeout(async () => {
         this.autosize({resize:true});
-        //await this.forceRepaint();
-        //this.isResizing = false;
       }, settings.TRANSITION_TIME_MS);
 
     }, // onResize()
@@ -263,11 +248,16 @@ export default {
         });
       }
 
+      /*
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
       // [2018-06-29] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
       const yOffset = navigator.userAgent.match(/Trident/) ? 0 : Math.floor(($slides.height() - frameHeight) / 2);
+      /*/
+
+      const {xOffset, yOffset} = this.getSlideOffset($slide);
+      //*/
 
       $slides.css({
         'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
@@ -292,8 +282,9 @@ export default {
 
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
+      // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
       const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
-      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null; //Math.ceil(window.$(`.slide[data-index="${sample.index}"] .slide-liner`).height());
+      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
@@ -330,30 +321,141 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onclickSlide(e) {
-      const index = e.target.getAttribute('data-index');
+    onTouchstart(e) {
+      const touches = e.touches ? e.touches[0] : e;
 
-      if (index === null) return;
+      const $frame = window.$(touches.target).closest('.frame');
 
-      console.log('onclickSlide()', `index:${index} active:${this.s.currentIndex} target:${e.target.getAttribute('data-index')}`, e);
+      if (!$frame.length) return;
 
-      if (Number(index) !== this.s.currentIndex) {
-        console.log(`go to:#${this.s.samples[index].id}`);
-        return this.$router.replace(`#${this.s.samples[index].id}`);
+      const el = $frame[0];
+
+      el.addEventListener('touchmove', this.onTouchmove);
+      el.addEventListener('mousemove', this.onTouchmove);
+      el.addEventListener('touchend',  this.onTouchend);
+      el.addEventListener('mouseup',   this.onTouchend);
+
+      const {pageX, pageY} = touches;
+
+      const {xOffset, yOffset} = this.getSlideOffset($frame.find(`[data-index="${this.currentIndex}"]`));
+
+      this.touchPoint = {
+        time: Date.now(),
+        el: el,
+        slidesX: xOffset,
+        slidesY: yOffset,
+        x: pageX,
+        y: pageY,
+        deltaX: 0,
+        deltaY: 0,
+      };
+
+      this.isScrolling = null;
+
+    }, // onTouchstart()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onTouchmove(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      const {pageX, pageY} = touches;
+
+      this.touchPoint.deltaX = pageX - this.touchPoint.x;
+      this.touchPoint.deltaY = pageY - this.touchPoint.y;
+
+      if (this.isScrolling === null) {
+        this.isScrolling = !!(this.isScrolling || Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY));
       }
 
-      // TODO: abort zoom if panning instead of clicking
+      if (!this.isScrolling) {
+        this.isGrabbing = true;
+        window.$('.slider').addClass('no-transition');
 
-      // abort zoom if not available or no mouse detected
-      if (!this.s.hasZoom || !window.$('main.has-mouse').length) return;
+        const $slides = window.$(this.touchPoint.el).find('.slides');
+        $slides.css({
+          'transform': `translate3d(${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px, 0)`,
+        });
+      }
+    }, // onTouchmove()
 
+    //------------------------------------------------------------------------------------------------------------------
+
+    onTouchend(e) {
+      const duration = Date.now() - this.touchPoint.time;
+      const diffX = Math.abs(this.touchPoint.deltaX);
+      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+
+      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+
+      // greater than half the slide width or a fast flick
+      const isValidSwipe = diffX > slideWidth / 2
+       || (duration < 300 && diffX > 25);
+
+      const el = this.touchPoint.el;
+      el.removeEventListener('touchmove', this.onTouchmove);
+      el.removeEventListener('mousemove', this.onTouchmove);
+      el.removeEventListener('touchend',  this.onTouchend);
+      el.removeEventListener('mouseup',   this.onTouchend);
+
+      this.touchPoint.el = null;
+
+      this.isScrolling = null;
+
+      this.isGrabbing = false;
+
+      window.$('.slider').removeClass('no-transition');
+
+      this.forceRepaint();
+
+      let index = this.currentIndex;
+
+      if (isValidSwipe) {
+        index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
+      } else {
+        if (duration < 300) {
+          const elIndex = e.target.getAttribute('data-index');
+          if (elIndex !== null) index = Number(elIndex);
+
+          if (index === this.currentIndex && this.s.hasZoom) {
+            this.onClickZoom(e);
+          }
+        }
+      }
+
+      if (index !== this.currentIndex && this.s.samples[index]) {
+        this.$router.replace(`#${this.s.samples[index].id}`);
+      } else {
+        this.autosize();
+      }
+    }, // onTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getSlideOffset($slide) {
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
+      const $slides = $slide.closest('.slides');
+      const height = Math.ceil($slide.height());
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+
+      const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
+      // [2018-06-29] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
+      const yOffset = navigator.userAgent.match(/Trident/) ? 0 : Math.floor(($slides.height() - frameHeight) / 2);
+
+      return {xOffset, yOffset};
+    }, // getSlideOffset()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onClickZoom(e) {
       const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
 
       this.toggleDpi({
         elX: asDec('X'),
         elY: asDec('Y'),
       });
-    }, // onclickSlide()
+    }, // onClickZoom()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -371,7 +473,7 @@ export default {
 
       const zoomIn = (dpi === 120);
 
-      const index = this.s.currentIndex;
+      const index = this.currentIndex;
 
       const $el        = window.$('.slider');
       const $frame     = $el.find('.frame.dpi80');
@@ -394,10 +496,6 @@ export default {
 
         const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
         const yDiff = Math.round((h * elY * (120 - 80)) - yOffset);
-
-        //*>>> TODO debug
-        console.log(`zoomIn h:${h} elY:${elY} yOffset:${yOffset}`);
-        //<<<*/
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -453,6 +551,7 @@ export default {
 
       // zoom out
       } else {
+        // TODO: bug on zoom out (see item 1-15411)
         const xOffset = $slide.offset().left;
         const yOffset = $slide.offset().top;
 
@@ -496,12 +595,6 @@ export default {
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
-
-        /* TODO
-        $frameZoom.css({opacity: .25});
-        $frame.css({opacity: .5});
-        return;
-        //*/
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
@@ -617,13 +710,13 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
     @at-root
     .slider.has-prev .frame-mask.prev,
-    .slider.has-next .frame-mask.next {
+    .slider.has-next .frame-mask.next,
+    [aria-grabbed] .frame-mask {
       display: none;
     }
   }
 
   .frame {
-    position: relative; // TODO
     position: absolute;
     box-sizing: border-box;
     overflow: hidden;
@@ -631,7 +724,6 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     @include short-transition;
 
     @at-root
-    //.is-resizing#{&},
     .no-transition#{&} {
       transition: none;
     }
@@ -642,12 +734,10 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       opacity: 0;
     }
 
-    /* TODO: wait until sliding is enabled
     cursor: grab;
-    @at-root [aria-grabbed] & {
+    @at-root [aria-grabbed]#{&} {
       cursor: grabbing;
     }
-    //*/
   } // .frame
 
   .slides {
@@ -662,7 +752,6 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     }
     @include short-transition;
 
-    //.is-resizing &,
     @at-root .no-transition#{&} {
       transition: none;
     }

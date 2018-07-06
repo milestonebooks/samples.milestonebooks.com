@@ -22,8 +22,8 @@ export const state = () => ({
   },
 
   persist: [
-    {key:'isAutoPlay', extract: v => v === 'true'},
-    {key:'isAutoNext', extract: v => v === 'true'},
+    {key:'isAutoPlay', get: v => v === 'true'},
+    {key:'isAutoNext', get: v => v === 'true'},
   ],
 }); // state{}
 
@@ -201,7 +201,7 @@ export const actions = {
 
     for (const p of state.persist) {
       console.log('initSettings', p.key, storage.getItem(p.key), p.type);
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.extract(v)});
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
     }
 
   }, // initSettings()
