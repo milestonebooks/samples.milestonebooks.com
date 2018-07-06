@@ -44,6 +44,9 @@ import SvgIcon from './SvgIcon.vue';
 import settings from '~/assets/settings';
 
 import sleep from '~/plugins/sleep';
+import supports3d from '~/plugins/supports3d';
+import supportsPassive from '~/plugins/supportsPassive';
+
 
 import { mapGetters } from 'vuex';
 
@@ -74,6 +77,8 @@ export default {
       slideWidth:   null,
       groupHeight:  null,
       touchPoint:   null,
+      supports3d:   supports3d(),
+      eTouchParams: supportsPassive() ? { passive: true } : false,
     }
   },
 
@@ -135,13 +140,13 @@ export default {
 
   mounted() {
     window.addEventListener('resize', this.onResize);
-    this.$el.addEventListener('touchstart', this.onTouchstart);
+    this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
   },
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
-    this.$el.removeEventListener('touchstart', this.onTouchstart);
+    this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
@@ -253,9 +258,10 @@ export default {
       }
 
       const {xOffset, yOffset} = this.getSlideOffset($slide);
+      const XY = `${-xOffset}px, ${-yOffset}px`;
 
       $slides.css({
-        'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
+        'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
     }, // autosize()
 
@@ -325,7 +331,7 @@ export default {
 
       const el = $frame[0];
 
-      el.addEventListener('touchmove', this.onTouchmove);
+      el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
       el.addEventListener('touchend',  this.onTouchend);
       el.addEventListener('mouseup',   this.onTouchend);
@@ -368,8 +374,9 @@ export default {
         window.$('.slider').addClass('no-transition');
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
+        const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
         $slides.css({
-          'transform': `translate3d(${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px, 0)`,
+          'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
         });
       }
     }, // onTouchmove()
@@ -379,7 +386,7 @@ export default {
     onTouchend(e) {
       // cleanup
       const el = this.touchPoint.el;
-      el.removeEventListener('touchmove', this.onTouchmove);
+      el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.removeEventListener('mousemove', this.onTouchmove);
       el.removeEventListener('touchend',  this.onTouchend);
       el.removeEventListener('mouseup',   this.onTouchend);
@@ -777,11 +784,15 @@ $layer-buttons: $layer-frame-mask + 1;
       opacity: 0.25;
     }
 
+    // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
+    // [2018-07] svg cursor only works in Chrome
     @at-root .has-mouse.has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
     @at-root .has-mouse.has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
 
     // TODO
