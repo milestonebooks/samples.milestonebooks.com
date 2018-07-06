@@ -153,15 +153,16 @@ export default {
       }
 
       this.set({
-        isInit:   true,
-        title:    d.title,
-        item:     this.$route.params.item,
-        type:     d.type,
-        hasZoom:  d.hasZoom  || false,
-        hasPrint: d.hasPrint || false,
-        samples:  samples,
-        firstId:  samples[0].id,
-        lastId:   samples[samples.length - 1].id,
+        isInit:    true,
+        title:     d.title,
+        item:      this.$route.params.item,
+        type:      d.type,
+        direction: d.direction || 'ltr',
+        hasZoom:   d.hasZoom  || false,
+        hasPrint:  d.hasPrint || false,
+        samples:   samples,
+        firstId:   samples[0].id,
+        lastId:    samples[samples.length - 1].id,
       });
 
       console.timeEnd('index');

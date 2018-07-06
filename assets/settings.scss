@@ -32,6 +32,9 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 // timings
 $transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
 
+// selectors
+$isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usage
+
 // functions
 
 // adapted from <https://gist.github.com/tqc/2564280>

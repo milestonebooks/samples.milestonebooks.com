@@ -10,7 +10,7 @@ export const state = () => ({
   isListShown: false,
   isValidInputId: true,
 
-  isAutoPlay: true,
+  isAutoPlay: null, // default to true if mouse is detected
   isAutoNext: true,
 
   current: {
@@ -195,12 +195,14 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async initSettings({commit, state}) {
+  async initSettings({commit, state, rootState}) {
+
+    // isAutoPlay should default to true for devices using a mouse
+    if (rootState.hasMouse) commit('set', {isAutoPlay: true});
 
     let v;
 
     for (const p of state.persist) {
-      console.log('initSettings', p.key, storage.getItem(p.key), p.type);
       if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
     }
 

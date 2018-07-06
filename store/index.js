@@ -16,7 +16,7 @@ export const state = () => ({
   firstId:  '',
   lastId:   '',
 
-  direction: 'ltr', // 'ltr' | 'rtl' | 'ttb' // TODO: implement 'ttb'
+  direction: 'ltr', // 'ltr' | 'rtl' // TODO: implement 'ttb'
 
   isCompactList: true,
   isCompactListTitles: false,

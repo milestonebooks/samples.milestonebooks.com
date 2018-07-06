@@ -47,6 +47,10 @@ import sleep from '~/plugins/sleep';
 
 import { mapGetters } from 'vuex';
 
+window.$.fn.offsetRect = function() {
+  return this[0].getBoundingClientRect();
+};
+
 export default {
   components: {
     SvgIcon,
@@ -165,16 +169,14 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
-      console.log('onResize()');
       this.availHeight = document.documentElement.clientHeight;
       this.availWidth  = document.documentElement.clientWidth;
 
-      console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
+      //console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
 
       clearTimeout(window._resizeT);
 
       window._resizeT = setTimeout(async () => {
-        console.log('onResize() timeout');
         this.autosize({resize:true});
       }, settings.TRANSITION_TIME_MS);
 
@@ -183,7 +185,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
+      //console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
       this.autosize();
@@ -219,7 +221,7 @@ export default {
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
-      console.log(`autosize(${dpi})`);
+      //console.log(`autosize(${dpi})`);
 
       if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
@@ -250,16 +252,7 @@ export default {
         });
       }
 
-      /*
-      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
-
-      const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
-      // [2018-06-29] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
-      const yOffset = navigator.userAgent.match(/Trident/) ? 0 : Math.floor(($slides.height() - frameHeight) / 2);
-      /*/
-
       const {xOffset, yOffset} = this.getSlideOffset($slide);
-      //*/
 
       $slides.css({
         'transform': `translate3d(${-xOffset}px, ${-yOffset}px, 0)`,
@@ -417,9 +410,12 @@ export default {
       let index = this.currentIndex;
       let elIndex = null;
 
+      // main button, quickly, without moving, on a slide
+      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
+
       if (action === 'swipe') {
         index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
-      } else if (duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null) {
+      } else if (isSlideClick) {
         index = Number(elIndex);
         if (index === this.currentIndex && this.s.hasZoom) {
           action = 'zoom';
@@ -449,9 +445,11 @@ export default {
       const height = Math.ceil($slide.height());
       const frameHeight = Math.ceil(Math.max(height, this.availHeight));
 
-      const xOffset = $slide[0].getBoundingClientRect()[metric] - $slides[0].getBoundingClientRect()[metric];
-      // [2018-06-29] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
-      const yOffset = navigator.userAgent.match(/Trident/) ? 0 : Math.floor(($slides.height() - frameHeight) / 2);
+      const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
+      let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+
+      // [2018-07] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
+      if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
 
       return {xOffset, yOffset};
     }, // getSlideOffset()
@@ -460,9 +458,8 @@ export default {
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
-      console.log('toggleDpi', elX, elY);
-
       // TODO: cancel zoom action
+      // TODO: rtl zoom
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -489,8 +486,11 @@ export default {
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
+      // TODO: 'rtl' zoom in is buggy
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
       if (zoomIn) {
-        const xOffset = $slide.offset().left;
+        const xOffset = $slide.offsetRect()[metric];
         const yOffset = $slide.offset().top;
 
         const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
@@ -517,7 +517,7 @@ export default {
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
-        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
+        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width()  - $slide.width());
         const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
 
         const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
@@ -661,6 +661,9 @@ export default {
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
+$layer-frame-mask: 2; // above both <.frame>s to mask grab zones
+$layer-buttons: $layer-frame-mask + 1;
+
 .slider {
   position: absolute;
   //min-width: 100%;
@@ -677,7 +680,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
   .frame-mask {
     position: fixed;
-    z-index: 2; // above both <.frame>s to mask grab zones
+    z-index: $layer-frame-mask;
 
     &.end {
       top: 0;
@@ -733,6 +736,9 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     }
 
     cursor: grab;
+    #{$isIE} & {
+      cursor: move;
+    }
     @at-root [aria-grabbed]#{&} {
       cursor: grabbing;
     }
@@ -744,8 +750,8 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
     align-items: center;
     font-size: 1rem;
     line-height: 1;
-    // [2018-06-21] IE11 still has about 5% usage
-    html[data-browser*="Trident"] & {
+
+    #{$isIE} & {
       display: inline-block;
     }
     @include short-transition;
@@ -771,10 +777,10 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
       opacity: 0.25;
     }
 
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.current {
+    @at-root .has-mouse.has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide.current {
+    @at-root .has-mouse.has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
     }
 
@@ -856,7 +862,7 @@ $frame-unit: $unit;// ($unit / 1em) * 10px;
 
 .btn-slider {
   position: fixed;
-  z-index: 1;
+  z-index: $layer-buttons;
   top: 50%;
   margin-top: 0;
   transform: translateY(-50%);

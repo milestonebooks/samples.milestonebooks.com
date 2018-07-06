@@ -662,24 +662,4 @@ export default {
 
 } // .list
 
-/* [2018-05-25] hack to fix Edge rendering bug
-html[data-browser*="Trident"],
-html[data-browser*="Edge"] {
-  .list:not(.compact) .item {
-    border-bottom-width: 2px;
-    margin-bottom: -1px;
-
-    &::after {
-      content: '';
-      position: absolute;
-      width: 100%;
-      height: 1px;
-      top: calc(100% + 1px);
-      background-color: $list-bg-color;
-      border-radius: unset;
-    }
-  }
-}
-//*/
-
 </style>
