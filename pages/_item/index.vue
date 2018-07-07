@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import TheSlider from '~/components/TheSliderX';
+import TheSlider from '~/components/TheSlider';
 import TheNav    from '~/components/TheNav';
 import ThePlayer from '~/components/ThePlayer';
 
