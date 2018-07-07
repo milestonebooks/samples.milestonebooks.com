@@ -1,4 +1,4 @@
-import storage from '../plugins/storage';
+import storage from '~/plugins/storage';
 
 export const state = () => ({
   isInit:      false,
@@ -10,7 +10,7 @@ export const state = () => ({
   isListShown: false,
   isValidInputId: true,
 
-  isAutoPlay: true,
+  isAutoPlay: null, // default to true if mouse is detected
   isAutoNext: true,
 
   current: {
@@ -21,7 +21,10 @@ export const state = () => ({
     pctHandle: 0,
   },
 
-  persist: ['isAutoPlay', 'isAutoNext'],
+  persist: [
+    {key:'isAutoPlay', get: v => v === 'true'},
+    {key:'isAutoNext', get: v => v === 'true'},
+  ],
 }); // state{}
 
 //======================================================================================================================
@@ -191,14 +194,16 @@ export const mutations = {
 export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
-  // currently only handles boolean values
 
-  async initSettings({commit, state}) {
+  async initSettings({commit, state, rootState}) {
+
+    // isAutoPlay should default to true for devices using a mouse
+    if (rootState.hasMouse) commit('set', {isAutoPlay: true});
 
     let v;
 
-    for (const key of state.persist) {
-      if ((v = storage.getItem(key)) !== null) commit('set', {[key]: v === 'true'});
+    for (const p of state.persist) {
+      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
     }
 
   }, // initSettings()

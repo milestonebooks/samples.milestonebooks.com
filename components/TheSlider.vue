@@ -1,53 +1,58 @@
 <template>
-  <div :class="containerClass" :aria-grabbed="isGrabbing">
+  <article :class="sliderClass" :aria-grabbed="isGrabbing">
+    <div class="frame-mask end prev"></div>
+    <div class="frame-mask end next"></div>
+    <div class="frame-mask side above"></div>
+    <div class="frame-mask side below"></div>
 
-    <article :class="sliderClass(80)" data-dpi="80">
-      <div class="frame js_frame">
-        <div class="slides js_slides">
-          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)" @click="onclickSlide">
-            <div class="slide-liner">
-              <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
-              <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
-            </div>
-          </section>
-        </div>
+    <div class="frame dpi80">
+      <div class="slides">
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
+          <div class="slide-liner">
+            <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
+            <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
+          </div>
+        </section>
       </div>
-    </article>
+    </div>
 
-    <article v-if="s.hasZoom" :class="sliderClass(120)" data-dpi="120">
-      <div class="frame js_frame">
-        <div class="slides js_slides">
-          <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
-                   :class="`slide js_slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)" @click="onclickSlide">
-            <div class="slide-liner">
-              <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
-            </div>
-          </section>
-        </div>
+    <div v-if="s.hasZoom" class="frame dpi120">
+      <div class="slides">
+        <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
+                 :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
+          <div class="slide-liner">
+            <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+          </div>
+        </section>
       </div>
-    </article>
+    </div>
 
-    <nuxt-link class="btn slider-button prev" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="!getSample(-1)" aria-label="Previous sample" tag="button">
-      <SvgIcon view="24 48" d="M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z"></SvgIcon>
+    <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
+      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
-    <nuxt-link class="btn slider-button next" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="!getSample(+1)" aria-label="Next sample" tag="button">
-      <SvgIcon view="24 48" d="M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z"></SvgIcon>
+    <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
+      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
     </nuxt-link>
 
-  </div>
+  </article>
 </template>
 
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { lory } from 'lory.js';
-
 import settings from '~/assets/settings';
+
+import sleep from '~/plugins/sleep';
+import supports3d from '~/plugins/supports3d';
+import supportsPassive from '~/plugins/supportsPassive';
+
 
 import { mapGetters } from 'vuex';
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+window.$.fn.offsetRect = function() {
+  return this[0].getBoundingClientRect();
+};
 
 export default {
   components: {
@@ -62,24 +67,22 @@ export default {
 
   data () {
     return {
-      slider: null,
-      sliderZoom: null,
-
-      defaultOptions: {
-        enableMouseEvents: true,
-        rewindOnResize: false,
-        slideSpeed: settings.TRANSITION_TIME_MS,
-        ease: 'ease-in-out',
-      },
-
-      isInit80:     false,
-      isInit120:    false,
+      isInit:       false,
       isGrabbing:   false,
-      isResizing:   false,
+      isScrolling:  null,
       noTransition: true,
-      viewWidth:    document.documentElement.clientWidth,
+      availHeight:  document.documentElement.clientHeight,
+      availWidth:   document.documentElement.clientWidth,
+      slideHeight:  null,
+      slideWidth:   null,
+      groupHeight:  null,
+      touchPoint:   null,
+      supports3d:   supports3d(),
+      eTouchParams: supportsPassive() ? { passive: true } : false,
     }
   },
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
     ...mapGetters([
@@ -91,23 +94,40 @@ export default {
       return this.$store.state;
     },
 
-    isInit() {
-      return this.isInit80 && (this.s.hasZoom ? this.isInit120 : true);
+    isFirst() {
+      return this.getSample && !this.getSample(-1);
     },
 
-    containerClass() {
+    isLast() {
+      return this.getSample && !this.getSample(+1);
+    },
+
+    btnSliderPath() {
+      return 'M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z'; // right-pointing: 'M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z'
+    },
+
+    sliderClass() {
       return {
-        'slider-container': true,
-        'is-init':          this.isInit,
-        'is-resizing':      this.isResizing,
-        'no-transition':    this.noTransition,
+        'slider': true,
+        'is-init': this.isInit,
+        'no-transition': this.noTransition,
+        'has-prev': !this.isFirst,
+        'has-next': !this.isLast,
       }
-    }
-  },
+    }, // sliderClass()
+
+  }, // computed {}
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   watch: {
-    samples: 'init',
-    currentIndex: 'update',
+    samples() { this.init() },
+    currentIndex() {
+      // defer to ensure dom is updated
+      this.$nextTick(() => {
+        this.update();
+      });
+    },
     isInit() {
       // ensure that transitions are only enabled after init is complete
       this.$nextTick(() => {
@@ -116,9 +136,18 @@ export default {
     },
   },
 
+  //====================================================================================================================
+
+  mounted() {
+    window.addEventListener('resize', this.onResize);
+    this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.addEventListener('mousedown',  this.onTouchstart);
+  },
+
   beforeDestroy () {
-    if (this.slider)     this.slider.destroy();
-    if (this.sliderZoom) this.sliderZoom.destroy();
+    window.removeEventListener('resize', this.onResize);
+    this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
   //====================================================================================================================
@@ -130,136 +159,141 @@ export default {
     init() {
       console.log('init', this.s.samples.length);
 
-      this.$nextTick(() => {
-        this.$el.addEventListener('after.lory.init',    this.onLoryInit);
-        this.$el.addEventListener('on.lory.touchstart', () => this.isGrabbing = true);
-        this.$el.addEventListener('on.lory.touchend',   () => this.isGrabbing = false);
-        this.$el.addEventListener('before.lory.slide',  this.beforeSlideChange);
-        this.$el.addEventListener('after.lory.slide',   this.onSlideChange);
+      /* experimental
+      const style = document.createElement('style');
+      document.head.appendChild(style);
 
-        window._resizeT = null;
-        window.addEventListener('resize', () => {
-          // this is needed to ensure that font-size = 0 when lory resize calculations occur
-          this.isResizing = true;
-          clearTimeout(window._resizeT);
+      this.stylesheet = style.sheet;
 
-          this.viewWidth = document.documentElement.clientWidth;
+      console.log(`stylesheet @ ${this.availWidth}w X ${this.availHeight}h:`, this.stylesheet.cssRules);
+      //*/
 
-          window._resizeT = setTimeout(async () => {
-            this.autosize();
-            this.isResizing = false;
-            this.update();
-            // TODO: not always correct slide position after resizing
-          }, settings.TRANSITION_TIME_MS);
-        });
-
-        if (!this.slider && this.samples.length) {
-          this.slider = lory(document.getElementsByClassName('dpi80')[0],  Object.assign(this.defaultOptions, this.options));
-          if (this.s.hasZoom) this.sliderZoom = lory(document.getElementsByClassName('dpi120')[0], Object.assign(this.defaultOptions, this.options));
-        }
-      });
+      this.isInit = true;
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    sliderClass(dpi) {
-      return `dpi${dpi} slider js_slider` + (!this.getSample ? '' :
-          (this.getSample(-1) ? ' has-prev' : '')
-        + (this.getSample(+1) ? ' has-next' : '')
-      );
-    }, // sliderClass()
+    onResize() {
+      this.availHeight = document.documentElement.clientHeight;
+      this.availWidth  = document.documentElement.clientWidth;
 
-    //------------------------------------------------------------------------------------------------------------------
+      //console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
 
-    onLoryInit(e) {
-      const dpi = window.$(e.target).attr('data-dpi');
-      this[`isInit${dpi}`] = true;
+      clearTimeout(window._resizeT);
 
-      this.update();
-    }, // onLoryInit()
+      window._resizeT = setTimeout(async () => {
+        this.autosize({resize:true});
+      }, settings.TRANSITION_TIME_MS);
+
+    }, // onResize()
 
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      //console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
-      this.$nextTick(() => {
-        if (this.slider)     this.slider.slideTo(this.currentIndex);
-        if (this.sliderZoom) this.sliderZoom.slideTo(this.currentIndex);
-      });
+      this.autosize();
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onSlideChange(/*e*/) {
-      // update route only when initiated "internally"
-      const index = this.slider.returnIndex();
-      console.log(`onSlideChange(${index})`);
-      if (this.isGrabbing) {
-        window.$nuxt.$router.replace(`#${window.$nuxt.$store.state.samples[index].id}`);
+    autosize({resize = false, dpi = null} = {}) {
+      const index = this.currentIndex;
+
+      if (!dpi) dpi = this.s.dpi;
+
+      const $slider = window.$('.slider');
+      const $frame  = $slider.find(`.frame.dpi${dpi}`);
+      const $slides = $frame.find('.slides');
+      const $slide  = $slides.find(`.slide[data-index="${index}"]`);
+
+      const height = Math.ceil($slide.height());
+      const width  = Math.ceil($slide.width());
+
+      const $slidePrev = $slide.prev();
+      const $slideNext = $slide.next();
+
+      // scrollbars can sometimes be present that won't actually be needed for the actual slide size
+      const {needsScrollbar} = this.checkScrollbars({width, height});
+
+      this.availWidth  = window.innerWidth  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+      this.availHeight = window.innerHeight - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
+
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+      const frameWidth  = Math.ceil(Math.max(width,  this.availWidth));
+
+      // this determines how much gutter space is masked from being grabbable for sliding
+      const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+
+      //console.log(`autosize(${dpi})`);
+
+      if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
+
+        this.slideHeight = height;
+        this.slideWidth  = width;
+        this.groupHeight = groupHeight;
+
+        const xMargin = Math.max(this.availWidth - width, 0) / 2;
+        const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
+
+        if (dpi === this.s.dpi) {
+          $slider.css({
+            height: `${frameHeight}px`,
+            width:  `${frameWidth}px`,
+          });
+          window.$('.frame-mask.end').css({width: `${xMargin}px`});
+          window.$('.frame-mask.side').css({height: `${yMargin}px`});
+        }
+
+        $frame.css({
+          height: `${frameHeight}px`,
+          width:  `${frameWidth}px`,
+          left:            `${ xMargin}px`,
+          'margin-left':   `${-xMargin}px`,
+          'padding-left':  `${ xMargin}px`,
+          'margin-right':  `${-xMargin}px`,
+          'padding-right': `${ xMargin}px`,
+        });
       }
 
-      this.autosize();
-    }, // onSlideChange()
+      const {xOffset, yOffset} = this.getSlideOffset($slide);
+      const XY = `${-xOffset}px, ${-yOffset}px`;
+
+      $slides.css({
+        'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+      });
+    }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize(dpi = 80) {
-      const index = this.s.currentIndex;
+    checkScrollbars({width, height}) {
+      const hasScrollbarX = this.availHeight < window.innerHeight;
+      const hasScrollbarY = this.availWidth  < window.innerWidth;
+      const needsScrollbarX = width  > window.innerWidth  || (width  > this.availWidth  && height > window.innerHeight);
+      const needsScrollbarY = height > window.innerHeight || (height > this.availHeight && width  > window.innerWidth);
 
-      const $slider = window.$(`.slider.dpi${dpi}`);
-
-      const $frame  = $slider.find('.frame');
-      const $slides = $slider.find('.slides');
-      const $slide  = $slider.find(`.slide[data-index="${index}"]`);
-
-      const h = Math.ceil($slide.height() / 2) * 2; // ensure even number to handle margin rounding
-      const w = Math.ceil($slide.width());
-
-      const yMargin = -Math.floor(($slides.height() - h) / 2);
-
-      const wPagefades = settings.PAGEFADE_WIDTH * 2 * (dpi / 80);
-
-      const wMargin = Math.min(wPagefades, Math.max(this.viewWidth - w, 0));
-
-      const showPagefades = wMargin >= wPagefades;
-
-      //console.log(`autosize(${dpi}) h:${h} w:${w} ${this.viewWidth - document.documentElement.clientWidth} margin:${wMargin}`);
-
-      $slider.css({
-        'min-height': `${document.documentElement.clientHeight}px`
-      });
-
-      $frame.css({
-        height: `${h}px`,
-        width:  `${w}px`,
-        marginLeft:   !wMargin ? null : `${-wMargin / 2}px`,
-        paddingLeft:  !wMargin ? null : `${ wMargin / 2}px`,
-        marginRight:  `${-wMargin / 2}px`,
-        paddingRight: `${ wMargin / 2}px`,
-      }).toggleClass('show-pagefades', showPagefades);
-
-      $slides.css({
-        marginTop: `${yMargin}px`,
-      });
-
-      if (dpi === 80 && this.s.hasZoom) this.autosize(120);
-    }, // autosize()
+      return {
+        hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
+        needsScrollbar: {x:needsScrollbarX, y:needsScrollbarY},
+      };
+    }, // checkScrollbars()
 
     //------------------------------------------------------------------------------------------------------------------
 
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
-      let   w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.viewWidth, document.documentElement.clientHeight);
-      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null; //Math.ceil(window.$(`.slide[data-index="${sample.index}"] .slide-liner`).height());
+      // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
+      const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
+      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
       /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.viewWidth && !this.s.hasMouse) {
+      if (w > this.availWidth && !this.s.hasMouse) {
         const hRatio = h / w;
-        w = this.viewWidth;
+        w = this.availWidth;
         h = Math.floor(w * hRatio);
       }
       //*/
@@ -268,7 +302,7 @@ export default {
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      //console.log(`sampleStyleSize(): viewWidth:${this.viewWidth}`); // w:${width} h:${height}`);
+      //console.log(`sampleStyleSize(): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -288,43 +322,151 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    beforeSlideChange(e) {
-      console.log(`beforeSlideChange(${e.target.getAttribute('data-dpi')})`, e.detail, e);
-    }, // beforeSlideChange()
+    onTouchstart(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      const $frame = window.$(touches.target).closest('.frame');
+
+      if (!$frame.length) return;
+
+      const el = $frame[0];
+
+      el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.addEventListener('mousemove', this.onTouchmove);
+      el.addEventListener('touchend',  this.onTouchend);
+      el.addEventListener('mouseup',   this.onTouchend);
+
+      const {pageX, pageY} = touches;
+
+      const {xOffset, yOffset} = this.getSlideOffset($frame.find(`[data-index="${this.currentIndex}"]`));
+
+      this.touchPoint = {
+        time: Date.now(),
+        el: el,
+        slidesX: xOffset,
+        slidesY: yOffset,
+        x: pageX,
+        y: pageY,
+        deltaX: 0,
+        deltaY: 0,
+      };
+
+      this.isScrolling = null;
+
+    }, // onTouchstart()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onclickSlide(e) {
-      const index = e.target.getAttribute('data-index');
+    onTouchmove(e) {
+      const touches = e.touches ? e.touches[0] : e;
 
-      if (index === null) return;
+      const {pageX, pageY} = touches;
 
-      console.log('onclickSlide()', `index:${index} active:${this.s.currentIndex} target:${e.target.getAttribute('data-index')}`, e);
+      this.touchPoint.deltaX = pageX - this.touchPoint.x;
+      this.touchPoint.deltaY = pageY - this.touchPoint.y;
 
-      if (Number(index) !== this.s.currentIndex) {
-        console.log(`go to:#${this.s.samples[index].id}`);
-        return;
-        //return this.$router.replace(`#${this.s.samples[index].id}`);
+      if (this.isScrolling === null) {
+        this.isScrolling = !!(this.isScrolling || Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY));
       }
 
-      // TODO: abort zoom if panning instead of clicking
+      if (!this.isScrolling) {
+        this.isGrabbing = true;
+        window.$('.slider').addClass('no-transition');
 
-      // abort zoom if not available or no mouse detected
-      if (!this.s.hasZoom || !window.$('main.has-mouse').length) return;
+        const $slides = window.$(this.touchPoint.el).find('.slides');
+        const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
+        $slides.css({
+          'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+        });
+      }
+    }, // onTouchmove()
 
-      const asDec = (x) => e[`offset${x}`] / e.target.getBoundingClientRect()[(x === 'X' ? 'width' : 'height')];
+    //------------------------------------------------------------------------------------------------------------------
 
-      this.toggleDpi({
-        elX: asDec('X'),
-        elY: asDec('Y'),
-      });
-    }, // onclickSlide()
+    onTouchend(e) {
+      // cleanup
+      const el = this.touchPoint.el;
+      el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.removeEventListener('mousemove', this.onTouchmove);
+      el.removeEventListener('touchend',  this.onTouchend);
+      el.removeEventListener('mouseup',   this.onTouchend);
+
+      this.touchPoint.el = null;
+
+      this.isScrolling = null;
+
+      this.isGrabbing = false;
+
+      window.$('.slider').removeClass('no-transition');
+
+      this.forceRepaint();
+
+      // decide what the interaction means
+      let action = 'click';
+      const duration = Date.now() - this.touchPoint.time;
+      const diffX = Math.abs(this.touchPoint.deltaX);
+      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+
+      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+
+      // greater than a third the slide width or a fast flick
+      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25)) {
+        action = 'swipe';
+      }
+
+      let index = this.currentIndex;
+      let elIndex = null;
+
+      // main button, quickly, without moving, on a slide
+      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
+
+      if (action === 'swipe') {
+        index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
+      } else if (isSlideClick) {
+        index = Number(elIndex);
+        if (index === this.currentIndex && this.s.hasZoom) {
+          action = 'zoom';
+        }
+      }
+
+      if (action === 'zoom') {
+        this.toggleDpi({
+          elX: e.offsetX / e.target.getBoundingClientRect().width,
+          elY: e.offsetY / e.target.getBoundingClientRect().height,
+        });
+
+      } else if (index !== this.currentIndex && this.s.samples[index]) {
+        this.$router.replace(`#${this.s.samples[index].id}`);
+
+      } else {
+        this.autosize();
+      }
+    }, // onTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getSlideOffset($slide) {
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
+      const $slides = $slide.closest('.slides');
+      const height = Math.ceil($slide.height());
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+
+      const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
+      let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+
+      // [2018-07] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
+      if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
+
+      return {xOffset, yOffset};
+    }, // getSlideOffset()
 
     //------------------------------------------------------------------------------------------------------------------
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
       // TODO: cancel zoom action
+      // TODO: rtl zoom
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -334,36 +476,39 @@ export default {
 
       const zoomIn = (dpi === 120);
 
-      // zoom slider may not have been initialized to correct zoom where a mouse interaction is available
-      //TODO: if (zoomIn) this.autosize(120);
+      const index = this.currentIndex;
 
-      const $el         = window.$('.slider-container');
-      const $slider     = window.$(`.slider.dpi80`);
-      const $sliderZoom = window.$(`.slider.dpi120`);
-      const $frame      = $slider.find('.frame');
-      const $frameZoom  = $sliderZoom.find('.frame');
+      const $el        = window.$('.slider');
+      const $frame     = $el.find('.frame.dpi80');
+      const $frameZoom = $el.find('.frame.dpi120');
+      const $slide     = $frame.find(`[data-index="${index}"]`);
+      const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
 
       // ensure no transitions are in effect to delay prep layout
       $el.addClass('no-transition');
 
-      const index = this.s.currentIndex;
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      const xCompPagefades = $frame.hasClass('show-pagefades') && !$frameZoom.hasClass('show-pagefades');
+      // TODO: 'rtl' zoom in is buggy
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
-        const xDiff = Math.round((w * elX * (120 - 80)) - $frame.offset().left) - (xCompPagefades ? settings.PAGEFADE_WIDTH : 0);
-        const yDiff = Math.round((h * elY * (120 - 80)) - $frame.offset().top);
+        const xOffset = $slide.offsetRect()[metric];
+        const yOffset = $slide.offset().top;
+
+        const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
+        const yDiff = Math.round((h * elY * (120 - 80)) - yOffset);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
 
         // position the zoom slider to trigger layout
-        $sliderZoom.css({position: 'absolute'});
+        this.autosize({resize:true});
+        $frameZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
         window.scroll(xScrollTo, yScrollTo);
@@ -374,13 +519,19 @@ export default {
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
+
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'in');
+        // find origin that will scale to final position
+        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width()  - $slide.width());
+        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
 
-        $slider.css({'z-index': 1});
-        $sliderZoom.css({opacity: 0});
+        const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
+        const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
+
+        $frame.css({'z-index': 1});
+        $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
@@ -391,14 +542,14 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        $slider.css({'z-index': ''});
-        $sliderZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $frame.css({'z-index': ''});
+        $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
         $el.addClass('no-transition');
-        $slider.css({opacity: 0, 'pointer-events': 'none'});
+        $frame.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
 
         this.forceRepaint();
@@ -406,37 +557,48 @@ export default {
 
       // zoom out
       } else {
-        const xLeft = $frame.offset().left;
-        const yTop  = $frame.offset().top;
+        const xOffset = $slide.offset().left;
+        const yOffset = $slide.offset().top;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - (xLeft - $frameZoom.offset().left));
-        const yDiff = Math.round((h * elY * (120 - 80)) - (yTop  - $frameZoom.offset().top));
+        const xDiff = Math.round((w * elX * (120 - 80)) - (xOffset - $slideZoom.offset().left));
+        const yDiff = Math.round((h * elY * (120 - 80)) - (yOffset - $slideZoom.offset().top));
 
-        const xMargin = document.documentElement.clientWidth  - $frame.width();
-        const yMargin = (xMargin > 0 ? window.innerHeight : document.documentElement.clientHeight) - $frame.height();
+        const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
-        const xMarginLeft = xLeft + xDiff - xScroll;
-        const yMarginTop  = yTop  + yDiff - yScroll;
+        this.availWidth  = window.innerWidth  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+        this.availHeight = window.innerHeight - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
-        const xMarginRight  = xScroll + document.documentElement.clientWidth  - (xLeft + xDiff + $frame.width());
-        const yMarginBottom = yScroll + document.documentElement.clientHeight - (yTop  + yDiff + $frame.height());
+        const xMargin = this.availWidth  - $slide.width();
+        const yMargin = this.availHeight - $slide.height();
+
+        const xMarginLeft = xOffset + xDiff - xScroll;
+        const yMarginTop  = yOffset + yDiff - yScroll;
+
+        const xMarginRight  = xScroll + this.availWidth  - (xOffset + xDiff + $slide.width());
+        const yMarginBottom = yScroll + this.availHeight - (yOffset + yDiff + $slide.height());
 
         const xScrollAdj = (xMargin > 0
-          ? xScroll - (xLeft + xDiff) + Math.max(xMargin / 2, 0)
+          ? xScroll - (xOffset + xDiff) + Math.max(xMargin / 2, 0)
           : Math.min(-xMarginLeft, 0) + Math.max(xMarginRight, 0) );
         const yScrollAdj = (yMargin > 0
-          ? yScroll - (yTop + yDiff) + Math.max(yMargin / 2, 0)
+          ? yScroll - (yOffset + yDiff) + Math.max(yMargin / 2, 0)
           : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
 
         // position non-zoom frame in the desired relative location
         const xFrame = xDiff + xScrollAdj;
         const yFrame = yDiff + yScrollAdj;
+
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
-        const {xOrigin, yOrigin} = this.getTransformOrigin($frame, $frameZoom, xCompPagefades, 'out');
+        // find origin that will scale to final position
+        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
+        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
 
-        $sliderZoom.css({'z-index': 1});
-        $slider.css({opacity: 0});
+        const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
+        const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
+
+        $frameZoom.css({'z-index': 1});
+        $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
 
         // ensure dom is updated before running zoom transition
@@ -447,21 +609,21 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // fade
-        $sliderZoom.css({'z-index': ''});
-        $slider.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+        $frameZoom.css({'z-index': ''});
+        $frame.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
         const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
         const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
-        //return;
 
         $el.addClass('no-transition');
-        $sliderZoom.css({opacity: 0, 'pointer-events': 'none'});
+        $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
-        $sliderZoom.css({position: 'fixed'});
+        $frameZoom.css({position: 'fixed'});
+        this.autosize({resize:true});
         window.scroll(xScrollTo, yScrollTo);
 
         this.forceRepaint();
@@ -481,9 +643,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getTransformOrigin($frame, $frameZoom, xCompPagefades, $zoom) {
+    getTransformOrigin($frame, $frameZoom, $zoom) {
 
-      const xOriginAdj = xCompPagefades ? settings.PAGEFADE_WIDTH * ($zoom === 'in' ? settings.ZOOM_RATIO : 1) : 0;
+      const xOriginAdj = 0;
 
       const xOrigin = ($frame.offset().left - ($frameZoom.offset().left - xOriginAdj)) / ($frameZoom.width() + (xOriginAdj * 2) - $frame.width());
       const yOrigin = ($frame.offset().top - $frameZoom.offset().top) / ($frameZoom.height() - $frame.height());
@@ -506,103 +668,87 @@ export default {
 
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
-$layer-pagefades: 2; // raise above prev/next slides
-$layer-hover: $layer-pagefades + 1;
-$layer-buttons: $layer-hover + 1;
-
-.slider-container {
-  opacity: 0;
-  transition: opacity .5s ease-in-out;
-  &.is-init {
-    opacity: 1;
-  }
-}
+$layer-frame-mask: 2; // above both <.frame>s to mask grab zones
+$layer-buttons: $layer-frame-mask + 1;
 
 .slider {
   position: absolute;
-  min-width: 100%;
-  min-height: 100vh;
+  //min-width: 100%;
+  //min-height: 100vh;
+  overflow: hidden;
   display: flex;
   justify-content: center;
-  align-items: center;
   @include short-transition;
 
-  @at-root .no-transition & {
+  //&.is-resizing,
+  &.no-transition {
     transition: none;
   }
 
-  &.dpi120 {
+  .frame-mask {
     position: fixed;
-    pointer-events: none;
-    opacity: 0;
+    z-index: $layer-frame-mask;
+
+    &.end {
+      top: 0;
+      bottom: 0;
+    }
+
+    &.side {
+      left: 0;
+      right: 0;
+      &.above {
+        top: 0;
+      }
+      &.below {
+        bottom: 0;
+      }
+    }
+
+    @at-root
+    [data-dir="ltr"] .frame-mask.prev,
+    [data-dir="rtl"] .frame-mask.next {
+      left: 0;
+    }
+    @at-root
+    [data-dir="ltr"] .frame-mask.next,
+    [data-dir="rtl"] .frame-mask.prev {
+      right: 0;
+    }
+
+    @at-root
+    .slider.has-prev .frame-mask.prev,
+    .slider.has-next .frame-mask.next,
+    [aria-grabbed] .frame-mask {
+      display: none;
+    }
   }
 
   .frame {
-    width: 100px; // must have a default px width
-    height: 100px;
-
-    position: relative;
+    position: absolute;
+    box-sizing: border-box;
     overflow: hidden;
     white-space: nowrap;
-
-    line-height: 0;
-    font-size: 0; // lory setup has errors if font size is not 0
     @include short-transition;
 
-    @at-root .is-init & {
-      font-size: inherit;
-    }
-    @at-root .is-resizing & {
-      font-size: 0;
+    @at-root
+    .no-transition#{&} {
       transition: none;
     }
-    @at-root .no-transition & {
-      transition: none;
+
+    &.dpi120 {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0;
     }
 
     cursor: grab;
-    @at-root [aria-grabbed] & {
+    #{$isIE} & {
+      cursor: move;
+    }
+    @at-root [aria-grabbed]#{&} {
       cursor: grabbing;
     }
-
-    // [2018-06-12] hack to fix rendering bug at odd sizes (but sometimes doesn't fix anyway)
-    html[data-browser*="Firefox"] & {
-      padding-bottom: 1px;
-    }
-
-    &.show-pagefades {
-      margin-left:  -$frame-unit;
-      padding-left:  $frame-unit;
-      margin-right: -$frame-unit;
-      padding-right: $frame-unit;
-
-      @at-root .dpi120#{&} {
-        margin-left:  -$frame-unit * $zoom-ratio;
-        padding-left:  $frame-unit * $zoom-ratio;
-        margin-right: -$frame-unit * $zoom-ratio;
-        padding-right: $frame-unit * $zoom-ratio;
-      }
-
-      @at-root .slider-container:not(.is-resizing) .show-pagefades::before { // mask for prev/next slide fades
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        z-index: $layer-pagefades;
-        pointer-events: none;
-        background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit}), $background-color);
-        @at-root .slider-container:not(.is-resizing) .dpi120 .show-pagefades::before {
-          background: linear-gradient(to right, $background-color, transparent $frame-unit, transparent calc(100% - #{$frame-unit * $zoom-ratio}), $background-color);
-        }
-        // [2018-05-29] IE11 and Edge cannot handle calc()
-        html[data-browser*="Trident"] &,
-        html[data-browser*="Edge"] & {
-          background: linear-gradient(to right, $background-color, transparent 5%, transparent 95%, $background-color);
-        }
-      }
-    } // margin fades
   } // .frame
 
   .slides {
@@ -611,12 +757,13 @@ $layer-buttons: $layer-hover + 1;
     align-items: center;
     font-size: 1rem;
     line-height: 1;
-    // [2018-06-21] IE11 still has about 5% usage
-    html[data-browser*="Trident"] & {
+
+    #{$isIE} & {
       display: inline-block;
     }
-    .is-resizing &,
-    .no-transition & {
+    @include short-transition;
+
+    @at-root .no-transition#{&} {
       transition: none;
     }
   }
@@ -627,21 +774,25 @@ $layer-buttons: $layer-hover + 1;
     vertical-align: text-top;
     text-align: center;
     background-color: white;
-    margin-right: ($unit * 1/4);
-    @at-root .dpi120#{&} {
-      margin-right: ($unit * 1/4 * $zoom-ratio);
+    margin: 0 ($unit * 1/8);
+    @at-root .frame.dpi120 .slide {
+      margin: 0 ($unit * 1/8 * $zoom-ratio);
     }
     @include short-transition;
 
-    &:not(.active) {
-      opacity: 0.5;
+    &:not(.current) {
+      opacity: 0.25;
     }
 
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slide.active {
+    // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
+    // [2018-07] svg cursor only works in Chrome
+    @at-root .has-mouse.has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slide.active {
+    @at-root .has-mouse.has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
 
     // TODO
@@ -668,6 +819,7 @@ $layer-buttons: $layer-hover + 1;
       overflow: hidden;
 
       &::after {
+        pointer-events: none;
         @include absolute-center(x);
         content: 'COPYRIGHTED MATERIAL';
         white-space: nowrap;
@@ -675,7 +827,7 @@ $layer-buttons: $layer-hover + 1;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
 
-        @at-root .dpi120#{&} {
+        @at-root .dpi120 .slide-liner::after {
           font-size: 1.5em;
         }
       }
@@ -719,7 +871,7 @@ $layer-buttons: $layer-hover + 1;
   @include absolute-center();
 }
 
-.slider-button {
+.btn-slider {
   position: fixed;
   z-index: $layer-buttons;
   top: 50%;
@@ -738,14 +890,21 @@ $layer-buttons: $layer-hover + 1;
     opacity: 0 !important;
   }
 
-  &.prev {
+  @at-root
+  [data-dir="ltr"] &.prev,
+  [data-dir="rtl"] &.next {
     left: 0;
     border-radius: 0 $radius $radius 0;
   }
-  &.next {
+  @at-root
+  [data-dir="ltr"] &.next,
+  [data-dir="rtl"] &.prev {
     right: 0;
     border-radius: $radius 0 0 $radius;
+    svg {
+      transform: translate(-50%, -50%) rotate(180deg);
+    }
   }
-} // .slider-button
+} // .btn-slider
 
 </style>

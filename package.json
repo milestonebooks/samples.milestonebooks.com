@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "0.9.4",
+  "version": "0.9.6",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -19,8 +19,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
-    "lory.js": "^2.5.1",
-    "nuxt": "^1.4.0"
+    "nuxt": "^1.4.1"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.3",

@@ -2,7 +2,7 @@
   <aside :class="['audio-player', uiClass]">
 
     <div class="controls">
-      <button class="btn btn-play" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+      <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
         <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
       </button>
     </div>

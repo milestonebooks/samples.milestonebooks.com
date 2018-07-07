@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi">
+  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <aside class="alerts" :data-length="alerts.length">
       <div v-for="alert in alerts" class="alert">{{alert}}</div>
     </aside>
@@ -8,7 +8,7 @@
 
     <TheNav v-if="s.samples.length > 1" />
 
-    <ThePlayer ref="player" v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+    <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
@@ -106,9 +106,12 @@ export default {
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    /* TODO (disabled for debugging)
+    //* TODO (disabled for debugging)
+    console.log('initSettings...');
     await this.$store.dispatch('initSettings');
     //*/
+
+    this.set({scrollbarWidth: this.getScrollbarWidth() });
 
     if (!this.s.hasMouse) {
       const _firstmouseover = () => {
@@ -150,21 +153,50 @@ export default {
       }
 
       this.set({
-        isInit:   true,
-        title:    d.title,
-        item:     this.$route.params.item,
-        type:     d.type,
-        hasZoom:  d.hasZoom  || false,
-        hasPrint: d.hasPrint || false,
-        samples:  samples,
-        firstId:  samples[0].id,
-        lastId:   samples[samples.length - 1].id,
+        isInit:    true,
+        title:     d.title,
+        item:      this.$route.params.item,
+        type:      d.type,
+        direction: d.direction || 'ltr',
+        hasZoom:   d.hasZoom  || false,
+        hasPrint:  d.hasPrint || false,
+        samples:   samples,
+        firstId:   samples[0].id,
+        lastId:    samples[samples.length - 1].id,
       });
 
       console.timeEnd('index');
 
       this.update();
     }, // initSamplesData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getScrollbarWidth() {
+      const i = document.createElement('p');
+      i.style.width = "100%";
+      i.style.height = "200px";
+
+      const o = document.createElement('div');
+      o.style.position = "absolute";
+      o.style.top = "0px";
+      o.style.left = "0px";
+      o.style.visibility = "hidden";
+      o.style.width = "200px";
+      o.style.height = "150px";
+      o.style.overflow = "hidden";
+      o.appendChild(i);
+
+      document.body.appendChild(o);
+      const wI = i.offsetWidth;
+      o.style.overflow = 'scroll';
+      let wO = i.offsetWidth;
+      if (wI === wO) wO = o.clientWidth;
+
+      document.body.removeChild(o);
+
+      return (wI - wO);
+    }, // getScrollbarWidth()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -218,6 +250,10 @@ main {
   flex-direction: column;
   margin: auto;
   @include short-transition;
+
+  &[data-dir="rtl"] {
+    direction: rtl;
+  }
 
   &::before {
     content: attr(data-title);
