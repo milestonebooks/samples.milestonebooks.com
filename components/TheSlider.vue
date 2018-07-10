@@ -47,6 +47,7 @@ import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
 
+// TODO: rulers?
 
 import { mapGetters } from 'vuex';
 
@@ -140,13 +141,13 @@ export default {
 
   mounted() {
     window.addEventListener('resize', this.onResize);
-    this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.addEventListener('touchstart', this.onTouchstart); //TODO, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
   },
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
-    this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.removeEventListener('touchstart', this.onTouchstart); //TODO, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
@@ -331,7 +332,7 @@ export default {
 
       const el = $frame[0];
 
-      el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.addEventListener('touchmove', this.onTouchmove); //, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
       el.addEventListener('touchend',  this.onTouchend);
       el.addEventListener('mouseup',   this.onTouchend);
@@ -386,7 +387,7 @@ export default {
     onTouchend(e) {
       // cleanup
       const el = this.touchPoint.el;
-      el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.removeEventListener('touchmove', this.onTouchmove); //TODO, this.eTouchParams);
       el.removeEventListener('mousemove', this.onTouchmove);
       el.removeEventListener('touchend',  this.onTouchend);
       el.removeEventListener('mouseup',   this.onTouchend);
