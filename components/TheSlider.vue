@@ -1,5 +1,5 @@
 <template>
-  <article :class="sliderClass" :aria-grabbed="isGrabbing">
+  <article :class="sliderClass" :aria-grabbed="isGrabbing" :data-debug="debug">
     <div class="frame-mask end prev"></div>
     <div class="frame-mask end next"></div>
     <div class="frame-mask side above"></div>
@@ -68,6 +68,7 @@ export default {
 
   data () {
     return {
+      debug:        null,
       isInit:       false,
       isGrabbing:   false,
       isScrolling:  null,
@@ -141,13 +142,13 @@ export default {
 
   mounted() {
     window.addEventListener('resize', this.onResize);
-    this.$el.addEventListener('touchstart', this.onTouchstart); //TODO, this.eTouchParams);
+    this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
   },
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
-    this.$el.removeEventListener('touchstart', this.onTouchstart); //TODO, this.eTouchParams);
+    this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
@@ -332,7 +333,7 @@ export default {
 
       const el = $frame[0];
 
-      el.addEventListener('touchmove', this.onTouchmove); //, this.eTouchParams);
+      el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
       el.addEventListener('touchend',  this.onTouchend);
       el.addEventListener('mouseup',   this.onTouchend);
@@ -387,7 +388,7 @@ export default {
     onTouchend(e) {
       // cleanup
       const el = this.touchPoint.el;
-      el.removeEventListener('touchmove', this.onTouchmove); //TODO, this.eTouchParams);
+      el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.removeEventListener('mousemove', this.onTouchmove);
       el.removeEventListener('touchend',  this.onTouchend);
       el.removeEventListener('mouseup',   this.onTouchend);
@@ -644,7 +645,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getTransformOrigin($frame, $frameZoom, $zoom) {
+    getTransformOrigin($frame, $frameZoom) {
 
       const xOriginAdj = 0;
 
@@ -685,6 +686,19 @@ $layer-buttons: $layer-frame-mask + 1;
   &.no-transition {
     transition: none;
   }
+
+  /*
+  &[data-debug]::before {
+    content: attr(data-debug);
+    z-index: 9;
+    position: fixed;
+    top: 0;
+    left: 0;
+    font-size: 2em;
+    outline: 1px solid red;
+    background: hsla(0,100%,100%,.75);
+  }
+  //*/
 
   .frame-mask {
     position: fixed;
