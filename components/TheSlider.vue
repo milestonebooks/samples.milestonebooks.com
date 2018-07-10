@@ -407,12 +407,13 @@ export default {
       let action = 'click';
       const duration = Date.now() - this.touchPoint.time;
       const diffX = Math.abs(this.touchPoint.deltaX);
+      const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
 
       const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
-      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25)) {
+      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
         action = 'swipe';
       }
 
