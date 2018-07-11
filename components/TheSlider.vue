@@ -1,9 +1,13 @@
 <template>
   <article :class="sliderClass" :aria-grabbed="isGrabbing" :data-debug="debug">
-    <div class="frame-mask end prev"></div>
-    <div class="frame-mask end next"></div>
-    <div class="frame-mask side above"></div>
-    <div class="frame-mask side below"></div>
+
+    <div class="frame-masks">
+      <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
+    </div>
+
+    <div class="frame-rulers">
+      <div v-for="cls of ['x left r','x right','y top','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 16"></b></div>
+    </div>
 
     <div class="frame dpi80">
       <div class="slides">
@@ -115,6 +119,7 @@ export default {
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
+        'show-rulers': this.s.showRulers,
       }
     }, // sliderClass()
 
@@ -672,7 +677,8 @@ export default {
 $frame-unit: $unit;// ($unit / 1em) * 10px;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
-$layer-buttons: $layer-frame-mask + 1;
+$layer-frame-rulers: $layer-frame-mask + 1;
+$layer-buttons: $layer-frame-rulers + 1;
 
 .slider {
   position: absolute;
@@ -738,6 +744,68 @@ $layer-buttons: $layer-frame-mask + 1;
     [aria-grabbed] .frame-mask {
       display: none;
     }
+  } // .frame-mask
+
+  .frame-rulers {
+    opacity: 0;
+    z-index: $layer-frame-rulers;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    @include short-transition;
+    @at-root [data-dpi="120"] .frame-rulers {
+      transform: scale(1.5);
+    }
+  }
+  &.show-rulers .frame-rulers {
+    opacity: .75;
+  }
+
+  .frame-ruler {
+    position: absolute;
+    left: calc(50% + 15.5px);
+    top: calc(50% - 15.5px);
+    width: 100%;
+    height: 31px;
+    overflow: hidden;
+    background-color: hsl(60, 100%, 50%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='31' viewBox='0 0 80 31'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispedges' /%3E%3C/svg%3E");
+    counter-reset: inches;
+    transform-origin: -15.5px 15.5px;
+
+    b {
+      float: left;
+      position: relative;
+      width: 80px;
+      height: 31px;
+
+      &::after {
+        counter-increment: inches;
+        content: counter(inches);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translate(calc(-50% - 0.5px), -50%);
+        @at-root .frame-ruler.r b::after {
+          transform: translate(calc(-50% + 0.5px), -50%) rotate(180deg);
+        }
+        font: 900 16px Arial, Helvetica, sans-serif;
+        background: hsl(60, 100%, 50%);
+        line-height: 12px;
+        padding: 2px;
+      }
+    }
+  } // .frame-ruler
+  .frame-ruler.y.top {
+    transform: rotate(-90deg);
+  }
+  .frame-ruler.x.left {
+    transform: rotate(-180deg);
+  }
+  .frame-ruler.y.bottom {
+    transform: rotate(-270deg);
   }
 
   .frame {

@@ -21,6 +21,8 @@ export const state = () => ({
   isCompactList: true,
   isCompactListTitles: false,
 
+  showRulers: true, // TODO: default to false
+
   hasTouch:  false,
   hasMouse:  false,
 
@@ -36,6 +38,7 @@ export const state = () => ({
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
     {key:'isCompactListTitles', get: v => v === 'true'},
+    {key:'showRulers',          get: v => v === 'true'},
     {key:'hasTouch',            get: v => v === 'true'},
     {key:'hasMouse',            get: v => v === 'true'},
     {key:'scrollbarWidth',      get: v => Number(v)},
