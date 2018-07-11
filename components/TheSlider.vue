@@ -6,7 +6,7 @@
     </div>
 
     <div class="frame-rulers">
-      <div v-for="cls of ['x left r','x right','y top','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 16"></b></div>
+      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b></div> <!-- 20 * 80px = (monitors up to 1600px) -->
     </div>
 
     <div class="frame dpi80">
@@ -129,18 +129,22 @@ export default {
 
   watch: {
     samples() { this.init() },
+
     currentIndex() {
       // defer to ensure dom is updated
       this.$nextTick(() => {
         this.update();
       });
     },
+
     isInit() {
       // ensure that transitions are only enabled after init is complete
       this.$nextTick(() => {
         if (this.isInit) this.noTransition = false;
       });
     },
+
+    'this.s.showRulers'() { this.toggleRulers() },
   },
 
   //====================================================================================================================
@@ -149,6 +153,7 @@ export default {
     window.addEventListener('resize', this.onResize);
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
+    if (this.s.showRulers) this.toggleRulers();
   },
 
   beforeDestroy () {
@@ -268,7 +273,7 @@ export default {
       const XY = `${-xOffset}px, ${-yOffset}px`;
 
       $slides.css({
-        'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+        transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
     }, // autosize()
 
@@ -450,6 +455,94 @@ export default {
         this.autosize();
       }
     }, // onTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    toggleRulers() {
+      console.log('toggleRulers()');
+      const $rulers = window.$('.frame-rulers');
+      if (this.s.showRulers) {
+        $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
+        window.addEventListener('mousemove', this.positionRulers);
+      } else {
+        $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
+        window.removeEventListener('mousemove', this.positionRulers);
+      }
+    }, // toggleRulers()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    positionRulers(event) {
+      const {clientX:x, clientY:y} = event;
+
+      //console.log('positionRulers()', x, y, event);
+
+      window.$('.frame-rulers').css({
+        left: `${x}px`,
+        top:  `${y}px`,
+      });
+
+    }, // positionRulers()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchstart(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      const $rulers = window.$('.frame-rulers');
+
+      $rulers[0].addEventListener('touchmove', this.onRulersTouchmove);
+      $rulers[0].addEventListener('touchend',  this.onRulersTouchend);
+
+      this.touchPoint = {
+        $el: $rulers,
+        rulerX: $rulers.offset().left,
+        rulerY: $rulers.offset().top,
+        x: touches.pageX,
+        y: touches.pageY,
+        deltaX: 0,
+        deltaY: 0,
+      };
+
+      // avoid scrolling when moving rulers
+      e.preventDefault();
+
+    }, // onRulersTouchstart()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchmove(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      this.touchPoint.deltaX = touches.pageX - this.touchPoint.x;
+      this.touchPoint.deltaY = touches.pageY - this.touchPoint.y;
+
+      let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
+      let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
+
+      const offset = (settings.FRAME_RULER_WIDTH / 2) * (this.s.dpi / 80);
+
+      // keep within view
+      x = Math.min(Math.max(x, offset), this.availWidth  - offset);
+      y = Math.min(Math.max(y, offset), this.availHeight - offset);
+
+      this.positionRulers({
+        clientX: x,
+        clientY: y,
+      });
+
+    }, // onRulersTouchmove()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchend() {
+      // cleanup
+      const $rulers = window.$('.frame-rulers');
+
+      $rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
+      $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
+
+    }, // onRulersTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -674,7 +767,7 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-$frame-unit: $unit;// ($unit / 1em) * 10px;
+$frame-ruler-inch: 80px;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
 $layer-frame-rulers: $layer-frame-mask + 1;
@@ -747,16 +840,18 @@ $layer-buttons: $layer-frame-rulers + 1;
   } // .frame-mask
 
   .frame-rulers {
+    pointer-events: none;
     opacity: 0;
     z-index: $layer-frame-rulers;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    pointer-events: none;
-    @include short-transition;
+    position: fixed;
+    left: $frame-ruler-width / 2;
+    top:  $frame-ruler-width / 2;
+    width: 200%;
+    height: 200%;
+    transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
+    transform-origin: 0 0;
     @at-root [data-dpi="120"] .frame-rulers {
-      transform: scale(1.5);
+      transform: scale($zoom-ratio);
     }
   }
   &.show-rulers .frame-rulers {
@@ -764,22 +859,23 @@ $layer-buttons: $layer-frame-rulers + 1;
   }
 
   .frame-ruler {
+    pointer-events: all;
     position: absolute;
-    left: calc(50% + 15.5px);
-    top: calc(50% - 15.5px);
+    left: $frame-ruler-width / 2;
+    top: -$frame-ruler-width / 2;
     width: 100%;
-    height: 31px;
+    height: $frame-ruler-width;
     overflow: hidden;
     background-color: hsl(60, 100%, 50%);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='31' viewBox='0 0 80 31'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispedges' /%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='31' viewBox='0 0 80 31'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
-    transform-origin: -15.5px 15.5px;
+    transform-origin: -#{$frame-ruler-width / 2} #{$frame-ruler-width / 2};
 
     b {
       float: left;
       position: relative;
-      width: 80px;
-      height: 31px;
+      width: $frame-ruler-inch;
+      height: $frame-ruler-width;
 
       &::after {
         counter-increment: inches;
@@ -787,9 +883,9 @@ $layer-buttons: $layer-frame-rulers + 1;
         position: absolute;
         left: 100%;
         top: 50%;
-        transform: translate(calc(-50% - 0.5px), -50%);
+        transform: translate(-50%, -50%) translate(-0.5px, 0); // sequential because IE11 doesn't support calc() here
         @at-root .frame-ruler.r b::after {
-          transform: translate(calc(-50% + 0.5px), -50%) rotate(180deg);
+          transform: translate(-50%, -50%) translate(0.5px, 0) rotate(180deg); // sequential because IE11 doesn't support calc() here
         }
         font: 900 16px Arial, Helvetica, sans-serif;
         background: hsl(60, 100%, 50%);

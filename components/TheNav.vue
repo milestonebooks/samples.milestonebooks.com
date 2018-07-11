@@ -17,7 +17,7 @@
 
     <nav ref="list" :class="['list', listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
-        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
           <span class="item-flex">
             <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
@@ -179,6 +179,7 @@ export default {
     toggleList() {
       this[this.isListShown ? 'hideList' : 'showList']();
     }, // toggleList()
+
     //------------------------------------------------------------------------------------------------------------------
 
     onListItemMouseEnter(e) {

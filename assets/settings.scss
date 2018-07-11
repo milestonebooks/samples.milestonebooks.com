@@ -10,7 +10,8 @@ $radius: .5em;
 $list-font-size: 1.6em;
 $list-padding: .5em;
 $sheet-music-width: 650px;
-$zoom-ratio: 120 / 80; // match settings.js > ZOOM_RATIO
+$zoom-ratio: 120 / 80; // => ZOOM_RATIO
+$frame-ruler-width: 31px; // => FRAME_RULER_WIDTH
 
 // colors
 $alert-color: hsl(0, 100%, 50%);
@@ -30,7 +31,7 @@ $list-item-border-focus-color: darken($list-item-border-color, 15%);
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 
 // timings
-$transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
+$transition-time-ms: 250ms; // => TRANSITION_TIME_MS
 
 // selectors
 $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usage
@@ -55,7 +56,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
 // mixins
 
 @mixin short-transition() {
-  transition: all $transition-time ease-in-out;
+  transition: all $transition-time-ms ease-in-out;
 }
 
 @mixin drop-shadow() {
