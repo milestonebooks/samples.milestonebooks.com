@@ -32,12 +32,16 @@
       </div>
     </div>
 
-    <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
-      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
-    </nuxt-link>
-    <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
-      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
-    </nuxt-link>
+    <aside class="sidebar left v">
+      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
+        <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
+    <aside class="sidebar right v">
+      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
+        <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
 
   </article>
 </template>
@@ -772,6 +776,8 @@ $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
 $layer-frame-rulers: $layer-frame-mask + 1;
 $layer-buttons: $layer-frame-rulers + 1;
 
+$radius-lg: $radius * 2;
+
 .slider {
   position: absolute;
   //min-width: 100%;
@@ -1038,6 +1044,24 @@ $layer-buttons: $layer-frame-rulers + 1;
   } // .slide
 } // .slider
 
+.sidebar {
+  z-index: $layer-buttons;
+  height: 8em;
+
+  &.left {
+    border-radius: 0 $radius-lg $radius-lg 0;
+  }
+
+  &.right {
+    border-radius: $radius-lg 0 0 $radius-lg;
+  }
+
+  .btn {
+    width: 100%;
+    height: 100%;
+  }
+}
+
 .btn:not(:disabled):focus,
 .btn:not(:disabled):hover {
   color: $focus-color;
@@ -1049,17 +1073,6 @@ $layer-buttons: $layer-frame-rulers + 1;
 }
 
 .btn-slider {
-  position: fixed;
-  z-index: $layer-buttons;
-  top: 50%;
-  margin-top: 0;
-  transform: translateY(-50%);
-  height: 8em;
-  width: 4em;
-  background: no-repeat center white;
-  @include drop-shadow;
-  cursor: pointer;
-  outline: none;
   @include short-transition;
 
   &[disabled] {

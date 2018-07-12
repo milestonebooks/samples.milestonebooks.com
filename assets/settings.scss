@@ -138,6 +138,11 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
       height: $unit;
     }
 
+    &.v {
+      @include absolute-center(y, fixed);
+      width: $unit;
+    }
+
     &.top {
       top: 0;
       border-radius: 0 0 $radius $radius;
@@ -146,6 +151,16 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     &.bottom {
       bottom: 0;
       border-radius: $radius $radius 0 0;
+    }
+
+    &.left {
+      left: 0;
+      border-radius: 0 $radius $radius 0;
+    }
+
+    &.right {
+      right: 0;
+      border-radius: $radius 0 0 $radius;
     }
 
     * {
