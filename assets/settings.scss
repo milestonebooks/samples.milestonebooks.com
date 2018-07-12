@@ -1,8 +1,10 @@
+//----------------------------------------------------------------------------------------------------------------------
 // layers
 $layer-alerts: 99;
 $layer-the-nav: 90;
 $layer-title: 50;
 
+//----------------------------------------------------------------------------------------------------------------------
 // sizes
 $base-size: 10px;
 $unit: 4em;
@@ -13,6 +15,7 @@ $sheet-music-width: 650px;
 $zoom-ratio: 120 / 80; // => ZOOM_RATIO
 $frame-ruler-width: 31px; // => FRAME_RULER_WIDTH
 
+//----------------------------------------------------------------------------------------------------------------------
 // colors
 $alert-color: hsl(0, 100%, 50%);
 $alert-bg-color: lighten($alert-color, 40%);
@@ -28,15 +31,17 @@ $list-bg-color: lighten($disabled-color, 5%);
 $list-current-bg-color: $list-bg-color; // hsl(60, 100%, 95%);
 $list-item-border-color: $disabled-color;
 $list-item-border-focus-color: darken($list-item-border-color, 15%);
-
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 
+//----------------------------------------------------------------------------------------------------------------------
 // timings
 $transition-time-ms: 250ms; // => TRANSITION_TIME_MS
 
+//----------------------------------------------------------------------------------------------------------------------
 // selectors
 $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usage
 
+//----------------------------------------------------------------------------------------------------------------------
 // functions
 
 // adapted from <https://gist.github.com/tqc/2564280>
@@ -54,6 +59,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   @return hsl($h, $s, $l);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 // mixins
 
 @mixin short-transition() {
@@ -98,6 +104,8 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     @content;
   }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 @mixin base_styling() {
   html {
@@ -209,4 +217,4 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     }
   } // .btn
 
-}
+} // base-styling()
