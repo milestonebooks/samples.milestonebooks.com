@@ -331,7 +331,6 @@ export default {
     & .id-indicator-frame {
       color: $focus-color;
       border-color: $focus-color;
-      @include short-transition;
     }
   }
 }
