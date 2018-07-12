@@ -1,11 +1,9 @@
 <template>
   <aside :class="['audio-player', uiClass]">
 
-    <div class="controls">
-      <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
-        <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
-      </button>
-    </div>
+    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+      <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
+    </button>
 
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
@@ -296,13 +294,6 @@ export default {
   :focus {
     outline: none;
   }
-}
-
-.btn svg {
-  width: 2.8em;
-  height: 2.8em;
-  fill: currentColor;
-  @include absolute-center();
 }
 
 .btn-play {

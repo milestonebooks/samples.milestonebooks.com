@@ -1,5 +1,5 @@
 <template>
-  <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
+  <aside :class="`the-nav sidebar top ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
       <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
@@ -294,13 +294,6 @@ export default {
 
 .the-nav {
   z-index: $layer-the-nav;
-  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
-  top: 0;
-  box-sizing: border-box;
-  background-color: white;
-  border-radius: 0 0 $radius $radius;
-  @include drop-shadow;
-  height: $unit;
   width: 3 * $unit;
 
   * {
@@ -324,6 +317,11 @@ export default {
   &.is-list-shown::before {
     opacity: .5;
     pointer-events: auto;
+  }
+
+  .controls {
+    width: 100%;
+    height: 100%;
   }
 }
 

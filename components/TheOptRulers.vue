@@ -74,7 +74,7 @@ export default {
 @import "../assets/settings.scss";
 
 .the-opt-rulers {
-  z-index: $layer-the-nav;
+  z-index: $layer-the-nav - 1;
   @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
   left: calc(50% + #{$unit * 2.5});
   top: 0;
