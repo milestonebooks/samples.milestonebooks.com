@@ -205,7 +205,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      //console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
       this.autosize();
@@ -462,7 +461,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleRulers() {
-      console.log('toggleRulers()', this.s.showRulers);
       const $rulers = window.$('.frame-rulers');
       if (this.s.showRulers) {
         $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
@@ -478,13 +476,10 @@ export default {
     positionRulers(event) {
       const {clientX:x, clientY:y} = event;
 
-      //console.log('positionRulers()', x, y, event);
-
       window.$('.frame-rulers').css({
         left: `${x}px`,
         top:  `${y}px`,
       });
-
     }, // positionRulers()
 
     //------------------------------------------------------------------------------------------------------------------

@@ -84,7 +84,7 @@ export default {
   }, // beforeDestroy ()
 
   watch: {
-    currentIndex: 'update',
+    currentIndex() { this.update() },
   },
 
   //====================================================================================================================
@@ -99,11 +99,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
-      console.log('ThePlayer initSettings...');
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
       this.refresh();
+      this.update();
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------

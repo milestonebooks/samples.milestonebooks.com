@@ -199,7 +199,7 @@ export const actions = {
   async initSettings({commit, state, rootState}) {
 
     // isAutoPlay should default to true for devices using a mouse
-    if (rootState.hasMouse) commit('set', {isAutoPlay: true});
+    if (rootState.hasMouse && storage.getItem('isAutoPlay') === null) commit('set', {isAutoPlay: true});
 
     let v;
 

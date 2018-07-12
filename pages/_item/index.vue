@@ -112,7 +112,6 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     //* TODO (disabled for debugging)
-    console.log('initSettings...');
     await this.$store.dispatch('initSettings');
     //*/
 
