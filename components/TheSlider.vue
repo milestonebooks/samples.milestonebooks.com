@@ -563,7 +563,6 @@ export default {
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
       // TODO: cancel zoom action
-      // TODO: rtl zoom
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -964,13 +963,23 @@ $radius-lg: $radius * 2;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+    }
+    @at-root
+    [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
+    [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
+    }
+    @at-root
+    [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
+    [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
     }
 
     // TODO
@@ -986,6 +995,34 @@ $radius-lg: $radius * 2;
       top: 0;
       bottom: 0;
       border: 1px solid hsl(0, 0%, 60%);
+    }
+
+    @at-root [data-dir="ltr"] &.non-sequential-after {
+      margin-right: 5.5em;
+    }
+    @at-root [data-dir="rtl"] &.non-sequential-after {
+      margin-left: 5.5em;
+    }
+    &.non-sequential-after::after {
+      content: '\2022\2009\2022\2009\2022';
+      font-size: 3em;
+      pointer-events: none;
+      position: absolute;
+      color: transparentize(darken($background-color, 95%), .5);
+      @include short-transition;
+      top: 50%;
+      transform: translate(-50%, -50%);
+
+      @at-root [data-dir="ltr"] & {
+        left: calc(100% + 3rem);
+      }
+      @at-root [data-dir="rtl"] & {
+        right: calc(100% + 3rem);
+        transform: translate(50%, -50%);
+      }
+    }
+    &.non-sequential-after.current::after {
+      opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
     }
 
     .slide-liner {
