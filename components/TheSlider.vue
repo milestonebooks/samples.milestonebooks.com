@@ -32,13 +32,13 @@
       </div>
     </div>
 
-    <aside class="sidebar left v">
-      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
+    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
         <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
       </nuxt-link>
     </aside>
-    <aside class="sidebar right v">
-      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
+    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
         <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
       </nuxt-link>
     </aside>
@@ -54,8 +54,6 @@ import settings from '~/assets/settings';
 import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
-
-// TODO: rulers?
 
 import { mapGetters } from 'vuex';
 
@@ -1042,35 +1040,9 @@ $radius-lg: $radius * 2;
 .sidebar {
   z-index: $layer-buttons;
   height: 8em;
-
-  &.left {
-    border-radius: 0 $radius-lg $radius-lg 0;
-  }
-
-  &.right {
-    border-radius: $radius-lg 0 0 $radius-lg;
-  }
-
-  .btn {
-    width: 100%;
-    height: 100%;
-  }
-}
-
-.btn:not(:disabled):focus,
-.btn:not(:disabled):hover {
-  color: $focus-color;
-}
-
-.btn svg {
-  width: 3em;
-  height: 6em;
-}
-
-.btn-slider {
   @include short-transition;
 
-  &[disabled] {
+  &.disabled {
     pointer-events: none;
     opacity: 0 !important;
   }
@@ -1079,17 +1051,29 @@ $radius-lg: $radius * 2;
   [data-dir="ltr"] &.prev,
   [data-dir="rtl"] &.next {
     left: 0;
-    border-radius: 0 $radius $radius 0;
+    border-radius: 0 $radius-lg $radius-lg 0;
   }
+
   @at-root
   [data-dir="ltr"] &.next,
   [data-dir="rtl"] &.prev {
     right: 0;
-    border-radius: $radius 0 0 $radius;
+    border-radius: $radius-lg 0 0 $radius-lg;
     svg {
       transform: translate(-50%, -50%) rotate(180deg);
     }
   }
-} // .btn-slider
+
+  .btn {
+    width: 100%;
+    height: 100%;
+    @include short-transition;
+
+    svg {
+      width: 3em;
+      height: 6em;
+    }
+  }
+}
 
 </style>

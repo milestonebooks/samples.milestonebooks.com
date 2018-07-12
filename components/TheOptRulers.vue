@@ -62,14 +62,17 @@ export default {
   width: $unit;
 }
 
-.show-rulers .btn-opt.rulers::after {
+.btn-opt.rulers::after {
   content: '';
   @include absolute-center();
   width: 3.2em;
   height: 3.2em;
-  box-sizing: border-box;
-  border: 2px solid currentColor;
   border-radius: 3px;
+  @include short-transition;
+
+  @at-root .show-rulers & {
+    background-color: $btn-toggle-bg-color;
+  }
 }
 
 </style>

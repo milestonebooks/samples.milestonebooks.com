@@ -21,6 +21,7 @@ $controls-color: black;
 $sidebar-bg-color: white;
 $disabled-color: lighten($controls-color, 90%);
 $theme-color: hsl(22, 85%, 43%);
+$btn-toggle-bg-color: transparentize($theme-color, .75);
 $focus-color: $theme-color;
 $focus-bg-color: lighten($disabled-color, 5%);
 $list-bg-color: lighten($disabled-color, 5%);
