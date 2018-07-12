@@ -1,8 +1,10 @@
+//----------------------------------------------------------------------------------------------------------------------
 // layers
 $layer-alerts: 99;
 $layer-the-nav: 90;
 $layer-title: 50;
 
+//----------------------------------------------------------------------------------------------------------------------
 // sizes
 $base-size: 10px;
 $unit: 4em;
@@ -10,31 +12,36 @@ $radius: .5em;
 $list-font-size: 1.6em;
 $list-padding: .5em;
 $sheet-music-width: 650px;
-$zoom-ratio: 120 / 80; // match settings.js > ZOOM_RATIO
+$zoom-ratio: 120 / 80; // => ZOOM_RATIO
+$frame-ruler-width: 31px; // => FRAME_RULER_WIDTH
 
+//----------------------------------------------------------------------------------------------------------------------
 // colors
 $alert-color: hsl(0, 100%, 50%);
 $alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
 $controls-color: black;
-$controls-bg-color: white;
+$sidebar-bg-color: white;
 $disabled-color: lighten($controls-color, 90%);
 $theme-color: hsl(22, 85%, 43%);
+$btn-toggle-bg-color: transparentize($theme-color, .75);
 $focus-color: $theme-color;
 $focus-bg-color: lighten($disabled-color, 5%);
 $list-bg-color: lighten($disabled-color, 5%);
 $list-current-bg-color: $list-bg-color; // hsl(60, 100%, 95%);
 $list-item-border-color: $disabled-color;
 $list-item-border-focus-color: darken($list-item-border-color, 15%);
-
 $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 
+//----------------------------------------------------------------------------------------------------------------------
 // timings
-$transition-time: .25s; // match settings.js > TRANSITION_TIME_MS
+$transition-time-ms: 250ms; // => TRANSITION_TIME_MS
 
+//----------------------------------------------------------------------------------------------------------------------
 // selectors
 $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usage
 
+//----------------------------------------------------------------------------------------------------------------------
 // functions
 
 // adapted from <https://gist.github.com/tqc/2564280>
@@ -52,10 +59,11 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   @return hsl($h, $s, $l);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 // mixins
 
 @mixin short-transition() {
-  transition: all $transition-time ease-in-out;
+  transition: all $transition-time-ms ease-in-out;
 }
 
 @mixin drop-shadow() {
@@ -97,6 +105,8 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   }
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
 @mixin base_styling() {
   html {
     font-size: $base-size;
@@ -127,39 +137,84 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     }
   }
 
+  .sidebar {
+    box-sizing: border-box;
+    background-color: $sidebar-bg-color;
+    @include drop-shadow;
 
-  .controls {
-    width: 100%;
-    height: 100%;
+    &.h {
+      @include absolute-center(x, fixed);
+      height: $unit;
+    }
 
-    .btn {
-      &::before {
-        content: '';
-        position: absolute;
-        background-color: $focus-bg-color;
-        left: 50%;
-        top: 50%;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        @include short-transition;
-        transform: translate(-50%, -50%) scale(0);
+    &.v {
+      @include absolute-center(y, fixed);
+      width: $unit;
+    }
 
-        @at-root .controls .btn:focus::before {
-          transform: translate(-50%, -50%) scale(1);
-        }
-      }
+    &.top {
+      top: 0;
+      border-radius: 0 0 $radius $radius;
+    }
 
-      &:not(:disabled) {
-        cursor: pointer;
-        color: $controls-color;
+    &.bottom {
+      bottom: 0;
+      border-radius: $radius $radius 0 0;
+    }
 
-        &:focus,
-        &:hover {
-          color: $focus-color;
-        }
+    &.left {
+      left: 0;
+      border-radius: 0 $radius $radius 0;
+    }
+
+    &.right {
+      right: 0;
+      border-radius: $radius 0 0 $radius;
+    }
+
+    * {
+      position: absolute;
+    }
+
+    :focus {
+      outline: none;
+    }
+  } // .sidebar
+
+  .btn {
+    &::before {
+      content: '';
+      position: absolute;
+      background-color: $focus-bg-color;
+      left: 50%;
+      top: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      @include short-transition;
+      transform: translate(-50%, -50%) scale(0);
+
+      @at-root .controls .btn:focus::before {
+        transform: translate(-50%, -50%) scale(1);
       }
     }
-  } // .controls
 
-}
+    &:not(:disabled) {
+      cursor: pointer;
+      color: $controls-color;
+
+      &:focus,
+      &:hover {
+        color: $focus-color;
+      }
+    }
+
+    svg {
+      width: 2.8em;
+      height: 2.8em;
+      fill: currentColor;
+      @include absolute-center();
+    }
+  } // .btn
+
+} // base-styling()

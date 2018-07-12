@@ -1,5 +1,5 @@
 <template>
-  <aside :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
+  <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
       <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
@@ -17,7 +17,7 @@
 
     <nav ref="list" :class="['list', listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
-        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id"
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
           <span class="item-flex">
             <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
@@ -109,11 +109,6 @@ export default {
 
   //====================================================================================================================
 
-  mounted() {
-    if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
-    this.init();
-  }, // mounted ()
-
   watch: {
     $route() {
       if (this.isListShown) this.hideList();
@@ -134,11 +129,6 @@ export default {
     ...mapMutations('player', {
       'setPlayer': 'set',
     }),
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    init() {
-    }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -179,6 +169,7 @@ export default {
     toggleList() {
       this[this.isListShown ? 'hideList' : 'showList']();
     }, // toggleList()
+
     //------------------------------------------------------------------------------------------------------------------
 
     onListItemMouseEnter(e) {
@@ -291,25 +282,9 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-//$nav-top: 0; obsolete
-
 .the-nav {
   z-index: $layer-the-nav;
-  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
-  top: 0;
-  box-sizing: border-box;
-  background-color: white;
-  border-radius: 0 0 $radius $radius;
-  @include drop-shadow;
-  height: $unit;
   width: 3 * $unit;
-
-  * {
-    position: absolute;
-  }
-  :focus {
-    outline: none;
-  }
 
   &::before {
     content: '';
@@ -326,6 +301,11 @@ export default {
     opacity: .5;
     pointer-events: auto;
   }
+
+  .controls {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .btn:not(:disabled) {
@@ -334,6 +314,7 @@ export default {
     & .id-indicator-frame {
       color: $focus-color;
       border-color: $focus-color;
+      @include short-transition;
     }
   }
 }
@@ -341,8 +322,6 @@ export default {
 .btn svg {
   width: 1.4em;
   height: 1.4em;
-  fill: currentColor;
-  @include absolute-center();
 }
 
 .btn-nav:not(.btn-list) {
@@ -366,21 +345,6 @@ export default {
 .btn-list {
   left: 50%;
 }
-
-/* [2018-06-29] obsolete
-// this element is used to prevent clicking on the .btn-list outside the visible ui
-// not necessary as long as btn is at top of page
-@if $nav-top != 0 {
-  .btn-list-mask {
-    display: block;
-    left: calc((1 * #{$unit}) - 1em);
-    width: 6em;
-    height: 1em;
-    top: -1em;
-    z-index: 2; // raise above .btn-list shadow
-  }
-}
-//*/
 
 .btn-list {
   z-index: 1; /* raise above .list shadow */

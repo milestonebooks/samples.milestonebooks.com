@@ -8,15 +8,18 @@
 
     <TheNav v-if="s.samples.length > 1" />
 
+    <TheOptRulers v-if="s.hasRulers" />
+
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
 
 <script>
-import TheSlider from '~/components/TheSlider';
-import TheNav    from '~/components/TheNav';
-import ThePlayer from '~/components/ThePlayer';
+import TheSlider    from '~/components/TheSlider';
+import TheNav       from '~/components/TheNav';
+import TheOptRulers from '~/components/TheOptRulers';
+import ThePlayer    from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
@@ -28,6 +31,7 @@ export default {
   components: {
     TheSlider,
     TheNav,
+    TheOptRulers,
     ThePlayer,
   },
 
@@ -83,12 +87,13 @@ export default {
 
     mainClass() {
       return {
-        'is-init':    this.s.isInit,
-        'has-touch':  this.s.hasTouch,
-        'has-mouse':  this.s.hasMouse,
-        'has-zoom':   this.s.hasZoom,
-        'has-print':  this.s.hasPrint,
-        'show-title': true,
+        'is-init':     this.s.isInit,
+        'has-touch':   this.s.hasTouch,
+        'has-mouse':   this.s.hasMouse,
+        'has-zoom':    this.s.hasZoom,
+        'has-print':   this.s.hasPrint,
+        'show-rulers': this.s.showRulers,
+        'show-title':  true,
       }
     },
 
@@ -107,7 +112,6 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     //* TODO (disabled for debugging)
-    console.log('initSettings...');
     await this.$store.dispatch('initSettings');
     //*/
 
@@ -158,6 +162,7 @@ export default {
         item:      this.$route.params.item,
         type:      d.type,
         direction: d.direction || 'ltr',
+        hasRulers: d.type !== 'audio',
         hasZoom:   d.hasZoom  || false,
         hasPrint:  d.hasPrint || false,
         samples:   samples,

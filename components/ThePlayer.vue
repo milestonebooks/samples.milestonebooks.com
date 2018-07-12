@@ -1,11 +1,9 @@
 <template>
-  <aside :class="['audio-player', uiClass]">
+  <aside :class="['audio-player sidebar bottom h', uiClass]">
 
-    <div class="controls">
-      <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
-        <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
-      </button>
-    </div>
+    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+      <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
+    </button>
 
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
@@ -86,7 +84,7 @@ export default {
   }, // beforeDestroy ()
 
   watch: {
-    currentIndex: 'update',
+    currentIndex() { this.update() },
   },
 
   //====================================================================================================================
@@ -101,11 +99,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
-      console.log('ThePlayer initSettings...');
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
       this.refresh();
+      this.update();
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -276,33 +274,13 @@ export default {
 
 .audio-player {
   z-index: $layer-the-nav - 1;
-  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
-  bottom: 0;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
-  background-color: $controls-bg-color;
-  @include drop-shadow;
-  box-sizing: border-box;
-  height: $unit;
-  width: 100%;
+  width: 10 * $unit;
 
-  @include sheet-music-min {
-    border-radius: $radius $radius 0 0;
-    width: 10 * $unit;
+  @include below-sheet-music-min {
+    width: 100%;
+    border-radius: 0;
   }
-
-  * {
-    position: absolute;
-  }
-  :focus {
-    outline: none;
-  }
-}
-
-.btn svg {
-  width: 2.8em;
-  height: 2.8em;
-  fill: currentColor;
-  @include absolute-center();
 }
 
 .btn-play {
@@ -377,7 +355,7 @@ export default {
   height: 100%;
   width: 0;
   box-sizing: content-box;
-  border-right: 1px solid $controls-bg-color;
+  border-right: 1px solid $sidebar-bg-color;
   cursor: pointer;
   background-color: $focus-color;
 }

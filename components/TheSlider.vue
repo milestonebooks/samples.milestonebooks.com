@@ -1,9 +1,13 @@
 <template>
-  <article :class="sliderClass" :aria-grabbed="isGrabbing">
-    <div class="frame-mask end prev"></div>
-    <div class="frame-mask end next"></div>
-    <div class="frame-mask side above"></div>
-    <div class="frame-mask side below"></div>
+  <article :class="sliderClass" :aria-grabbed="isGrabbing" :data-debug="debug">
+
+    <div class="frame-masks">
+      <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
+    </div>
+
+    <div class="frame-rulers">
+      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b></div> <!-- 20 * 80px = (monitors up to 1600px) -->
+    </div>
 
     <div class="frame dpi80">
       <div class="slides">
@@ -28,12 +32,16 @@
       </div>
     </div>
 
-    <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace :disabled="isFirst" aria-label="Previous sample" tag="button">
-      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
-    </nuxt-link>
-    <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace :disabled="isLast" aria-label="Next sample" tag="button">
-      <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
-    </nuxt-link>
+    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
+    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
+        <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
 
   </article>
 </template>
@@ -46,7 +54,6 @@ import settings from '~/assets/settings';
 import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
-
 
 import { mapGetters } from 'vuex';
 
@@ -67,6 +74,7 @@ export default {
 
   data () {
     return {
+      debug:        null,
       isInit:       false,
       isGrabbing:   false,
       isScrolling:  null,
@@ -122,18 +130,22 @@ export default {
 
   watch: {
     samples() { this.init() },
+
     currentIndex() {
       // defer to ensure dom is updated
       this.$nextTick(() => {
         this.update();
       });
     },
+
     isInit() {
       // ensure that transitions are only enabled after init is complete
       this.$nextTick(() => {
         if (this.isInit) this.noTransition = false;
       });
     },
+
+    's.showRulers'() { this.toggleRulers() },
   },
 
   //====================================================================================================================
@@ -142,6 +154,7 @@ export default {
     window.addEventListener('resize', this.onResize);
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
+    if (this.s.showRulers) this.toggleRulers();
   },
 
   beforeDestroy () {
@@ -190,7 +203,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      //console.log(`update(init:${this.isInit}, i:${this.currentIndex})`);
       if (!this.isInit) return;
 
       this.autosize();
@@ -261,7 +273,7 @@ export default {
       const XY = `${-xOffset}px, ${-yOffset}px`;
 
       $slides.css({
-        'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+        transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
     }, // autosize()
 
@@ -405,12 +417,13 @@ export default {
       let action = 'click';
       const duration = Date.now() - this.touchPoint.time;
       const diffX = Math.abs(this.touchPoint.deltaX);
+      const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
 
       const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
-      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25)) {
+      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
         action = 'swipe';
       }
 
@@ -445,6 +458,90 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    toggleRulers() {
+      const $rulers = window.$('.frame-rulers');
+      if (this.s.showRulers) {
+        $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
+        window.addEventListener('mousemove', this.positionRulers);
+      } else {
+        $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
+        window.removeEventListener('mousemove', this.positionRulers);
+      }
+    }, // toggleRulers()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    positionRulers(event) {
+      const {clientX:x, clientY:y} = event;
+
+      window.$('.frame-rulers').css({
+        left: `${x}px`,
+        top:  `${y}px`,
+      });
+    }, // positionRulers()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchstart(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      const $rulers = window.$('.frame-rulers');
+
+      $rulers[0].addEventListener('touchmove', this.onRulersTouchmove);
+      $rulers[0].addEventListener('touchend',  this.onRulersTouchend);
+
+      this.touchPoint = {
+        $el: $rulers,
+        rulerX: $rulers.offset().left,
+        rulerY: $rulers.offset().top,
+        x: touches.pageX,
+        y: touches.pageY,
+        deltaX: 0,
+        deltaY: 0,
+      };
+
+      // avoid scrolling when moving rulers
+      e.preventDefault();
+
+    }, // onRulersTouchstart()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchmove(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      this.touchPoint.deltaX = touches.pageX - this.touchPoint.x;
+      this.touchPoint.deltaY = touches.pageY - this.touchPoint.y;
+
+      let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
+      let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
+
+      const offset = (settings.FRAME_RULER_WIDTH / 2) * (this.s.dpi / 80);
+
+      // keep within view
+      x = Math.min(Math.max(x, offset), this.availWidth  - offset);
+      y = Math.min(Math.max(y, offset), this.availHeight - offset);
+
+      this.positionRulers({
+        clientX: x,
+        clientY: y,
+      });
+
+    }, // onRulersTouchmove()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onRulersTouchend() {
+      // cleanup
+      const $rulers = window.$('.frame-rulers');
+
+      $rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
+      $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
+
+    }, // onRulersTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     getSlideOffset($slide) {
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
@@ -466,7 +563,6 @@ export default {
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
       // TODO: cancel zoom action
-      // TODO: rtl zoom
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -643,7 +739,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getTransformOrigin($frame, $frameZoom, $zoom) {
+    getTransformOrigin($frame, $frameZoom) {
 
       const xOriginAdj = 0;
 
@@ -666,10 +762,13 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-$frame-unit: $unit;// ($unit / 1em) * 10px;
+$frame-ruler-inch: 80px;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
-$layer-buttons: $layer-frame-mask + 1;
+$layer-frame-rulers: $layer-frame-mask + 1;
+$layer-buttons: $layer-frame-rulers + 1;
+
+$radius-lg: $radius * 2;
 
 .slider {
   position: absolute;
@@ -684,6 +783,19 @@ $layer-buttons: $layer-frame-mask + 1;
   &.no-transition {
     transition: none;
   }
+
+  /*
+  &[data-debug]::before {
+    content: attr(data-debug);
+    z-index: 9;
+    position: fixed;
+    top: 0;
+    left: 0;
+    font-size: 2em;
+    outline: 1px solid red;
+    background: hsla(0,100%,100%,.75);
+  }
+  //*/
 
   .frame-mask {
     position: fixed;
@@ -722,6 +834,71 @@ $layer-buttons: $layer-frame-mask + 1;
     [aria-grabbed] .frame-mask {
       display: none;
     }
+  } // .frame-mask
+
+  .frame-rulers {
+    pointer-events: none;
+    opacity: 0;
+    z-index: $layer-frame-rulers;
+    position: fixed;
+    left: $frame-ruler-width / 2;
+    top:  $frame-ruler-width / 2;
+    width: 200%;
+    height: 200%;
+    transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
+    transform-origin: 0 0;
+    @at-root [data-dpi="120"] .frame-rulers {
+      transform: scale($zoom-ratio);
+    }
+  }
+  @at-root .show-rulers .frame-rulers {
+    opacity: .75;
+  }
+
+  .frame-ruler {
+    pointer-events: all;
+    position: absolute;
+    left: $frame-ruler-width / 2;
+    top: -$frame-ruler-width / 2;
+    width: 100%;
+    height: $frame-ruler-width;
+    overflow: hidden;
+    background-color: hsl(60, 100%, 50%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='31' viewBox='0 0 80 31'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
+    counter-reset: inches;
+    transform-origin: -#{$frame-ruler-width / 2} #{$frame-ruler-width / 2};
+
+    b {
+      float: left;
+      position: relative;
+      width: $frame-ruler-inch;
+      height: $frame-ruler-width;
+
+      &::after {
+        counter-increment: inches;
+        content: counter(inches);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translate(-50%, -50%) translate(-0.5px, 0); // sequential because IE11 doesn't support calc() here
+        @at-root .frame-ruler.r b::after {
+          transform: translate(-50%, -50%) translate(0.5px, 0) rotate(180deg); // sequential because IE11 doesn't support calc() here
+        }
+        font: 900 16px Arial, Helvetica, sans-serif;
+        background: hsl(60, 100%, 50%);
+        line-height: 12px;
+        padding: 2px;
+      }
+    }
+  } // .frame-ruler
+  .frame-ruler.y.top {
+    transform: rotate(-90deg);
+  }
+  .frame-ruler.x.left {
+    transform: rotate(-180deg);
+  }
+  .frame-ruler.y.bottom {
+    transform: rotate(-270deg);
   }
 
   .frame {
@@ -786,13 +963,23 @@ $layer-buttons: $layer-frame-mask + 1;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome
-    @at-root .has-mouse.has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-mouse.has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+    }
+    @at-root
+    [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
+    [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
+    }
+    @at-root
+    [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
+    [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
     }
 
     // TODO
@@ -808,6 +995,34 @@ $layer-buttons: $layer-frame-mask + 1;
       top: 0;
       bottom: 0;
       border: 1px solid hsl(0, 0%, 60%);
+    }
+
+    @at-root [data-dir="ltr"] &.non-sequential-after {
+      margin-right: 5.5em;
+    }
+    @at-root [data-dir="rtl"] &.non-sequential-after {
+      margin-left: 5.5em;
+    }
+    &.non-sequential-after::after {
+      content: '\2022\2009\2022\2009\2022';
+      font-size: 3em;
+      pointer-events: none;
+      position: absolute;
+      color: transparentize(darken($background-color, 95%), .5);
+      @include short-transition;
+      top: 50%;
+      transform: translate(-50%, -50%);
+
+      @at-root [data-dir="ltr"] & {
+        left: calc(100% + 3rem);
+      }
+      @at-root [data-dir="rtl"] & {
+        right: calc(100% + 3rem);
+        transform: translate(50%, -50%);
+      }
+    }
+    &.non-sequential-after.current::after {
+      opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
     }
 
     .slide-liner {
@@ -859,33 +1074,12 @@ $layer-buttons: $layer-frame-mask + 1;
   } // .slide
 } // .slider
 
-.btn:not(:disabled):focus,
-.btn:not(:disabled):hover {
-  color: $focus-color;
-}
-
-.btn svg {
-  width: 3em;
-  height: 6em;
-  fill: currentColor;
-  @include absolute-center();
-}
-
-.btn-slider {
-  position: fixed;
+.sidebar {
   z-index: $layer-buttons;
-  top: 50%;
-  margin-top: 0;
-  transform: translateY(-50%);
   height: 8em;
-  width: 4em;
-  background: no-repeat center white;
-  @include drop-shadow;
-  cursor: pointer;
-  outline: none;
   @include short-transition;
 
-  &[disabled] {
+  &.disabled {
     pointer-events: none;
     opacity: 0 !important;
   }
@@ -894,17 +1088,29 @@ $layer-buttons: $layer-frame-mask + 1;
   [data-dir="ltr"] &.prev,
   [data-dir="rtl"] &.next {
     left: 0;
-    border-radius: 0 $radius $radius 0;
+    border-radius: 0 $radius-lg $radius-lg 0;
   }
+
   @at-root
   [data-dir="ltr"] &.next,
   [data-dir="rtl"] &.prev {
     right: 0;
-    border-radius: $radius 0 0 $radius;
+    border-radius: $radius-lg 0 0 $radius-lg;
     svg {
       transform: translate(-50%, -50%) rotate(180deg);
     }
   }
-} // .btn-slider
+
+  .btn {
+    width: 100%;
+    height: 100%;
+    @include short-transition;
+
+    svg {
+      width: 3em;
+      height: 6em;
+    }
+  }
+}
 
 </style>

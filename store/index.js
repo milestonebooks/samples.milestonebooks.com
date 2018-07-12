@@ -21,6 +21,9 @@ export const state = () => ({
   isCompactList: true,
   isCompactListTitles: false,
 
+  hasRulers:  false,
+  showRulers: false,
+
   hasTouch:  false,
   hasMouse:  false,
 
@@ -36,6 +39,7 @@ export const state = () => ({
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
     {key:'isCompactListTitles', get: v => v === 'true'},
+    {key:'showRulers',          get: v => v === 'true'},
     {key:'hasTouch',            get: v => v === 'true'},
     {key:'hasMouse',            get: v => v === 'true'},
     {key:'scrollbarWidth',      get: v => Number(v)},
@@ -60,7 +64,7 @@ export const getters = {
     const i = sample.index;
 
     return 'item'
-      + (i === state.currentIndex ? ' current' : '')
+      + ` ${i < state.currentIndex ? 'before-' : i > state.currentIndex ? 'after-' : ''}current`
       + (!sample.sequential ? ' non-' : ' ') + 'sequential-before'
       + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after';
   }, // listItemClass()
