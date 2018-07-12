@@ -18,7 +18,7 @@ $alert-color: hsl(0, 100%, 50%);
 $alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
 $controls-color: black;
-$controls-bg-color: white;
+$sidebar-bg-color: white;
 $disabled-color: lighten($controls-color, 90%);
 $theme-color: hsl(22, 85%, 43%);
 $focus-color: $theme-color;
@@ -130,20 +130,32 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
 
   .sidebar {
     box-sizing: border-box;
-    background-color: white;
+    background-color: $sidebar-bg-color;
     @include drop-shadow;
 
-    &.top {
+    &.h {
       @include absolute-center(x, fixed);
       height: $unit;
+    }
+
+    &.top {
       top: 0;
       border-radius: 0 0 $radius $radius;
+    }
+
+    &.bottom {
+      bottom: 0;
+      border-radius: $radius $radius 0 0;
     }
 
     * {
       position: absolute;
     }
-  }
+
+    :focus {
+      outline: none;
+    }
+  } // .sidebar
 
   .btn {
     &::before {

@@ -1,5 +1,5 @@
 <template>
-  <aside :class="`the-nav sidebar top ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
+  <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
       <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
@@ -296,13 +296,6 @@ export default {
   z-index: $layer-the-nav;
   width: 3 * $unit;
 
-  * {
-    position: absolute;
-  }
-  :focus {
-    outline: none;
-  }
-
   &::before {
     content: '';
     @include absolute-center(x);
@@ -331,6 +324,7 @@ export default {
     & .id-indicator-frame {
       color: $focus-color;
       border-color: $focus-color;
+      @include short-transition;
     }
   }
 }
@@ -338,8 +332,6 @@ export default {
 .btn svg {
   width: 1.4em;
   height: 1.4em;
-  fill: currentColor;
-  @include absolute-center();
 }
 
 .btn-nav:not(.btn-list) {

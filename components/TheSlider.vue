@@ -119,7 +119,6 @@ export default {
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
-        'show-rulers': this.s.showRulers,
       }
     }, // sliderClass()
 
@@ -144,7 +143,7 @@ export default {
       });
     },
 
-    'this.s.showRulers'() { this.toggleRulers() },
+    's.showRulers'() { this.toggleRulers() },
   },
 
   //====================================================================================================================
@@ -459,7 +458,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleRulers() {
-      console.log('toggleRulers()');
+      console.log('toggleRulers()', this.s.showRulers);
       const $rulers = window.$('.frame-rulers');
       if (this.s.showRulers) {
         $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
@@ -854,7 +853,7 @@ $layer-buttons: $layer-frame-rulers + 1;
       transform: scale($zoom-ratio);
     }
   }
-  &.show-rulers .frame-rulers {
+  @at-root .show-rulers .frame-rulers {
     opacity: .75;
   }
 
@@ -1047,8 +1046,6 @@ $layer-buttons: $layer-frame-rulers + 1;
 .btn svg {
   width: 3em;
   height: 6em;
-  fill: currentColor;
-  @include absolute-center();
 }
 
 .btn-slider {

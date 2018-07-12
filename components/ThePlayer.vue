@@ -1,5 +1,5 @@
 <template>
-  <aside :class="['audio-player', uiClass]">
+  <aside :class="['audio-player sidebar bottom h', uiClass]">
 
     <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
@@ -274,25 +274,12 @@ export default {
 
 .audio-player {
   z-index: $layer-the-nav - 1;
-  @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
-  bottom: 0;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
-  background-color: $controls-bg-color;
-  @include drop-shadow;
-  box-sizing: border-box;
-  height: $unit;
-  width: 100%;
+  width: 10 * $unit;
 
-  @include sheet-music-min {
-    border-radius: $radius $radius 0 0;
-    width: 10 * $unit;
-  }
-
-  * {
-    position: absolute;
-  }
-  :focus {
-    outline: none;
+  @include below-sheet-music-min {
+    width: 100%;
+    border-radius: 0;
   }
 }
 
@@ -368,7 +355,7 @@ export default {
   height: 100%;
   width: 0;
   box-sizing: content-box;
-  border-right: 1px solid $controls-bg-color;
+  border-right: 1px solid $sidebar-bg-color;
   cursor: pointer;
   background-color: $focus-color;
 }
