@@ -1,5 +1,5 @@
 <template>
-  <svg :viewBox="viewBox"><path :d="d"></path></svg>
+  <svg :viewBox="viewBox"><path v-if="d" :d="d"></path><slot /></svg>
 </template>
 
 <script>

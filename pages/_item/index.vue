@@ -8,15 +8,18 @@
 
     <TheNav v-if="s.samples.length > 1" />
 
+    <TheOptRulers v-if="s.hasRulers" />
+
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
   </main>
 </template>
 
 <script>
-import TheSlider from '~/components/TheSlider';
-import TheNav    from '~/components/TheNav';
-import ThePlayer from '~/components/ThePlayer';
+import TheSlider    from '~/components/TheSlider';
+import TheNav       from '~/components/TheNav';
+import TheOptRulers from '~/components/TheOptRulers';
+import ThePlayer    from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
@@ -28,6 +31,7 @@ export default {
   components: {
     TheSlider,
     TheNav,
+    TheOptRulers,
     ThePlayer,
   },
 
@@ -158,6 +162,7 @@ export default {
         item:      this.$route.params.item,
         type:      d.type,
         direction: d.direction || 'ltr',
+        hasRulers: d.type !== 'audio',
         hasZoom:   d.hasZoom  || false,
         hasPrint:  d.hasPrint || false,
         samples:   samples,

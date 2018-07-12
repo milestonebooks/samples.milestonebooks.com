@@ -292,8 +292,6 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-//$nav-top: 0; obsolete
-
 .the-nav {
   z-index: $layer-the-nav;
   @include absolute-center(x, fixed); // `align-self: center` doesn't work with IE 11 and early iPhones
@@ -367,21 +365,6 @@ export default {
 .btn-list {
   left: 50%;
 }
-
-/* [2018-06-29] obsolete
-// this element is used to prevent clicking on the .btn-list outside the visible ui
-// not necessary as long as btn is at top of page
-@if $nav-top != 0 {
-  .btn-list-mask {
-    display: block;
-    left: calc((1 * #{$unit}) - 1em);
-    width: 6em;
-    height: 1em;
-    top: -1em;
-    z-index: 2; // raise above .btn-list shadow
-  }
-}
-//*/
 
 .btn-list {
   z-index: 1; /* raise above .list shadow */
