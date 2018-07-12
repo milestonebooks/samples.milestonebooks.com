@@ -87,12 +87,13 @@ export default {
 
     mainClass() {
       return {
-        'is-init':    this.s.isInit,
-        'has-touch':  this.s.hasTouch,
-        'has-mouse':  this.s.hasMouse,
-        'has-zoom':   this.s.hasZoom,
-        'has-print':  this.s.hasPrint,
-        'show-title': true,
+        'is-init':     this.s.isInit,
+        'has-touch':   this.s.hasTouch,
+        'has-mouse':   this.s.hasMouse,
+        'has-zoom':    this.s.hasZoom,
+        'has-print':   this.s.hasPrint,
+        'show-rulers': this.s.showRulers,
+        'show-title':  true,
       }
     },
 

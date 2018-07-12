@@ -22,7 +22,7 @@ export const state = () => ({
   isCompactListTitles: false,
 
   hasRulers:  false,
-  showRulers: true, // TODO: default to false
+  showRulers: false,
 
   hasTouch:  false,
   hasMouse:  false,
