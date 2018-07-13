@@ -14,7 +14,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
-            <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
+            <img v-if="sample.image" class="dpi80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -26,7 +26,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
-            <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+            <img class="dpi120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120)" draggable="false" />
           </div>
         </section>
       </div>
@@ -129,7 +129,12 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   watch: {
-    samples() { this.init() },
+    samples() {
+      // defer to ensure dom is updated
+      this.$nextTick(() => {
+        this.init();
+      });
+    },
 
     currentIndex() {
       // defer to ensure dom is updated
@@ -181,8 +186,61 @@ export default {
       console.log(`stylesheet @ ${this.availWidth}w X ${this.availHeight}h:`, this.stylesheet.cssRules);
       //*/
 
+      this.initImages();
+
       this.isInit = true;
     }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    imageStyleSize(sample, dpi = 80) {
+      return {
+        width:  `${Math.ceil(sample.image.w * dpi)}px`,
+        height: `${Math.ceil(sample.image.h * dpi)}px`,
+      };
+    }, // imageStyleSize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    imageSrc(sample, dpi) {
+      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
+    }, // imageSrc()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    initImages() {
+      const images = document.querySelectorAll('[data-src]');
+
+      const config = {rootMargin: '0% 0% 0% 0%'};
+
+      const observer = new IntersectionObserver((entries, self) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.preloadImage(entry.target);
+            self.unobserve(entry.target);
+          }
+        });
+      }, config);
+
+      images.forEach(image => { observer.observe(image); });
+
+    }, // initImages()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    preloadImage(img) {
+      console.log('preloadImage()', img);
+      const src = img.getAttribute('data-src');
+      if (!src) return;
+      img.src = src;
+    }, // preloadImage()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onImageLoaded(i, dpi) {
+      console.log('onImageLoaded', i, dpi);
+      // TODO: multiple size images; lazy loading; fadein when current image has loaded
+    }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -318,19 +376,6 @@ export default {
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    imgSrc(sample, dpi) {
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
-    }, // imgSrc()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    imgLoaded(i, dpi) {
-      console.log('imgLoaded', i, dpi);
-      // TODO: multiple size images; lazy loading; fadein when first image has loaded
-    }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 <template>
   <aside :class="['audio-player sidebar bottom h', uiClass]">
 
-    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.commit('player/togglePlay')">
+    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
     </button>
 
@@ -85,6 +85,10 @@ export default {
 
   watch: {
     currentIndex() { this.update() },
+
+    'p.isAutoPlay'() {
+      this.$store.dispatch('player/togglePlay', {play: this.p.isAutoPlay});
+    },
   },
 
   //====================================================================================================================
@@ -194,7 +198,7 @@ export default {
         newPct = 100; break;
       case 'Enter':
       case ' ': // duplicate play button behavior
-        this.$store.commit('player/togglePlay',false); break;
+        this.$store.dispatch('player/togglePlay'); break;
       default:
         return; // ignore all other keys
       }
