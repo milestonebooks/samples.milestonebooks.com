@@ -2,7 +2,7 @@
   <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
     <div class="controls">
-      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
         <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
       <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
@@ -10,7 +10,7 @@
           <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
         </span></span>
       </button>
-      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace tag="button">
+      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
         <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
       </nuxt-link>
     </div>
