@@ -14,7 +14,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
-            <img v-if="sample.image" :src="imgSrc(sample, 80)" @load="imgLoaded(sample.index, 80)" draggable="false" />
+            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -26,7 +26,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
-            <img :src="imgSrc(sample, 120)" @load="imgLoaded(sample.index, 120)" draggable="false" />
+            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120)" draggable="false" />
           </div>
         </section>
       </div>
@@ -57,6 +57,7 @@ import supportsPassive from '~/plugins/supportsPassive';
 
 import { mapGetters } from 'vuex';
 
+// jQuery-style custom function
 window.$.fn.offsetRect = function() {
   return this[0].getBoundingClientRect();
 };
@@ -67,7 +68,6 @@ export default {
   },
 
   props: {
-    options: Object,
     samples: Array,
     currentIndex: Number,
   },
@@ -122,14 +122,13 @@ export default {
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
       }
-    }, // sliderClass()
+    },
 
   }, // computed {}
 
   //--------------------------------------------------------------------------------------------------------------------
 
   watch: {
-    samples() { this.init() },
 
     currentIndex() {
       // defer to ensure dom is updated
@@ -146,6 +145,7 @@ export default {
     },
 
     's.showRulers'() { this.toggleRulers() },
+
   },
 
   //====================================================================================================================
@@ -169,20 +169,72 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    update() {
+      this.autosize();
+      console.log('TheSlider update()', this.currentIndex, 'isInit?', this.isInit);
+      if (!this.isInit) this.init();
+    }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     init() {
-      console.log('init', this.s.samples.length);
-
-      /* experimental
-      const style = document.createElement('style');
-      document.head.appendChild(style);
-
-      this.stylesheet = style.sheet;
-
-      console.log(`stylesheet @ ${this.availWidth}w X ${this.availHeight}h:`, this.stylesheet.cssRules);
-      //*/
-
+      this.initImages();
       this.isInit = true;
     }, // init()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    imageStyleSize(sample, dpi = 80) {
+      return {
+        width:  `${Math.ceil(sample.image.w * dpi)}px`,
+        height: `${Math.ceil(sample.image.h * dpi)}px`,
+      };
+    }, // imageStyleSize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    imageSrc(sample, dpi) {
+      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
+    }, // imageSrc()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    initImages() {
+
+      let images = document.querySelectorAll('[data-src]');
+
+      //const config = {rootMargin: '0% -50% 0% 0%'};
+      const config = {rootMargin: '0px'};
+
+      const observer = new IntersectionObserver((entries, self) => {
+        entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            this.preloadImage(entry.target);
+            self.unobserve(entry.target);
+          }
+        });
+      }, config);
+
+      images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
+      images.forEach(image => { observer.observe(image); });
+
+    }, // initImages()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    preloadImage(img) {
+      const src = img.getAttribute('data-src');
+      if (img.src || !src) return;
+      img.src = src;
+    }, // preloadImage()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onImageLoaded(i, dpi) {
+      console.log('TODO: onImageLoaded', i, dpi);
+      // TODO: multiple size images; lazy loading; fadein when current image has loaded
+    }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -202,18 +254,18 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    update() {
-      if (!this.isInit) return;
-
-      this.autosize();
-    }, // update()
-
-    //------------------------------------------------------------------------------------------------------------------
-
     autosize({resize = false, dpi = null} = {}) {
       const index = this.currentIndex;
 
       if (!dpi) dpi = this.s.dpi;
+
+      // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
+      // this ensure the current image loads first, which is useful when scrolling past many slides via the nav list
+      if (this.s.samples[this.currentIndex].image) {
+        this.preloadImage(window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
+      }
+
+      //console.log(`autosize(${dpi}) isInit?`, this.isInit);
 
       const $slider = window.$('.slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
@@ -237,8 +289,6 @@ export default {
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
-
-      //console.log(`autosize(${dpi})`);
 
       if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
 
@@ -275,6 +325,8 @@ export default {
       $slides.css({
         transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
+
+      if (this.noTransition) this.forceRepaint();
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -318,19 +370,6 @@ export default {
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    imgSrc(sample, dpi) {
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
-    }, // imgSrc()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    imgLoaded(i, dpi) {
-      console.log('imgLoaded', i, dpi);
-      // TODO: multiple size images; lazy loading; fadein when first image has loaded
-    }, // imgLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -602,9 +641,9 @@ export default {
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
 
-        // position the zoom slider to trigger layout
+        // position the zoom slider to trigger layout and image loading
+        $frameZoom.css({display: 'block', position: 'absolute'});
         this.autosize({resize:true});
-        $frameZoom.css({position: 'absolute'});
 
         // position view to compensate for new layout
         window.scroll(xScrollTo, yScrollTo);
@@ -837,9 +876,9 @@ $radius-lg: $radius * 2;
   } // .frame-mask
 
   .frame-rulers {
+    z-index: $layer-frame-rulers;
     pointer-events: none;
     opacity: 0;
-    z-index: $layer-frame-rulers;
     position: fixed;
     left: $frame-ruler-width / 2;
     top:  $frame-ruler-width / 2;
@@ -855,8 +894,10 @@ $radius-lg: $radius * 2;
     opacity: .75;
   }
 
-  .frame-ruler {
+  @at-root .show-rulers .frame-ruler {
     pointer-events: all;
+  }
+  .frame-ruler {
     position: absolute;
     left: $frame-ruler-width / 2;
     top: -$frame-ruler-width / 2;
@@ -914,6 +955,7 @@ $radius-lg: $radius * 2;
     }
 
     &.dpi120 {
+      display: none;
       position: fixed;
       pointer-events: none;
       opacity: 0;
@@ -965,21 +1007,21 @@ $radius-lg: $radius * 2;
     // [2018-07] svg cursor only works in Chrome
     @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
     @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-out;
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
     @at-root
     [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
     [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
     }
     @at-root
     [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
     [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color}' /%3E%3C/svg%3E") 16 16, grab;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
     }
 
     // TODO

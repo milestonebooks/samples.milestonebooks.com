@@ -136,22 +136,6 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  togglePlay(state) {
-    if (state.isLoading) return false;
-
-    const sound = window.howls[state.current.index];
-
-    if (!state.isPlaying) {
-      sound.play();
-      state.isPlaying = true;
-    } else {
-      sound.pause();
-      state.isPlaying = false;
-    }
-  }, // togglePlay()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
   interrupt(state, t) {
 
     if (t) {
@@ -241,9 +225,21 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async onLoad({commit, state}) {
+  async togglePlay({state, commit, getters}, {play = null} = {}) {
+    if (!getters.isPlayable || !(window.howls && window.howls[state.current.index])) return false;
+
+    if (play === null) play = !state.isPlaying;
+
+    commit('set', {isPlaying: play});
+
+    window.howls[state.current.index][play ? 'play' : 'pause']();
+  }, // togglePlay()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async onLoad({dispatch, commit, state}) {
     commit('setLoaded');
-    if (state.isAutoPlay) commit('togglePlay');
+    if (state.isAutoPlay) dispatch('togglePlay');
   }, // onLoad()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -302,7 +298,7 @@ export const actions = {
 
   async reset({dispatch, commit, state}) {
     // pause audio to avoid fades
-    if (state.isPlaying) commit('togglePlay');
+    if (state.isPlaying) dispatch('togglePlay');
 
     // resets state, then handle, then audio
     await dispatch('setPct',0);

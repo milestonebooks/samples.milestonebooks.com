@@ -24,6 +24,7 @@ $controls-color: black;
 $sidebar-bg-color: white;
 $disabled-color: lighten($controls-color, 90%);
 $theme-color: hsl(22, 85%, 43%);
+$theme-color-data-uri: '%23' + str_slice(#{$theme-color}, 2);
 $btn-toggle-bg-color: transparentize($theme-color, .75);
 $focus-color: $theme-color;
 $focus-bg-color: lighten($disabled-color, 5%);
