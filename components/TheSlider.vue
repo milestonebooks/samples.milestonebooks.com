@@ -959,6 +959,7 @@ $radius-lg: $radius * 2;
       position: fixed;
       pointer-events: none;
       opacity: 0;
+      font-size: #{$zoom-ratio}em;
     }
 
     cursor: grab;
@@ -974,8 +975,6 @@ $radius-lg: $radius * 2;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    font-size: 1rem;
-    line-height: 1;
 
     #{$isIE} & {
       display: inline-block;
@@ -994,9 +993,6 @@ $radius-lg: $radius * 2;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
-    @at-root .frame.dpi120 .slide {
-      margin: 0 ($unit * 1/8 * $zoom-ratio);
-    }
     @include short-transition;
 
     &:not(.current) {
@@ -1004,7 +1000,7 @@ $radius-lg: $radius * 2;
     }
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-    // [2018-07] svg cursor only works in Chrome
+    // [2018-07] svg cursor only works in Chrome and Firefox
     @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
@@ -1056,10 +1052,10 @@ $radius-lg: $radius * 2;
       transform: translate(-50%, -50%);
 
       @at-root [data-dir="ltr"] & {
-        left: calc(100% + 3rem);
+        left: calc(100% + 1em);
       }
       @at-root [data-dir="rtl"] & {
-        right: calc(100% + 3rem);
+        right: calc(100% + 1em);
         transform: translate(50%, -50%);
       }
     }
