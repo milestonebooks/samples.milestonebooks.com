@@ -923,15 +923,12 @@ $radius-lg: $radius * 2;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
     transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
-    // rulers are a bit fuzzy when scaled, but redrawn rulers (see below) would require more work to transition smoothly
     @at-root [data-dpi="120"] & {
-      //*
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
       left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
       top:  -($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
       height: $frame-ruler-width-nominal * $zoom-ratio - 1;
       transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
-      //*/
     }
 
     b {
@@ -939,12 +936,10 @@ $radius-lg: $radius * 2;
       position: relative;
       width: $frame-ruler-inch;
       height: $frame-ruler-width-nominal - 1;
-      //*
       @at-root [data-dpi="120"] & {
         width: $frame-ruler-inch * $zoom-ratio;
         height: $frame-ruler-width-nominal * $zoom-ratio - 1;
       }
-      //*/
 
       &::after {
         counter-increment: inches;
@@ -960,13 +955,11 @@ $radius-lg: $radius * 2;
         background: hsl(60, 100%, 50%);
         line-height: 12px;
         padding: 2px;
-        //*
         @at-root [data-dpi="120"] & {
           font-size: 24px;
           line-height: 18px;
           padding: 3px;
         }
-        //*/
       }
     }
   } // .frame-ruler
@@ -1117,10 +1110,6 @@ $radius-lg: $radius * 2;
         bottom: .5em;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
-
-        @at-root .dpi120 .slide-liner::after {
-          font-size: 1.5em;
-        }
       }
     }
 
