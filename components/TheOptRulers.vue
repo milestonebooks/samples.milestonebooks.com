@@ -1,5 +1,5 @@
 <template>
-  <aside class="the-opt-rulers sidebar top h">
+  <aside class="the-opt-rulers controls sidebar top h">
     <button class="btn btn-opt rulers ltr" tabindex="1" :title="`${s.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
       <SvgIcon view="28" :d="btnRulerPath" />
     </button>

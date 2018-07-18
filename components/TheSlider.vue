@@ -14,7 +14,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
-            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80)" draggable="false" />
+            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80, $event)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -26,7 +26,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
-            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120)" draggable="false" />
+            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120, $event)" draggable="false" />
           </div>
         </section>
       </div>
@@ -79,6 +79,8 @@ export default {
       isGrabbing:   false,
       isScrolling:  null,
       noTransition: true,
+      isScaled:     false, // set to true when zoom has completed, but before images have cross-faded
+      dpiImages:    settings.DPI_DEFAULT,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
       slideHeight:  null,
@@ -171,7 +173,7 @@ export default {
 
     update() {
       this.autosize();
-      console.log('TheSlider update()', this.currentIndex, 'isInit?', this.isInit);
+      console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       if (!this.isInit) this.init();
     }, // update()
 
@@ -184,7 +186,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imageStyleSize(sample, dpi = 80) {
+    imageStyleSize(sample, dpi) {
       return {
         width:  `${Math.ceil(sample.image.w * dpi)}px`,
         height: `${Math.ceil(sample.image.h * dpi)}px`,
@@ -201,23 +203,28 @@ export default {
 
     initImages() {
 
-      let images = document.querySelectorAll('[data-src]');
-
-      //const config = {rootMargin: '0% -50% 0% 0%'};
-      const config = {rootMargin: '0px'};
-
-      const observer = new IntersectionObserver((entries, self) => {
-        entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            this.preloadImage(entry.target);
-            self.unobserve(entry.target);
-          }
+      for (const dpi of [80, 120]) {
+        const observer = new IntersectionObserver((entries, self) => {
+          entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              this.preloadImage(entry.target);
+              self.unobserve(entry.target);
+            }
+          });
+        }, {
+          root: window.$(`.frame.dpi${dpi}`)[0],
+          rootMargin: '100px',
         });
-      }, config);
 
-      images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
-      images.forEach(image => { observer.observe(image); });
+        let images = document.querySelectorAll(`.slider .frame.dpi${dpi} [data-src]`);
+
+        //console.log(images);
+
+        //images = window.$(`.slider .frame.dpi${dpi} [data-src]`);
+        images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
+        images.forEach(image => { observer.observe(image); });
+      }
 
     }, // initImages()
 
@@ -231,9 +238,18 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onImageLoaded(i, dpi) {
-      console.log('TODO: onImageLoaded', i, dpi);
-      // TODO: multiple size images; lazy loading; fadein when current image has loaded
+    onImageLoaded(i, dpi, event) {
+      this.$store.commit('setImageLoaded', {i, dpi});
+
+      // use 80-dpi image as scaled background until 120-dpi image loads
+      if (dpi === 80 && !this.s.samples[i].image.loaded['120']) {
+        //console.log(`.frame.dpi120 [data-index="${i}"] img > background-image: ${event.target.src}`);
+        window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+      }
+      // use 120-dpi image to avoid unnecessary downloads
+      if (dpi === 120 && !this.s.samples[i].image.loaded['80']) {
+        window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
+      }
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -254,7 +270,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({resize = false, dpi = null} = {}) {
+    autosize({dpi = null, resize = false} = {}) {
       const index = this.currentIndex;
 
       if (!dpi) dpi = this.s.dpi;
@@ -264,8 +280,6 @@ export default {
       if (this.s.samples[this.currentIndex].image) {
         this.preloadImage(window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
       }
-
-      //console.log(`autosize(${dpi}) isInit?`, this.isInit);
 
       const $slider = window.$('.slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
@@ -298,6 +312,8 @@ export default {
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
+
+        //console.log(`autosize(${dpi}) width[${width}] xMargin[${xMargin}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -417,7 +433,7 @@ export default {
       this.touchPoint.deltaY = pageY - this.touchPoint.y;
 
       if (this.isScrolling === null) {
-        this.isScrolling = !!(this.isScrolling || Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY));
+        this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
       if (!this.isScrolling) {
@@ -603,7 +619,6 @@ export default {
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
-      // TODO: cancel zoom action
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -631,7 +646,7 @@ export default {
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      // TODO: 'rtl' zoom in is buggy
+      // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
@@ -679,13 +694,18 @@ export default {
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
         $rulers.css({transform: ''});
 
+        // zoom
         await sleep(settings.TRANSITION_TIME_MS);
+
+        this.isScaled = true;
 
         // fade
         $frame.css({'z-index': ''});
         $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
+
+        this.isScaled = false;
 
         // cleanup
         $el.addClass('no-transition');
@@ -1051,7 +1071,7 @@ $radius-lg: $radius * 2;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
     }
 
-    // TODO
+    // TODO style slide height
     @include below-sheet-music-min {
       height: calc(100vh - 10em);
     }
@@ -1117,6 +1137,7 @@ $radius-lg: $radius * 2;
       max-width: 100%;
       vertical-align: top;
       object-position: top;
+      background-size: cover;
     }
 
     .sample-title {

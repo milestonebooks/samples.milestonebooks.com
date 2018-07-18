@@ -111,9 +111,7 @@ export default {
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    //* TODO (disabled for debugging)
     await this.$store.dispatch('initSettings');
-    //*/
 
     this.set({scrollbarWidth: this.getScrollbarWidth() });
 

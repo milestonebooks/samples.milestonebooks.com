@@ -142,6 +142,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     box-sizing: border-box;
     background-color: $sidebar-bg-color;
     @include drop-shadow;
+    @include short-transition; //TODO: relocate smoothly when scrollbar visiblity changes
 
     &.h {
       @include absolute-center(x, fixed);
