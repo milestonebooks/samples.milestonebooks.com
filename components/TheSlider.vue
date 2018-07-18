@@ -97,6 +97,7 @@ export default {
   computed: {
     ...mapGetters([
       'getSample',
+      'imageSrc',
       'listItemClass',
     ]),
 
@@ -194,10 +195,11 @@ export default {
     }, // imageStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
-
+    /* MOVED to index.js
     imageSrc(sample, dpi) {
       return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
     }, // imageSrc()
+    //*/
 
     //------------------------------------------------------------------------------------------------------------------
 

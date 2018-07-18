@@ -24,13 +24,15 @@ export const state = () => ({
   hasRulers:  false,
   showRulers: false,
 
-  hasTouch:  false,
-  hasMouse:  false,
+  hasPrint:   false,
+  isPrinting: false,
 
-  dpi:       80, // 80 | 120
-  hasZoom:   false,
-  isZooming: false,
-  hasPrint:  false,
+  hasTouch:   false,
+  hasMouse:   false,
+
+  dpi:        80, // 80 | 120
+  hasZoom:    false,
+  isZooming:  false,
 
   scrollbarWidth: 0,
 
@@ -57,6 +59,12 @@ export const getters = {
     const sample = (state.samples[i] ? state.samples[i] : null);
     return sample && key ? sample[key] : sample;
   }, // getSample()
+
+  //------------------------------------------------------------------------------------------------------------------
+
+  imageSrc: (state) => (sample, dpi) => {
+    return `${state.urlBase}${state.type === 'audio' ? 'audio' : 'items'}/${state.item}/${state.item}.${sample.id}(${dpi}).${sample.image.ext}`;
+  }, // imageSrc()
 
   //--------------------------------------------------------------------------------------------------------------------
 

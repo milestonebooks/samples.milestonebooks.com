@@ -6,9 +6,11 @@
 
     <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <TheNav v-if="s.samples.length > 1" />
-
     <TheOptRulers v-if="s.hasRulers" />
+
+    <TheOptPrint v-if="s.hasPrint" />
+
+    <TheNav v-if="s.samples.length > 1" />
 
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
@@ -17,21 +19,21 @@
 
 <script>
 import TheSlider    from '~/components/TheSlider';
-import TheNav       from '~/components/TheNav';
 import TheOptRulers from '~/components/TheOptRulers';
+import TheOptPrint  from '~/components/TheOptPrint';
+import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-// TODO: print option
-
 export default {
   components: {
     TheSlider,
-    TheNav,
     TheOptRulers,
+    TheOptPrint,
+    TheNav,
     ThePlayer,
   },
 
@@ -93,6 +95,7 @@ export default {
         'has-zoom':    this.s.hasZoom,
         'has-print':   this.s.hasPrint,
         'show-rulers': this.s.showRulers,
+        'is-printing': this.s.isPrinting,
         'show-title':  true,
       }
     },
