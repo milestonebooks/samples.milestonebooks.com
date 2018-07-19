@@ -1,8 +1,6 @@
 <template>
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
-    <aside class="alerts" :data-length="alerts.length">
-      <div v-for="alert in alerts" class="alert">{{alert}}</div>
-    </aside>
+    <TheAlerts />
 
     <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
@@ -18,6 +16,7 @@
 </template>
 
 <script>
+import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
@@ -30,6 +29,7 @@ import axios from 'axios';
 
 export default {
   components: {
+    TheAlerts,
     TheSlider,
     TheOptRulers,
     TheOptPrint,
@@ -98,10 +98,6 @@ export default {
         'is-printing': this.s.isPrinting,
         'show-title':  true,
       }
-    },
-
-    alerts() {
-      return this.s.alert ? [this.s.alert] : [];
     },
 
   }, // computed{}
@@ -298,39 +294,6 @@ main:not(.is-init) {
 
 .glue {
   white-space: nowrap;
-}
-
-.alerts {
-  z-index: $layer-alerts;
-  pointer-events: none; // continue to allow interaction
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 0;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  @include short-transition;
-}
-.alerts:not([data-length="0"]) {
-  height: 100%;
-}
-
-.alert {
-  position: relative;
-  align-self: center;
-  box-sizing: border-box;
-  margin: .5em;
-  border: 1px solid $alert-color;
-  box-shadow: 0 .25em 1em #999;
-  background-color: $alert-bg-color;
-  font-size: 2rem;
-  padding: .5em;
-  min-width: 10em;
-  max-width: 30em;
-  @include short-transition;
 }
 
 </style>

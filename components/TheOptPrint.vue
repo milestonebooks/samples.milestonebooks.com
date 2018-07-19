@@ -3,7 +3,7 @@
     <button class="btn btn-opt print ltr" tabindex="1" title="print page" @click="print">
       <SvgIcon view="28" :d="btnPrintPath" />
     </button>
-    <iframe id="print" :src="srcPrint" @load="onLoad($event)"></iframe>
+    <img class="thumbnail" @load="onLoad($event)" @error="onError" />
   </aside>
 </template>
 
@@ -13,12 +13,6 @@ import SvgIcon from './SvgIcon';
 export default {
   components: {
     SvgIcon,
-  },
-
-  data() {
-    return {
-      srcPrint: '',
-    }
   },
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -38,6 +32,13 @@ export default {
 
   }, // computed {}
 
+  mounted() {
+    // [2018-07] Edge needs printout <img> to be near the root of the document to simplify setting width:100%
+    window.$('body').append('<div id="printout"><img /></div>');
+    window.$('#printout img').on('load', function(){ window.print() });
+    window.onafterprint = this.onAfterPrint;
+  },
+
   //====================================================================================================================
 
   methods: {
@@ -46,18 +47,27 @@ export default {
 
     print() {
       this.$store.commit('set', {isPrinting: !this.s.isPrinting});
-      this.srcPrint = this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200);
-      console.log('print!', this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200));
+      window.$('.thumbnail').attr('src', this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200));
     }, // print()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onLoad(event) {
-      if (!this.srcPrint || !this.s.isPrinting) return;
-      console.log('onLoad()', `srcPrint:${this.srcPrint}`, event.target);
-      event.target.contentWindow.print();
-      this.$store.commit('set', {isPrinting: false});
+      if (this.s.isPrinting) window.$('#printout').addClass('is-printing').find('img').attr('src', event.target.src);
     }, // onLoad()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onError() {
+      this.$store.dispatch('alert', {msg: 'Print error: unable to load file.'});
+    }, // onError()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onAfterPrint() {
+      window.$('#printout').removeClass('is-printing').find('img').removeAttr('src');
+      this.$store.commit('set', {isPrinting: false});
+    }, // onAfterPrint()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -76,9 +86,15 @@ export default {
   top: 1em !important;
   left: (1em + $unit + 1em) !important;
   width: $unit;
+
+  @media screen and (max-width: 350px) {
+    top: (1em + $unit + 1em) !important;
+    left: 1em !important;
+  }
 }
 
 .btn-opt.print::after {
+  z-index: -1;
   content: '';
   @include absolute-center();
   width: 100%;
@@ -88,13 +104,14 @@ export default {
 
   @at-root .is-printing & {
     background-color: $btn-toggle-bg-color;
-    animation: a-printing 2.0s infinite ease-in-out;
+    animation: a-btn-printing 2.0s infinite ease-in-out;
   }
 }
 
-@keyframes a-printing {
+@keyframes a-btn-printing {
   from {
-    transform: translate(-50%, -50%) scale(0);
+    // [2018-07] Edge will only animate translation with absolute (px) values
+    transform: translate(-20px, -20px) scale(0);
   }
   50% {
     transform: translate(-50%, -50%) scale(1);
@@ -105,11 +122,62 @@ export default {
   }
 }
 
-#print {
+.thumbnail {
   pointer-events: none;
   opacity: 0;
-  width: 100%;
-  height: 100%;
+  @include absolute-center(x);
+  top: calc(50% + 1px);
+  width: 14px;
+  min-height: 100%;
+  box-sizing: content-box;
+  border: 1px solid transparent;
+  transform: translateX(-50%) perspective(20em) rotate3d(1, 0, 0, 90deg);
+  transform-origin: top center;
+  @include short-transition;
+
+  @at-root .is-printing & {
+    transform: translateX(-50%) perspective(20em) rotate3d(1, 0, 0, 0deg);
+    opacity: 1;
+    top: calc(100% + 1em);
+    width: 100%;
+    border-color: white;
+    background-color: white;
+    @include drop-shadow;
+  }
 }
+
+@media screen {
+  #printout {
+    display: none;
+  }
+} // @screen
+
+@media print {
+
+  html {
+    background: unset !important;
+  }
+
+  #printout.is-printing::before {
+    position: absolute;
+    z-index: 1;
+    content: 'Copyrighted Material. Use for evaluation purposes only. Printout may not be actual size.';
+    width: 100%;
+    text-align: center;
+    text-decoration: underline;
+    font-style: italic;
+    font-size: 10pt;
+    text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
+  }
+
+  #printout img {
+    width: 100% !important;
+  }
+
+  body > *:not(#printout) {
+    display: none !important;
+  }
+
+} // @print
 
 </style>
