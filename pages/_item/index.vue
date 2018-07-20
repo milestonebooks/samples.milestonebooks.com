@@ -1,14 +1,14 @@
 <template>
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
-    <aside class="alerts" :data-length="alerts.length">
-      <div v-for="alert in alerts" class="alert">{{alert}}</div>
-    </aside>
+    <TheAlerts />
 
     <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <TheNav v-if="s.samples.length > 1" />
-
     <TheOptRulers v-if="s.hasRulers" />
+
+    <TheOptPrint v-if="s.hasPrint" />
+
+    <TheNav v-if="s.samples.length > 1" />
 
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
@@ -16,22 +16,24 @@
 </template>
 
 <script>
+import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
-import TheNav       from '~/components/TheNav';
 import TheOptRulers from '~/components/TheOptRulers';
+import TheOptPrint  from '~/components/TheOptPrint';
+import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-// TODO: print option
-
 export default {
   components: {
+    TheAlerts,
     TheSlider,
-    TheNav,
     TheOptRulers,
+    TheOptPrint,
+    TheNav,
     ThePlayer,
   },
 
@@ -93,12 +95,9 @@ export default {
         'has-zoom':    this.s.hasZoom,
         'has-print':   this.s.hasPrint,
         'show-rulers': this.s.showRulers,
+        'is-printing': this.s.isPrinting,
         'show-title':  true,
       }
-    },
-
-    alerts() {
-      return this.s.alert ? [this.s.alert] : [];
     },
 
   }, // computed{}
@@ -111,9 +110,7 @@ export default {
     console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
-    //* TODO (disabled for debugging)
     await this.$store.dispatch('initSettings');
-    //*/
 
     this.set({scrollbarWidth: this.getScrollbarWidth() });
 
@@ -297,39 +294,6 @@ main:not(.is-init) {
 
 .glue {
   white-space: nowrap;
-}
-
-.alerts {
-  z-index: $layer-alerts;
-  pointer-events: none; // continue to allow interaction
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 0;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  @include short-transition;
-}
-.alerts:not([data-length="0"]) {
-  height: 100%;
-}
-
-.alert {
-  position: relative;
-  align-self: center;
-  box-sizing: border-box;
-  margin: .5em;
-  border: 1px solid $alert-color;
-  box-shadow: 0 .25em 1em #999;
-  background-color: $alert-bg-color;
-  font-size: 2rem;
-  padding: .5em;
-  min-width: 10em;
-  max-width: 30em;
-  @include short-transition;
 }
 
 </style>

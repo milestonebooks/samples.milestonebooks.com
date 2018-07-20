@@ -14,7 +14,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
-            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80)" draggable="false" />
+            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80, $event)" draggable="false" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -26,7 +26,7 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
-            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120)" draggable="false" />
+            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120, $event)" draggable="false" />
           </div>
         </section>
       </div>
@@ -79,6 +79,8 @@ export default {
       isGrabbing:   false,
       isScrolling:  null,
       noTransition: true,
+      isScaled:     false, // set to true when zoom has completed, but before images have cross-faded
+      dpiImages:    settings.DPI_DEFAULT,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
       slideHeight:  null,
@@ -95,6 +97,7 @@ export default {
   computed: {
     ...mapGetters([
       'getSample',
+      'imageSrc',
       'listItemClass',
     ]),
 
@@ -171,7 +174,7 @@ export default {
 
     update() {
       this.autosize();
-      console.log('TheSlider update()', this.currentIndex, 'isInit?', this.isInit);
+      console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       if (!this.isInit) this.init();
     }, // update()
 
@@ -184,7 +187,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imageStyleSize(sample, dpi = 80) {
+    imageStyleSize(sample, dpi) {
       return {
         width:  `${Math.ceil(sample.image.w * dpi)}px`,
         height: `${Math.ceil(sample.image.h * dpi)}px`,
@@ -192,32 +195,38 @@ export default {
     }, // imageStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
-
+    /* MOVED to index.js
     imageSrc(sample, dpi) {
       return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
     }, // imageSrc()
+    //*/
 
     //------------------------------------------------------------------------------------------------------------------
 
     initImages() {
 
-      let images = document.querySelectorAll('[data-src]');
-
-      //const config = {rootMargin: '0% -50% 0% 0%'};
-      const config = {rootMargin: '0px'};
-
-      const observer = new IntersectionObserver((entries, self) => {
-        entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            this.preloadImage(entry.target);
-            self.unobserve(entry.target);
-          }
+      for (const dpi of [80, 120]) {
+        const observer = new IntersectionObserver((entries, self) => {
+          entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              this.preloadImage(entry.target);
+              self.unobserve(entry.target);
+            }
+          });
+        }, {
+          root: window.$(`.frame.dpi${dpi}`)[0],
+          rootMargin: '100px',
         });
-      }, config);
 
-      images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
-      images.forEach(image => { observer.observe(image); });
+        let images = document.querySelectorAll(`.slider .frame.dpi${dpi} [data-src]`);
+
+        //console.log(images);
+
+        //images = window.$(`.slider .frame.dpi${dpi} [data-src]`);
+        images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
+        images.forEach(image => { observer.observe(image); });
+      }
 
     }, // initImages()
 
@@ -231,9 +240,18 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onImageLoaded(i, dpi) {
-      console.log('TODO: onImageLoaded', i, dpi);
-      // TODO: multiple size images; lazy loading; fadein when current image has loaded
+    onImageLoaded(i, dpi, event) {
+      this.$store.commit('setImageLoaded', {i, dpi});
+
+      // use 80-dpi image as scaled background until 120-dpi image loads
+      if (dpi === 80 && !this.s.samples[i].image.loaded['120']) {
+        //console.log(`.frame.dpi120 [data-index="${i}"] img > background-image: ${event.target.src}`);
+        window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+      }
+      // use 120-dpi image to avoid unnecessary downloads
+      if (dpi === 120 && !this.s.samples[i].image.loaded['80']) {
+        window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
+      }
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -254,7 +272,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({resize = false, dpi = null} = {}) {
+    autosize({dpi = null, resize = false} = {}) {
       const index = this.currentIndex;
 
       if (!dpi) dpi = this.s.dpi;
@@ -264,8 +282,6 @@ export default {
       if (this.s.samples[this.currentIndex].image) {
         this.preloadImage(window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
       }
-
-      //console.log(`autosize(${dpi}) isInit?`, this.isInit);
 
       const $slider = window.$('.slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
@@ -298,6 +314,8 @@ export default {
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
+
+        //console.log(`autosize(${dpi}) width[${width}] xMargin[${xMargin}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -417,7 +435,7 @@ export default {
       this.touchPoint.deltaY = pageY - this.touchPoint.y;
 
       if (this.isScrolling === null) {
-        this.isScrolling = !!(this.isScrolling || Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY));
+        this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
       if (!this.isScrolling) {
@@ -513,6 +531,8 @@ export default {
     positionRulers(event) {
       const {clientX:x, clientY:y} = event;
 
+      if (window.$(event.target).closest('.sidebar').length) return false;
+
       window.$('.frame-rulers').css({
         left: `${x}px`,
         top:  `${y}px`,
@@ -555,7 +575,7 @@ export default {
       let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
       let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
 
-      const offset = (settings.FRAME_RULER_WIDTH / 2) * (this.s.dpi / 80);
+      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / 80)) - 1) / 2;
 
       // keep within view
       x = Math.min(Math.max(x, offset), this.availWidth  - offset);
@@ -601,7 +621,6 @@ export default {
 
     async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
 
-      // TODO: cancel zoom action
       if (this.s.isZooming) return;
 
       this.$store.commit('set', {isZooming:true});
@@ -618,6 +637,7 @@ export default {
       const $frameZoom = $el.find('.frame.dpi120');
       const $slide     = $frame.find(`[data-index="${index}"]`);
       const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
+      const $rulers    = $el.find('.frame-rulers');
 
       // ensure no transitions are in effect to delay prep layout
       $el.addClass('no-transition');
@@ -628,7 +648,7 @@ export default {
       const xScroll = window.scrollX;
       const yScroll = window.scrollY;
 
-      // TODO: 'rtl' zoom in is buggy
+      // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
@@ -668,19 +688,26 @@ export default {
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
+        $rulers.css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
+        $rulers.css({transform: ''});
 
+        // zoom
         await sleep(settings.TRANSITION_TIME_MS);
+
+        this.isScaled = true;
 
         // fade
         $frame.css({'z-index': ''});
         $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
+
+        this.isScaled = false;
 
         // cleanup
         $el.addClass('no-transition');
@@ -735,11 +762,13 @@ export default {
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
+        $rulers.css({transform: `scale(${settings.ZOOM_RATIO})`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
+        $rulers.css({transform: ''});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
@@ -802,6 +831,7 @@ export default {
 @import "../assets/settings.scss";
 
 $frame-ruler-inch: 80px;
+$frame-ruler-width-half: ($frame-ruler-width-nominal - 1) / 2;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
 $layer-frame-rulers: $layer-frame-mask + 1;
@@ -880,14 +910,21 @@ $radius-lg: $radius * 2;
     pointer-events: none;
     opacity: 0;
     position: fixed;
-    left: $frame-ruler-width / 2;
-    top:  $frame-ruler-width / 2;
+    left: $frame-ruler-width-half;
+    top:  $frame-ruler-width-half;
     width: 200%;
     height: 200%;
     transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
+    @at-root
+    .no-transition#{&} {
+      transition: none;
+    }
+
     transform-origin: 0 0;
     @at-root [data-dpi="120"] .frame-rulers {
-      transform: scale($zoom-ratio);
+      //transform: scale($zoom-ratio);
+      left: ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
+      top:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
     }
   }
   @at-root .show-rulers .frame-rulers {
@@ -899,21 +936,32 @@ $radius-lg: $radius * 2;
   }
   .frame-ruler {
     position: absolute;
-    left: $frame-ruler-width / 2;
-    top: -$frame-ruler-width / 2;
+    left: $frame-ruler-width-half;
+    top: -$frame-ruler-width-half;
     width: 100%;
-    height: $frame-ruler-width;
+    height: $frame-ruler-width-nominal - 1;
     overflow: hidden;
     background-color: hsl(60, 100%, 50%);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='31' viewBox='0 0 80 31'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
-    transform-origin: -#{$frame-ruler-width / 2} #{$frame-ruler-width / 2};
+    transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
+    @at-root [data-dpi="120"] & {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
+      left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
+      top:  -($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
+      height: $frame-ruler-width-nominal * $zoom-ratio - 1;
+      transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
+    }
 
     b {
       float: left;
       position: relative;
       width: $frame-ruler-inch;
-      height: $frame-ruler-width;
+      height: $frame-ruler-width-nominal - 1;
+      @at-root [data-dpi="120"] & {
+        width: $frame-ruler-inch * $zoom-ratio;
+        height: $frame-ruler-width-nominal * $zoom-ratio - 1;
+      }
 
       &::after {
         counter-increment: inches;
@@ -929,6 +977,11 @@ $radius-lg: $radius * 2;
         background: hsl(60, 100%, 50%);
         line-height: 12px;
         padding: 2px;
+        @at-root [data-dpi="120"] & {
+          font-size: 24px;
+          line-height: 18px;
+          padding: 3px;
+        }
       }
     }
   } // .frame-ruler
@@ -959,6 +1012,7 @@ $radius-lg: $radius * 2;
       position: fixed;
       pointer-events: none;
       opacity: 0;
+      font-size: #{$zoom-ratio}em;
     }
 
     cursor: grab;
@@ -974,8 +1028,6 @@ $radius-lg: $radius * 2;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    font-size: 1rem;
-    line-height: 1;
 
     #{$isIE} & {
       display: inline-block;
@@ -994,9 +1046,6 @@ $radius-lg: $radius * 2;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
-    @at-root .frame.dpi120 .slide {
-      margin: 0 ($unit * 1/8 * $zoom-ratio);
-    }
     @include short-transition;
 
     &:not(.current) {
@@ -1004,7 +1053,7 @@ $radius-lg: $radius * 2;
     }
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-    // [2018-07] svg cursor only works in Chrome
+    // [2018-07] svg cursor only works in Chrome and Firefox
     @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
@@ -1024,7 +1073,7 @@ $radius-lg: $radius * 2;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
     }
 
-    // TODO
+    // TODO style slide height
     @include below-sheet-music-min {
       height: calc(100vh - 10em);
     }
@@ -1056,10 +1105,10 @@ $radius-lg: $radius * 2;
       transform: translate(-50%, -50%);
 
       @at-root [data-dir="ltr"] & {
-        left: calc(100% + 3rem);
+        left: calc(100% + 1em);
       }
       @at-root [data-dir="rtl"] & {
-        right: calc(100% + 3rem);
+        right: calc(100% + 1em);
         transform: translate(50%, -50%);
       }
     }
@@ -1083,10 +1132,6 @@ $radius-lg: $radius * 2;
         bottom: .5em;
         color: darken($alert-color, 25%);
         text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
-
-        @at-root .dpi120 .slide-liner::after {
-          font-size: 1.5em;
-        }
       }
     }
 
@@ -1094,6 +1139,7 @@ $radius-lg: $radius * 2;
       max-width: 100%;
       vertical-align: top;
       object-position: top;
+      background-size: cover;
     }
 
     .sample-title {

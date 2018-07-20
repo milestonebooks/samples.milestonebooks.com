@@ -142,7 +142,7 @@ export default {
 
     async load(index) {
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$store.commit('set', {alert: `Error loading audio [${err_code}]`});
+        this.$store.dispatch('alert', {msg:`Error loading audio [${err_code}]`});
         //TODO: this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
       });
       this.refresh();
