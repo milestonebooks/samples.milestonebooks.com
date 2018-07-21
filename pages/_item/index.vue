@@ -27,6 +27,9 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
+// TODO implement behavior analytics
+// TODO provide info/exit button in upper right to help with contextual awareness
+
 export default {
   components: {
     TheAlerts,
@@ -64,7 +67,8 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`; // TODO dev mode
+    // TODO: `&dev=true` should be removed only after old system is retired (see .htaccess >> RewriteRule . _index.php [L])
+    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`;
 
     try {
       const res = await axios.get(url);

@@ -12,11 +12,12 @@ export const state = () => ({
   item:     '',
   type:     'items', // 'items' | 'audio'
   samples:  [],
-  currentIndex: null,
   firstId:  '',
   lastId:   '',
+  currentIndex:  null,
+  currentWScale: 1,
 
-  direction: 'ltr', // 'ltr' | 'rtl' // TODO: implement 'ttb'
+  direction: 'ltr', // 'ltr' | 'rtl'
 
   isCompactList: true,
   isCompactListTitles: false,

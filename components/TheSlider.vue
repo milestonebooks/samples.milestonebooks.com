@@ -55,7 +55,7 @@ import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
 
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 // jQuery-style custom function
 window.$.fn.offsetRect = function() {
@@ -170,6 +170,10 @@ export default {
 
   methods: {
 
+    ...mapMutations([
+      'set',
+    ]),
+
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
@@ -189,17 +193,10 @@ export default {
 
     imageStyleSize(sample, dpi) {
       return {
-        width:  `${Math.ceil(sample.image.w * dpi)}px`,
-        height: `${Math.ceil(sample.image.h * dpi)}px`,
+        width:  `${Math.ceil(sample.image.w * dpi * this.s.currentWScale)}px`,
+        height: `${Math.ceil(sample.image.h * dpi * this.s.currentWScale)}px`,
       };
     }, // imageStyleSize()
-
-    //------------------------------------------------------------------------------------------------------------------
-    /* MOVED to index.js
-    imageSrc(sample, dpi) {
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
-    }, // imageSrc()
-    //*/
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -366,17 +363,23 @@ export default {
     sampleStyleSize(sample, dpi = 80) {
       const xdpi = sample.image ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
-      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
+      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
+      let h = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
       // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
       /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.availWidth && !this.s.hasMouse) {
-        const hRatio = h / w;
-        w = this.availWidth;
-        h = Math.floor(w * hRatio);
+      if (w > this.availWidth) {
+        const slideWRatio = w / h;
+        const availWRatio = document.documentElement.clientWidth / document.documentElement.clientHeight;
+
+        // if slide is taller than screen at full width, vertical scrollbar will be activated
+        const isOverHeight = slideWRatio < availWRatio;
+
+        this.set({currentWScale: (document.documentElement.clientWidth - (isOverHeight ? this.s.scrollbarWidth : 0)) / w});
+        w = Math.round(w * this.s.currentWScale);
+        h = Math.floor(h * this.s.currentWScale);
       }
       //*/
 
@@ -623,10 +626,10 @@ export default {
 
       if (this.s.isZooming) return;
 
-      this.$store.commit('set', {isZooming:true});
+      this.set({isZooming:true});
 
       const dpi = (this.s.dpi === 80 ? 120 : 80);
-      this.$store.commit('set', {dpi});
+      this.set({dpi});
 
       const zoomIn = (dpi === 120);
 
@@ -794,7 +797,7 @@ export default {
         $el.removeClass('no-transition');
       } // zoom out
 
-      this.$store.commit('set', {isZooming:false});
+      this.set({isZooming:false});
 
     }, // toggleDpi()
 
