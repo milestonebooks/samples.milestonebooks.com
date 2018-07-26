@@ -27,8 +27,9 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-// TODO implement behavior analytics
-// TODO provide info/exit button in upper right to help with contextual awareness
+// TODO: background image loading indicator
+// TODO: implement behavior analytics
+// TODO: provide info/exit button in upper right to help with contextual awareness
 
 export default {
   components: {
@@ -151,10 +152,14 @@ export default {
       const d = this.data;
       const samples = d.samples;
 
+      let maxHRatio = null;
+
       // create object to monitor loaded state
       for (const i of samples) {
         if (!i.image) continue;
         i.image.loaded = {};
+        i.image.hRatio = i.image.h / i.image.w;
+        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
       }
 
       this.set({
@@ -169,6 +174,7 @@ export default {
         samples:   samples,
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
+        maxHRatio: maxHRatio,
       });
 
       console.timeEnd('index');
@@ -179,6 +185,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getScrollbarWidth() {
+      console.log('getScrollbarWidth()');
       const i = document.createElement('p');
       i.style.width = "100%";
       i.style.height = "200px";

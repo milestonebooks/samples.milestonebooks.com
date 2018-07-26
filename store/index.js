@@ -35,7 +35,9 @@ export const state = () => ({
   hasZoom:    false,
   isZooming:  false,
 
-  scrollbarWidth: 0,
+  scrollbarWidth: 0, // 17px in many/(all?) desktop browsers
+
+  maxHRatio:  null, // tallest (height / width) slide image
 
   alerts: [],
 
@@ -108,6 +110,13 @@ export const mutations = {
   setAlert(state, {msg}) {
     state.alerts.push(msg);
   }, // setAlert()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  setSampleImageWScale(state, {i, wScale}) {
+    //console.log(`setSampleWScale(i:${i}, wScale:${wScale})`, state.samples)
+    state.samples[i].image.wScale = wScale;
+  }, // setSampleImageWScale()
 
   //--------------------------------------------------------------------------------------------------------------------
 

@@ -83,6 +83,7 @@ export default {
       dpiImages:    settings.DPI_DEFAULT,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
+      windowWidth:  window.innerWidth,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
@@ -149,6 +150,12 @@ export default {
 
     's.showRulers'() { this.toggleRulers() },
 
+    's.currentWScale'() { this.scaleRulers() },
+
+    windowWidth() {
+      console.log('windowWidth():', this.windowWidth);
+    },
+
   },
 
   //====================================================================================================================
@@ -177,8 +184,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      this.autosize();
       console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
+      this.autosize();
       if (!this.isInit) this.init();
     }, // update()
 
@@ -192,9 +199,10 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     imageStyleSize(sample, dpi) {
+      const x = dpi * (dpi === settings.DPI_DEFAULT ? (sample.image.wScale || 1) : 1);
       return {
-        width:  `${Math.ceil(sample.image.w * dpi * this.s.currentWScale)}px`,
-        height: `${Math.ceil(sample.image.h * dpi * this.s.currentWScale)}px`,
+        width:  `${Math.ceil(sample.image.w * x)}px`,
+        height: `${Math.ceil(sample.image.h * x)}px`,
       };
     }, // imageStyleSize()
 
@@ -218,9 +226,6 @@ export default {
 
         let images = document.querySelectorAll(`.slider .frame.dpi${dpi} [data-src]`);
 
-        //console.log(images);
-
-        //images = window.$(`.slider .frame.dpi${dpi} [data-src]`);
         images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
         images.forEach(image => { observer.observe(image); });
       }
@@ -241,12 +246,11 @@ export default {
       this.$store.commit('setImageLoaded', {i, dpi});
 
       // use 80-dpi image as scaled background until 120-dpi image loads
-      if (dpi === 80 && !this.s.samples[i].image.loaded['120']) {
-        //console.log(`.frame.dpi120 [data-index="${i}"] img > background-image: ${event.target.src}`);
+      if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
         window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
-      if (dpi === 120 && !this.s.samples[i].image.loaded['80']) {
+      if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
         window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
       }
     }, // onImageLoaded()
@@ -254,10 +258,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
-      this.availHeight = document.documentElement.clientHeight;
       this.availWidth  = document.documentElement.clientWidth;
+      this.availHeight = document.documentElement.clientHeight;
+      this.windowWidth = window.innerWidth;
 
-      //console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
+      console.log(`onresize: ${this.availWidth}w${this.windowWidth !== this.availWidth ? `[${this.windowWidth}]` : ''} X ${this.availHeight}h`);
+
+      // delay autosize() until above settings are propagated in layout
 
       clearTimeout(window._resizeT);
 
@@ -360,7 +367,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    sampleStyleSize(sample, dpi = 80) {
+    sampleStyleSize(sample, dpi) {
       const xdpi = sample.image ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
       let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
@@ -368,18 +375,21 @@ export default {
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
-      // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
-      /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.availWidth) {
-        const slideWRatio = w / h;
-        const availWRatio = document.documentElement.clientWidth / document.documentElement.clientHeight;
+      // non-width scrollbars is presumed to be a touch device, which can use native pinch-zoom and pan
+      //* TODO: recalculates on first hover, which can cause shifting
+      if (dpi === settings.DPI_DEFAULT) {
+        let wScale = 1;
 
-        // if slide is taller than screen at full width, vertical scrollbar will be activated
-        const isOverHeight = slideWRatio < availWRatio;
+        if (w > this.windowWidth) {
+          wScale = document.documentElement.clientWidth / w;
 
-        this.set({currentWScale: (document.documentElement.clientWidth - (isOverHeight ? this.s.scrollbarWidth : 0)) / w});
-        w = Math.round(w * this.s.currentWScale);
-        h = Math.floor(h * this.s.currentWScale);
+          w = Math.round(w * wScale);
+          h = Math.floor(h * wScale);
+        }
+
+        this.$store.commit('setSampleImageWScale', {i:sample.index, wScale});
+
+        if (sample.index === this.s.currentIndex) this.set({currentWScale: wScale});
       }
       //*/
 
@@ -387,7 +397,7 @@ export default {
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
 
-      //console.log(`sampleStyleSize(): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
+      //console.log(`sampleStyleSize(${sample.id}, ${dpi}): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -577,8 +587,9 @@ export default {
 
       let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
       let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
+      const scale = settings.DPI_DEFAULT / this.s.currentWScale;
 
-      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / 80)) - 1) / 2;
+      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
 
       // keep within view
       x = Math.min(Math.max(x, offset), this.availWidth  - offset);
@@ -601,6 +612,12 @@ export default {
       $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
 
     }, // onRulersTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    scaleRulers() {
+      if (this.s.dpi === settings.DPI_DEFAULT) window.$('.frame-rulers').css({transform: `scale(${this.s.currentWScale}`});
+    }, // scaleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -628,10 +645,10 @@ export default {
 
       this.set({isZooming:true});
 
-      const dpi = (this.s.dpi === 80 ? 120 : 80);
+      const dpi = (this.s.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
       this.set({dpi});
 
-      const zoomIn = (dpi === 120);
+      const zoomIn = (dpi === settings.DPI_ZOOM);
 
       const index = this.currentIndex;
 
@@ -657,9 +674,10 @@ export default {
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
         const yOffset = $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
-        const yDiff = Math.round((h * elY * (120 - 80)) - yOffset);
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -687,16 +705,17 @@ export default {
 
         const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
         const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
-        $rulers.css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
+        $rulers.css({transform: `scale(${1 / scale})`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
-        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
+        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
         $rulers.css({transform: ''});
 
         // zoom
@@ -724,9 +743,10 @@ export default {
       } else {
         const xOffset = $slide.offset().left;
         const yOffset = $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - (xOffset - $slideZoom.offset().left));
-        const yDiff = Math.round((h * elY * (120 - 80)) - (yOffset - $slideZoom.offset().top));
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - $slideZoom.offset().left));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - $slideZoom.offset().top));
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
@@ -761,6 +781,7 @@ export default {
 
         const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
         const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
@@ -770,8 +791,8 @@ export default {
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
-        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
-        $rulers.css({transform: ''});
+        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
+        $rulers.css({transform: `scale(${this.s.currentWScale})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
@@ -913,8 +934,8 @@ $radius-lg: $radius * 2;
     pointer-events: none;
     opacity: 0;
     position: fixed;
-    left: $frame-ruler-width-half;
-    top:  $frame-ruler-width-half;
+    left: 1em + ($unit / 2);// $frame-ruler-width-half;
+    top:  1em + ($unit / 2);// $frame-ruler-width-half;
     width: 200%;
     height: 200%;
     transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
@@ -925,7 +946,6 @@ $radius-lg: $radius * 2;
 
     transform-origin: 0 0;
     @at-root [data-dpi="120"] .frame-rulers {
-      //transform: scale($zoom-ratio);
       left: ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
       top:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
     }
@@ -936,18 +956,20 @@ $radius-lg: $radius * 2;
 
   @at-root .show-rulers .frame-ruler {
     pointer-events: all;
+    width: 100% !important;
   }
   .frame-ruler {
     position: absolute;
     left: $frame-ruler-width-half;
     top: -$frame-ruler-width-half;
-    width: 100%;
+    width: 0;
     height: $frame-ruler-width-nominal - 1;
     overflow: hidden;
     background-color: hsl(60, 100%, 50%);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
     transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
+    transition: width $transition-time-ms ease-in-out;
     @at-root [data-dpi="120"] & {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
       left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
@@ -1082,6 +1104,7 @@ $radius-lg: $radius * 2;
     }
 
     &::before {
+      z-index: 1; // make sure it's above <img>
       content: '';
       position: absolute;
       left: 0;
@@ -1139,10 +1162,12 @@ $radius-lg: $radius * 2;
     }
 
     img {
+      /* [2018-07-24] not necessary with explicit dimensions?
       max-width: 100%;
       vertical-align: top;
       object-position: top;
       background-size: cover;
+      //*/
     }
 
     .sample-title {
