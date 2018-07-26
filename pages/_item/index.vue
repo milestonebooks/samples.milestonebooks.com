@@ -185,7 +185,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getScrollbarWidth() {
-      console.log('getScrollbarWidth()');
       const i = document.createElement('p');
       i.style.width = "100%";
       i.style.height = "200px";

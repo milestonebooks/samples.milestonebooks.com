@@ -6,7 +6,7 @@
     </div>
 
     <div class="frame-rulers">
-      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b></div> <!-- 20 * 80px = (monitors up to 1600px) -->
+      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
     </div>
 
     <div class="frame dpi80">
@@ -88,7 +88,6 @@ export default {
       slideWidth:   null,
       groupHeight:  null,
       touchPoint:   null,
-      isMultiTouch: false,
       supports3d:   supports3d(),
       eTouchParams: supportsPassive() ? { passive: true } : false,
     }
@@ -153,19 +152,19 @@ export default {
 
     's.currentWScale'() { this.scaleRulers() },
 
-    windowWidth() {
-      console.log('windowWidth():', this.windowWidth);
-    },
-
   },
 
   //====================================================================================================================
 
   mounted() {
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
-    if (this.s.showRulers) this.toggleRulers();
+    if (this.s.showRulers) {
+      this.scaleRulers();
+      this.toggleRulers();
+    }
   },
 
   beforeDestroy () {
@@ -263,7 +262,7 @@ export default {
       this.availHeight = document.documentElement.clientHeight;
       this.windowWidth = window.innerWidth;
 
-      console.log(`onresize: ${this.availWidth}w${this.windowWidth !== this.availWidth ? `[${this.windowWidth}]` : ''} X ${this.availHeight}h`);
+      //console.log(`onresize: ${this.availWidth}w${this.windowWidth !== this.availWidth ? `[${this.windowWidth}]` : ''} X ${this.availHeight}h`);
 
       // delay autosize() until above settings are propagated in layout
 
@@ -408,8 +407,13 @@ export default {
     onTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
 
-      this.isMultiTouch = e.touches && e.touches.length > 1;
-      this.debug = (e.touches && e.touches.length ? e.touches.length : null);
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 0;
+      //if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=.5, maximum-scale=2');
+      if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width');
+
+      this.debug = (e.touches && e.touches.length ? `${window.$('[name="viewport"]').attr('content')}@${e.touches.length}` : null);
+      //*/
 
       const $frame = window.$(touches.target).closest('.frame');
 
@@ -470,8 +474,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onTouchend(e) {
-      this.isMultiTouch = e.touches && e.touches.length > 1;
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 1;
+      if (!isMultiTouch) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1');
       this.debug = (e.touches && e.touches.length ? e.touches.length : null);
+      //*/
 
       // cleanup
       const el = this.touchPoint.el;
@@ -632,10 +639,14 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
-      if (this.s.dpi === settings.DPI_DEFAULT) window.$('.frame-rulers').css({
-        transform: `scale(${this.s.currentWScale}`,
-        width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
-      });
+      if (this.s.dpi === settings.DPI_DEFAULT) {
+        window.$('.frame-rulers').css({
+          transform: `scale(${this.s.currentWScale}`,
+          width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
+        }).find('.target').css({
+          transform: `scaleY(${1 / this.s.currentWScale})`
+        });
+      }
     }, // scaleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -901,7 +912,7 @@ $radius-lg: $radius * 2;
     content: attr(data-debug);
     z-index: 9;
     position: fixed;
-    top: 0;
+    top: 4rem;
     right: 0;
     font-size: 2em;
     outline: 1px solid red;
@@ -983,7 +994,6 @@ $radius-lg: $radius * 2;
     top: -$frame-ruler-width-half;
     width: 0;
     height: $frame-ruler-width-nominal - 1;
-    overflow: hidden;
     background-color: hsl(60, 100%, 50%);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
@@ -999,6 +1009,7 @@ $radius-lg: $radius * 2;
 
     b {
       float: left;
+      margin-bottom: 200%; // because overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
       position: relative;
       width: $frame-ruler-inch;
       height: $frame-ruler-width-nominal - 1;
@@ -1027,6 +1038,11 @@ $radius-lg: $radius * 2;
           padding: 3px;
         }
       }
+    }
+
+    .target {
+      height: 100%;
+      transform: scaleY(1); // used to make touch target physically consistent when ruler size is scaled down
     }
   } // .frame-ruler
   .frame-ruler.y.top {
