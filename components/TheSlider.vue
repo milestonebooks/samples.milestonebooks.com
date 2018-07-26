@@ -262,6 +262,8 @@ export default {
       this.availHeight = document.documentElement.clientHeight;
       this.windowWidth = window.innerWidth;
 
+      //this.debug += ' onResize()';
+
       //console.log(`onresize: ${this.availWidth}w${this.windowWidth !== this.availWidth ? `[${this.windowWidth}]` : ''} X ${this.availHeight}h`);
 
       // delay autosize() until above settings are propagated in layout
@@ -556,6 +558,12 @@ export default {
           top:  '',
         });
       }
+
+      // ensures overflow is visible (to enable extra touch target area at small scales) only when fully extended
+      setTimeout(() => {
+        window.$('.frame-rulers').toggleClass('show-target', this.s.showRulers);
+      }, (this.s.showRulers ? settings.TRANSITION_TIME_MS : 0));
+
     }, // toggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -639,6 +647,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
+      //this.debug += ` scaleRulers(${this.s.currentWScale.toFixed(2)})`;
       if (this.s.dpi === settings.DPI_DEFAULT) {
         window.$('.frame-rulers').css({
           transform: `scale(${this.s.currentWScale}`,
@@ -677,6 +686,9 @@ export default {
 
       const dpi = (this.s.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
       this.set({dpi});
+
+      window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1'}`);
+      //this.debug += ' ' + window.$('[name="viewport"]').attr('content');
 
       const zoomIn = (dpi === settings.DPI_ZOOM);
 
@@ -967,7 +979,6 @@ $radius-lg: $radius * 2;
     left: 1em + ($unit / 2);// $frame-ruler-width-half;
     top:  1em + ($unit / 2);// $frame-ruler-width-half;
     width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
-    //transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
     @include short-transition;
     @at-root
     .no-transition#{&} {
@@ -1006,10 +1017,20 @@ $radius-lg: $radius * 2;
       height: $frame-ruler-width-nominal * $zoom-ratio - 1;
       transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
     }
+    overflow: hidden;
+    @at-root .show-target .frame-ruler {
+      overflow: visible;
+    }
+
+    // used to make touch target physically consistent when ruler size is scaled down
+    .target {
+      height: 100%;
+      transform: scaleY(1);
+    }
 
     b {
       float: left;
-      margin-bottom: 200%; // because overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
+      margin-bottom: 200%; // when overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
       position: relative;
       width: $frame-ruler-inch;
       height: $frame-ruler-width-nominal - 1;
@@ -1038,11 +1059,6 @@ $radius-lg: $radius * 2;
           padding: 3px;
         }
       }
-    }
-
-    .target {
-      height: 100%;
-      transform: scaleY(1); // used to make touch target physically consistent when ruler size is scaled down
     }
   } // .frame-ruler
   .frame-ruler.y.top {
