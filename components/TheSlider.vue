@@ -88,6 +88,7 @@ export default {
       slideWidth:   null,
       groupHeight:  null,
       touchPoint:   null,
+      isMultiTouch: false,
       supports3d:   supports3d(),
       eTouchParams: supportsPassive() ? { passive: true } : false,
     }
@@ -407,6 +408,9 @@ export default {
     onTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
 
+      this.isMultiTouch = e.touches && e.touches.length > 1;
+      this.debug = (e.touches && e.touches.length ? e.touches.length : null);
+
       const $frame = window.$(touches.target).closest('.frame');
 
       if (!$frame.length) return;
@@ -466,6 +470,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onTouchend(e) {
+      this.isMultiTouch = e.touches && e.touches.length > 1;
+      this.debug = (e.touches && e.touches.length ? e.touches.length : null);
+
       // cleanup
       const el = this.touchPoint.el;
       el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
@@ -536,6 +543,11 @@ export default {
       } else {
         $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
         window.removeEventListener('mousemove', this.positionRulers);
+
+        window.$('.frame-rulers').css({
+          left: '',
+          top:  '',
+        });
       }
     }, // toggleRulers()
 
@@ -556,6 +568,8 @@ export default {
 
     onRulersTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
+
+      this.noTransition = true;
 
       const $rulers = window.$('.frame-rulers');
 
@@ -611,12 +625,17 @@ export default {
       $rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
       $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
 
+      this.noTransition = false;
+
     }, // onRulersTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
-      if (this.s.dpi === settings.DPI_DEFAULT) window.$('.frame-rulers').css({transform: `scale(${this.s.currentWScale}`});
+      if (this.s.dpi === settings.DPI_DEFAULT) window.$('.frame-rulers').css({
+        transform: `scale(${this.s.currentWScale}`,
+        width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
+      });
     }, // scaleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -877,13 +896,13 @@ $radius-lg: $radius * 2;
     transition: none;
   }
 
-  /*
+  //*
   &[data-debug]::before {
     content: attr(data-debug);
     z-index: 9;
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0;
     font-size: 2em;
     outline: 1px solid red;
     background: hsla(0,100%,100%,.75);
@@ -932,13 +951,13 @@ $radius-lg: $radius * 2;
   .frame-rulers {
     z-index: $layer-frame-rulers;
     pointer-events: none;
-    opacity: 0;
+    //opacity: 0;
     position: fixed;
     left: 1em + ($unit / 2);// $frame-ruler-width-half;
     top:  1em + ($unit / 2);// $frame-ruler-width-half;
-    width: 200%;
-    height: 200%;
-    transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
+    width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
+    //transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
+    @include short-transition;
     @at-root
     .no-transition#{&} {
       transition: none;
