@@ -5,9 +5,11 @@
       <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
-    <div class="frame-rulers">
-      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
-    </div>
+    <transition name="rulers">
+      <div class="frame-rulers" v-show="s.showRulers">
+        <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
+      </div>
+    </transition>
 
     <div class="frame dpi80">
       <div class="slides">
@@ -377,8 +379,7 @@ export default {
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
-      // non-width scrollbars is presumed to be a touch device, which can use native pinch-zoom and pan
-      //* TODO: recalculates on first hover, which can cause shifting
+      // at default zoom, contain slide within view
       if (dpi === settings.DPI_DEFAULT) {
         let wScale = 1;
 
@@ -393,7 +394,6 @@ export default {
 
         if (sample.index === this.s.currentIndex) this.set({currentWScale: wScale});
       }
-      //*/
 
       const width    = `${w}px`;
       const height   = sample.image ? `${h}px` : '';
@@ -546,6 +546,7 @@ export default {
 
     toggleRulers() {
       const $rulers = window.$('.frame-rulers');
+
       if (this.s.showRulers) {
         $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
@@ -553,16 +554,11 @@ export default {
         $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
         window.removeEventListener('mousemove', this.positionRulers);
 
-        window.$('.frame-rulers').css({
+        $rulers.css({
           left: '',
           top:  '',
         });
       }
-
-      // ensures overflow is visible (to enable extra touch target area at small scales) only when fully extended
-      setTimeout(() => {
-        window.$('.frame-rulers').toggleClass('show-target', this.s.showRulers);
-      }, (this.s.showRulers ? settings.TRANSITION_TIME_MS : 0));
 
     }, // toggleRulers()
 
@@ -974,42 +970,71 @@ $radius-lg: $radius * 2;
   .frame-rulers {
     z-index: $layer-frame-rulers;
     pointer-events: none;
-    //opacity: 0;
+    opacity: .75;
     position: fixed;
-    left: 1em + ($unit / 2);// $frame-ruler-width-half;
-    top:  1em + ($unit / 2);// $frame-ruler-width-half;
+    left: 1em + ($unit / 2);
+    top:  1em + ($unit / 2);
     width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
-    @include short-transition;
-    @at-root
-    .no-transition#{&} {
+    transform-origin: 0 0;
+
+    &.rulers-leave-active,
+    .show-rulers &.rulers-enter-active {
+      @include short-transition;
+    }
+
+    transition: transform $transition-time-ms ease-in-out; // used for zooming
+    @at-root .no-transition#{&} { // applied while dragging
       transition: none;
     }
 
-    transform-origin: 0 0;
-    @at-root [data-dpi="120"] .frame-rulers {
-      left: ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
-      top:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
+    @at-root .show-rulers:not(.has-mouse) &::before {
+      content: '';
+      position: absolute;
+      top: 4em;
+      font-size: 1.5em;
+      left: 0;
+      transform-origin: left center;
+      transform: translateX(2em);
+      border-top: 1.5em solid transparent;
+      border-right: 1.5em solid white;
+      border-bottom: 1.5em solid transparent;
+      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
+      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::before {
+        opacity: 0;
+        transform: translateX(1em);
+      }
+    }
+    @at-root .show-rulers:not(.has-mouse) &::after {
+      content: 'drag ruler to measure inches';
+      position: absolute;
+      top: 4em;
+      font-size: 1.5em;
+      transform-origin: left center;
+      transform: translateX(3.5em);
+      height: 3em;
+      line-height: 2.6;
+      background-color: white;
+      padding-right: 1em;
+      border-radius: 0 1.5em 1.5em 0;
+      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
+      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::after {
+        opacity: 0;
+        transform: translateX(2.5em);
+      }
     }
   }
-  @at-root .show-rulers .frame-rulers {
-    opacity: .75;
-  }
 
-  @at-root .show-rulers .frame-ruler {
-    pointer-events: all;
-    width: 100% !important;
-  }
   .frame-ruler {
     position: absolute;
     left: $frame-ruler-width-half;
     top: -$frame-ruler-width-half;
-    width: 0;
     height: $frame-ruler-width-nominal - 1;
     background-color: hsl(60, 100%, 50%);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
     transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
     transition: width $transition-time-ms ease-in-out;
+
     @at-root [data-dpi="120"] & {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
       left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
@@ -1017,8 +1042,13 @@ $radius-lg: $radius * 2;
       height: $frame-ruler-width-nominal * $zoom-ratio - 1;
       transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
     }
+    width: 0;
+    @at-root .show-rulers & {
+      width: 100% !important;
+      pointer-events: all;
+    }
     overflow: hidden;
-    @at-root .show-target .frame-ruler {
+    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active):not(.rulers-leave-active) .frame-ruler {
       overflow: visible;
     }
 
