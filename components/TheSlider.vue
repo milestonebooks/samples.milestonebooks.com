@@ -81,7 +81,7 @@ export default {
       isGrabbing:   false,
       isScrolling:  null,
       noTransition: true,
-      isScaled:     false, // set to true when zoom has completed, but before images have cross-faded
+      //isScaled:     false, // set to true when zoom has completed, but before images have cross-faded
       dpiImages:    settings.DPI_DEFAULT,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
@@ -383,8 +383,13 @@ export default {
       if (dpi === settings.DPI_DEFAULT) {
         let wScale = 1;
 
+        //console.log(`sampleStyleSize(${sample.id}, ${dpi}) w[${w}] availWidth[${this.availWidth}]`);
+
         if (w > this.windowWidth) {
-          wScale = document.documentElement.clientWidth / w;
+          const windowHRatio = document.documentElement.clientHeight / this.windowWidth;
+          const slideHRatio = h / w;
+
+          wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
 
           w = Math.round(w * wScale);
           h = Math.floor(h * wScale);
@@ -398,8 +403,6 @@ export default {
       const width    = `${w}px`;
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
-
-      //console.log(`sampleStyleSize(${sample.id}, ${dpi}): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -714,8 +717,15 @@ export default {
         const yOffset = $slide.offset().top;
         const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
-        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
+
+        /* [2018-07-31] aborted attempt to scroll focal point into view if covered by horizontal scrollbar
+        const isYScrollMax = (window.innerHeight + window.pageYOffset) >= $frame.height();
+        const yScrollOffset = isYScrollMax && ($frame.height() - ($frame.height() * elY) < this.s.scrollbarWidth) ? this.s.scrollbarWidth : 0;
+
+        console.log(`zoom in... at bottom?`, isYScrollMax, '-yOffset:', yScrollOffset);
+        //*/
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -734,21 +744,28 @@ export default {
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
 
+        console.log(`zoom-in... xScroll[${xScroll}] + xDiff[${xDiff}]... xScrollAdj[${xScrollAdj}] xFrame[${xFrame}]`);
+
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
-        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width()  - $slide.width());
-        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
+        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width() - $slide.width());
+        const yPct = ($slide.offset().top - $slideZoom.offset().top) / ($slideZoom.height() - $slide.height());
 
         const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
         const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
         const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
+        console.log(`zoom-in... elX[${elX.toFixed(2)}] transform-origin:'${xOrigin.toFixed(2)}% ${yOrigin.toFixed(2)}%' currentWScale:${this.s.currentWScale} xPct[${xPct}]`,$slideZoom.offsetRect());
+        console.log(`($slide.offsetRect()[${$slide.offsetRect()[metric]}] - $slideZoom.offsetRect()[${$slideZoom.offsetRect()[metric]}]) / ($slideZoom.width()[${$slideZoom.width()}] - $slide.width()[${$slide.width()}]);`);
+
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
         $rulers.css({transform: `scale(${1 / scale})`});
+
+        //return false;
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
@@ -759,7 +776,8 @@ export default {
         // zoom
         await sleep(settings.TRANSITION_TIME_MS);
 
-        this.isScaled = true;
+        //this.isScaled = true;
+        //return; // TODO: debug
 
         // fade
         $frame.css({'z-index': ''});
@@ -767,7 +785,7 @@ export default {
 
         await sleep(settings.TRANSITION_TIME_MS);
 
-        this.isScaled = false;
+        //this.isScaled = false;
 
         // cleanup
         $el.addClass('no-transition');
@@ -821,6 +839,13 @@ export default {
         const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
         const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
+        // TODO: iPhone Safari zoom-in is buggy; zoom-out is good
+        // TODO: Chrome mobile mode reports different $slide.offset().left value, creating buggy zoom
+        /*
+        console.log(`zoom out... slide.left[${$slide.offset().left}] slideZoom.left[${$slideZoom.offset().left}]`, $slide.offset(), $slide[0]);
+        //return;
+        //*/
+
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
@@ -831,6 +856,11 @@ export default {
         $el.removeClass('no-transition');
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
         $rulers.css({transform: `scale(${this.s.currentWScale})`});
+
+        /* TODO: debug
+        console.log(`zoom out... transform-origin: ${xOrigin * 100}% ${yOrigin * 100}%`);
+        return;
+        //*/
 
         await sleep(settings.TRANSITION_TIME_MS);
 
