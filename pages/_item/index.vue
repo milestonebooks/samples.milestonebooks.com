@@ -216,25 +216,30 @@ export default {
       // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
       const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
 
-      // replace url with the sample id
-      if (seq) {
-        const i = this.s.samples.find(i => i.index === seq - 1);
-        if (i) return this.$router.replace(`./#${i.id}`);
-      }
+      if (seq && this.getRouteFromSequence(seq)) return;
 
       // if id is not given in the hash, select the first in the samples list
       const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 
       const index = this.s.samples.findIndex(i => i.id === id);
 
-      // if id is not found, return to default
+      // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
+        if (this.getRouteFromSequence(id)) return;
         return this.$router.replace('./');
       }
 
       this.set({currentIndex: index});
 
     }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getRouteFromSequence(seq) {
+      const i = this.s.samples.find(i => i.index === seq - 1);
+      if (i) this.$router.replace(`./#${i.id}`);
+      return i !== undefined;
+    }, // getIdFromSequence()
 
     //------------------------------------------------------------------------------------------------------------------
 
