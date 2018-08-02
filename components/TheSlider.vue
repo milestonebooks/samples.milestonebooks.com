@@ -263,10 +263,6 @@ export default {
       this.availHeight = document.documentElement.clientHeight;
       this.windowWidth = window.innerWidth;
 
-      //this.debug += ' onResize()';
-
-      //console.log(`onresize: ${this.availWidth}w${this.windowWidth !== this.availWidth ? `[${this.windowWidth}]` : ''} X ${this.availHeight}h`);
-
       // delay autosize() until above settings are propagated in layout
 
       clearTimeout(window._resizeT);
@@ -391,8 +387,6 @@ export default {
           w = Math.round(w * wScale);
           h = Math.floor(h * wScale);
         }
-
-        this.$store.commit('setSampleImageWScale', {i:sample.index, wScale});
 
         if (sample.index === this.s.currentIndex) this.set({currentWScale: wScale});
       }
@@ -643,7 +637,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
-      //this.debug += ` scaleRulers(${this.s.currentWScale.toFixed(2)})`;
       if (this.s.dpi === settings.DPI_DEFAULT) {
         window.$('.frame-rulers').css({
           transform: `scale(${this.s.currentWScale}`,

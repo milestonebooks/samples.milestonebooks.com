@@ -27,7 +27,7 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
-// TODO: background image loading indicator
+// TODO: prev/next item in series
 // TODO: implement behavior analytics
 // TODO: provide info/exit button in upper right to help with contextual awareness
 
@@ -266,7 +266,7 @@ main {
     direction: rtl;
   }
 
-  &::before {
+  &.show-title::before {
     content: attr(data-title);
     z-index: $layer-title;
     @include absolute-center(fixed);
@@ -280,9 +280,6 @@ main {
     color: $theme-color;
     box-shadow: 0 0 1em transparentize($theme-color, 0.5);
     pointer-events: none;
-  }
-
-  &.show-title::before {
     animation: a-titlefade 3s 1 forwards ease-in-out;
   }
 }
