@@ -388,6 +388,8 @@ export default {
           h = Math.floor(h * wScale);
         }
 
+        if (sample.image) this.$store.commit('setSampleImageWScale', {i:sample.index, wScale});
+
         if (sample.index === this.s.currentIndex) this.set({currentWScale: wScale});
       }
 
