@@ -24,6 +24,7 @@ module.exports = {
       { src: 'https://cdn.jsdelivr.net/combine/npm/cash-dom@1.3.7,npm/howler@2.0.12' }, // combined
       // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
       { hid: 'ua', innerHTML: 'document.documentElement.setAttribute("data-browser", navigator.userAgent);', type: 'text/javascript' },
+      { hid: 'env', innerHTML: `document.documentElement.setAttribute("data-env", "${process.env.NODE_ENV}");`, type: 'text/javascript' },
     ],
     __dangerouslyDisableSanitizers: ["script"],
   },
