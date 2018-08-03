@@ -6,7 +6,7 @@
     </div>
 
     <transition name="rulers">
-      <div class="frame-rulers" v-show="s.showRulers">
+      <div :class="'frame-rulers' + (isUseTouch ? ' touch' : '')" v-show="s.showRulers">
         <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
       </div>
     </transition>
@@ -92,6 +92,7 @@ export default {
       groupHeight:  null,
       touchPoint:   null,
       supports3d:   supports3d(),
+      isUseTouch:   false,
       eTouchParams: supportsPassive() ? { passive: true } : false,
     }
   },
@@ -578,8 +579,10 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    positionRulers(event) {
+    positionRulers(event, {touch = false} = {}) {
       const {clientX:x, clientY:y} = event;
+
+      if (!touch) this.isUseTouch = false;
 
       if (window.$(event.target).closest('.sidebar').length) return false;
 
@@ -595,6 +598,7 @@ export default {
       const touches = e.touches ? e.touches[0] : e;
 
       this.noTransition = true;
+      this.isUseTouch = true;
 
       const $rulers = window.$('.frame-rulers');
 
@@ -637,7 +641,7 @@ export default {
       this.positionRulers({
         clientX: x,
         clientY: y,
-      });
+      }, {touch:true});
 
     }, // onRulersTouchmove()
 
@@ -662,7 +666,7 @@ export default {
           transform: `scale(${this.s.currentWScale}`,
           width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
         }).find('.target').css({
-          transform: `scaleY(${1 / this.s.currentWScale}) translateX(${-settings.FRAME_RULER_WIDTH_NOMINAL / 4})`
+          transform: `scaleY(${1 / this.s.currentWScale})`
         });
       }
     }, // scaleRulers()
@@ -997,6 +1001,7 @@ $radius-lg: $radius * 2;
       transition: none;
     }
 
+    /* [2018-08-03] TODO: change to a hideable Tip component
     @at-root .show-rulers:not(.has-mouse) &::before {
       content: '';
       position: absolute;
@@ -1032,6 +1037,26 @@ $radius-lg: $radius * 2;
         transform: translateX(2.5em);
       }
     }
+    //*/
+
+    /* [2018-08-03] disabled because it interferes with tap-to-zoom
+    &.touch::before {
+      content: '';
+      position: absolute;
+      background-color: hsl(60, 100%, 50%);
+      width:  $frame-ruler-width-nominal - 1;
+      height: $frame-ruler-width-nominal - 1;
+      left: -$frame-ruler-width-half;
+      top:  -$frame-ruler-width-half;
+
+      @at-root [data-dpi="120"] & {
+        width:  $frame-ruler-width-nominal * $zoom-ratio - 1;
+        height: $frame-ruler-width-nominal * $zoom-ratio - 1;
+        left: -$frame-ruler-width-half * $zoom-ratio;
+        top:  -$frame-ruler-width-half * $zoom-ratio;
+      }
+    }
+    //*/
   }
 
   .frame-ruler {
@@ -1065,7 +1090,7 @@ $radius-lg: $radius * 2;
     // used to make touch target physically consistent when ruler size is scaled down
     .target {
       height: 100%;
-      transform: scaleY(1) translateX(#{-$frame-ruler-width-nominal / 4});
+      transform: scaleY(1);
     }
 
     b {
