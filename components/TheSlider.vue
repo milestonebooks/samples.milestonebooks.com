@@ -17,7 +17,7 @@
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
             <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" :data-error="imageError(sample, 80)" draggable="false"
-                 @load="onImageLoaded(sample.index, 80, $event)" @error="onImageLoadError(sample.index, 80, $event)" />
+                 @load="onImageLoaded(sample.index, 80, $event)" @error="onImageLoadError(sample.index, 80)" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -30,7 +30,7 @@
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
             <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" :data-error="imageError(sample, 120)" draggable="false"
-                 @load="onImageLoaded(sample.index, 120, $event)" @error="onImageLoadError(sample.index, 120, $event)" />
+                 @load="onImageLoaded(sample.index, 120, $event)" @error="onImageLoadError(sample.index, 120)" />
           </div>
         </section>
       </div>
@@ -190,6 +190,9 @@ export default {
       console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       this.autosize();
       if (!this.isInit) this.init();
+      this.$nextTick(() => {
+        this.forceRepaint();
+      });
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -266,11 +269,9 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onImageLoadError(i, dpi, event) {
+    onImageLoadError(i, dpi) {
       this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
-
-      console.log(`onImageLoadError(${i}, ${dpi}, e)`, event);
-
+      window.$(`.frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
     }, // onImageLoadError()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -661,7 +662,7 @@ export default {
           transform: `scale(${this.s.currentWScale}`,
           width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
         }).find('.target').css({
-          transform: `scaleY(${1 / this.s.currentWScale})`
+          transform: `scaleY(${1 / this.s.currentWScale}) translateX(${-settings.FRAME_RULER_WIDTH_NOMINAL / 4})`
         });
       }
     }, // scaleRulers()
@@ -737,6 +738,7 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
+        // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
         window.scroll(xScrollTo, yScrollTo);
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
@@ -1063,7 +1065,7 @@ $radius-lg: $radius * 2;
     // used to make touch target physically consistent when ruler size is scaled down
     .target {
       height: 100%;
-      transform: scaleY(1);
+      transform: scaleY(1) translateX(#{-$frame-ruler-width-nominal / 4});
     }
 
     b {
@@ -1168,11 +1170,13 @@ $radius-lg: $radius * 2;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
-    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
+    .has-zoom[data-dpi="80"] .frame-rulers .target {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
+    .has-zoom[data-dpi="120"] .frame-rulers .target {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
@@ -1255,7 +1259,7 @@ $radius-lg: $radius * 2;
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cstyle type='text/css'%3E .c1, .c2 %7B transform-origin: 100px 100px; animation: x 2s ease-out infinite; %7D .c2 %7B animation-delay:-1s; %7D @keyframes x %7B from %7B transform: scale%280%29; opacity:.5; %7D to %7B transform:scale%281.0%29; opacity:0; %7D %7D %3C/style%3E%3Ccircle class='c1' cx='100' cy='100' r='20' fill='black' /%3E%3Ccircle class='c2' cx='100' cy='100' r='20' fill='black' /%3E%3C/svg%3E") no-repeat center / cover;
 
       &[data-error] {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B animation: sad 2s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B transform-origin: 100px 100px; animation: sad 1s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; transform: scale(0); %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
       }
     }
 
