@@ -6,6 +6,8 @@
 
 <script>
 
+// TODO: convert alerts component to handle multi-purpose notices (alerts and tips)
+
 export default {
 
   //--------------------------------------------------------------------------------------------------------------------

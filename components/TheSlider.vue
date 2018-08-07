@@ -337,7 +337,7 @@ export default {
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
-        console.log(`autosize(${dpi}) frameWidth[${frameWidth}]`);
+        //console.log(`autosize(${dpi}) frameWidth[${frameWidth}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -565,6 +565,8 @@ export default {
       if (this.s.showRulers) {
         $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
+
+        //this.$store.dispatch('alert', {msg:'drag rulers to measure in inches'});
       } else {
         $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
         window.removeEventListener('mousemove', this.positionRulers);
@@ -581,6 +583,9 @@ export default {
 
     positionRulers(event, {touch = false} = {}) {
       const {clientX:x, clientY:y} = event;
+
+      // screen out touch taps, which trigger 'mousemove' events with no movement
+      if (event.movementX !== undefined && event.movementX + event.movementY === 0) return false;
 
       if (!touch) this.isUseTouch = false;
 
@@ -1038,25 +1043,6 @@ $radius-lg: $radius * 2;
       }
     }
     //*/
-
-    /* [2018-08-03] disabled because it interferes with tap-to-zoom
-    &.touch::before {
-      content: '';
-      position: absolute;
-      background-color: hsl(60, 100%, 50%);
-      width:  $frame-ruler-width-nominal - 1;
-      height: $frame-ruler-width-nominal - 1;
-      left: -$frame-ruler-width-half;
-      top:  -$frame-ruler-width-half;
-
-      @at-root [data-dpi="120"] & {
-        width:  $frame-ruler-width-nominal * $zoom-ratio - 1;
-        height: $frame-ruler-width-nominal * $zoom-ratio - 1;
-        left: -$frame-ruler-width-half * $zoom-ratio;
-        top:  -$frame-ruler-width-half * $zoom-ratio;
-      }
-    }
-    //*/
   }
 
   .frame-ruler {
@@ -1091,6 +1077,15 @@ $radius-lg: $radius * 2;
     .target {
       height: 100%;
       transform: scaleY(1);
+
+      // make ruler cross-axis hole targetable for dragging (this prevents tap-to-zoom within the hole)
+      @at-root .frame-rulers.touch .target::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: -50%;
+      }
     }
 
     b {
