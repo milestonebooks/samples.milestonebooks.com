@@ -28,8 +28,8 @@ import { mapMutations } from 'vuex';
 import axios from 'axios';
 
 // TODO: prev/next item in series
-// TODO: implement behavior analytics
 // TODO: provide info/exit button in upper right to help with contextual awareness
+// TODO: implement behavior analytics (low priority)
 
 export default {
   components: {

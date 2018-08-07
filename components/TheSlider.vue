@@ -337,7 +337,7 @@ export default {
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
-        //console.log(`autosize(${dpi}) width[${width}] xMargin[${xMargin}]`);
+        console.log(`autosize(${dpi}) frameWidth[${frameWidth}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -700,8 +700,8 @@ export default {
       const dpi = (this.s.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
       this.set({dpi});
 
-      window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1'}`);
-      //this.debug += ' ' + window.$('[name="viewport"]').attr('content');
+      // `user-scaleable=no` prevents zooming jank in mobile Chrome (caused by browser resizing window.innerWidth)
+      window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1, user-scalable=no'}`);
 
       const zoomIn = (dpi === settings.DPI_ZOOM);
 
