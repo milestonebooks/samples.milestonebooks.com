@@ -99,7 +99,7 @@ export default {
         'has-mouse':   this.s.hasMouse,
         'has-zoom':    this.s.hasZoom,
         'has-print':   this.s.hasPrint,
-        'show-rulers': this.s.showRulers,
+        'show-rulers': this.s.hasRulers && this.s.showRulers,
         'is-printing': this.s.isPrinting,
         'show-title':  true,
       }

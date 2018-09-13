@@ -362,9 +362,13 @@ export default {
       const {xOffset, yOffset} = this.getSlideOffset($slide);
       const XY = `${-xOffset}px, ${-yOffset}px`;
 
+      console.log('in autosize()...', $slides.css('transform'), `translate3d(${XY}, 0)`, 'notransition', this.noTransition);
+
+      //*
       $slides.css({
         transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
+      //*/
 
       if (this.noTransition) this.forceRepaint();
     }, // autosize()
@@ -478,7 +482,7 @@ export default {
 
       if (!this.isScrolling) {
         this.isGrabbing = true;
-        window.$('.slider').addClass('no-transition');
+        window.$('.slider').addClass('no-transition'); // TODO
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
         const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
@@ -511,8 +515,6 @@ export default {
       this.isGrabbing = false;
 
       window.$('.slider').removeClass('no-transition');
-
-      this.forceRepaint();
 
       // decide what the interaction means
       let action = 'click';
@@ -553,7 +555,10 @@ export default {
         this.$router.replace(`#${this.s.samples[index].id}`);
 
       } else {
-        this.autosize();
+        // [2018-09-12] ensure 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
+        this.$nextTick(() => {
+          this.autosize();
+        });
       }
     }, // onTouchend()
 
