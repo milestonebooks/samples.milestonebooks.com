@@ -8,6 +8,8 @@
 
     <TheOptPrint v-if="s.hasPrint" />
 
+    <TheOptRevert v-if="s.type === 'items'" />
+
     <TheNav v-if="s.samples.length > 1" />
 
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
@@ -20,6 +22,7 @@ import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
+import TheOptRevert from '~/components/TheOptRevert';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
@@ -37,6 +40,7 @@ export default {
     TheSlider,
     TheOptRulers,
     TheOptPrint,
+    TheOptRevert,
     TheNav,
     ThePlayer,
   },
@@ -68,8 +72,7 @@ export default {
     const data = {
       data: null
     };
-    // TODO: `&dev=true` should be removed only after old system is retired (see .htaccess >> RewriteRule . _index.php [L])
-    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`;
+    const url = `${store.state.urlBase}${params.item}/?action=Data`;
 
     try {
       const res = await axios.get(url);

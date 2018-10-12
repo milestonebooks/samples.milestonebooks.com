@@ -188,7 +188,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
+      //if (process.env.NODE_ENV !== 'production') console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       this.autosize();
       if (!this.isInit) this.init();
       this.$nextTick(() => {
@@ -362,13 +362,9 @@ export default {
       const {xOffset, yOffset} = this.getSlideOffset($slide);
       const XY = `${-xOffset}px, ${-yOffset}px`;
 
-      console.log('in autosize()...', $slides.css('transform'), `translate3d(${XY}, 0)`, 'notransition', this.noTransition);
-
-      //*
       $slides.css({
         transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
-      //*/
 
       if (this.noTransition) this.forceRepaint();
     }, // autosize()
