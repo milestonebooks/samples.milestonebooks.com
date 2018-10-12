@@ -5,16 +5,19 @@
       <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
-    <div class="frame-rulers">
-      <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b></div> <!-- 20 * 80px = (monitors up to 1600px) -->
-    </div>
+    <transition name="rulers">
+      <div :class="'frame-rulers' + (isUseTouch ? ' touch' : '')" v-show="s.showRulers">
+        <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
+      </div>
+    </transition>
 
     <div class="frame dpi80">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 80)">
           <div class="slide-liner">
-            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" @load="onImageLoaded(sample.index, 80, $event)" draggable="false" />
+            <img v-if="sample.image" data-dpi="80" :style="imageStyleSize(sample, 80)" :data-src="imageSrc(sample, 80)" :data-error="imageError(sample, 80)" draggable="false"
+                 @load="onImageLoaded(sample.index, 80, $event)" @error="onImageLoadError(sample.index, 80)" />
             <h1 v-else class="sample-title">{{sample.title ? sample.title : `(${sample.id})` }}</h1>
           </div>
         </section>
@@ -26,7 +29,8 @@
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
                  :class="`slide ${listItemClass(sample)}`" :style="sampleStyleSize(sample, 120)">
           <div class="slide-liner">
-            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" @load="onImageLoaded(sample.index, 120, $event)" draggable="false" />
+            <img data-dpi="120" :style="imageStyleSize(sample, 120)" :data-src="imageSrc(sample, 120)" :data-error="imageError(sample, 120)" draggable="false"
+                 @load="onImageLoaded(sample.index, 120, $event)" @error="onImageLoadError(sample.index, 120)" />
           </div>
         </section>
       </div>
@@ -55,7 +59,7 @@ import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
 
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 // jQuery-style custom function
 window.$.fn.offsetRect = function() {
@@ -79,15 +83,16 @@ export default {
       isGrabbing:   false,
       isScrolling:  null,
       noTransition: true,
-      isScaled:     false, // set to true when zoom has completed, but before images have cross-faded
       dpiImages:    settings.DPI_DEFAULT,
       availHeight:  document.documentElement.clientHeight,
       availWidth:   document.documentElement.clientWidth,
+      windowWidth:  window.innerWidth,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
       touchPoint:   null,
       supports3d:   supports3d(),
+      isUseTouch:   false,
       eTouchParams: supportsPassive() ? { passive: true } : false,
     }
   },
@@ -149,15 +154,21 @@ export default {
 
     's.showRulers'() { this.toggleRulers() },
 
+    's.currentWScale'() { this.scaleRulers() },
+
   },
 
   //====================================================================================================================
 
   mounted() {
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
-    if (this.s.showRulers) this.toggleRulers();
+    if (this.s.showRulers) {
+      this.scaleRulers();
+      this.toggleRulers();
+    }
   },
 
   beforeDestroy () {
@@ -170,12 +181,19 @@ export default {
 
   methods: {
 
+    ...mapMutations([
+      'set',
+    ]),
+
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      //if (process.env.NODE_ENV !== 'production') console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       this.autosize();
-      console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       if (!this.isInit) this.init();
+      this.$nextTick(() => {
+        this.forceRepaint();
+      });
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -188,18 +206,12 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     imageStyleSize(sample, dpi) {
+      const x = dpi * (dpi === settings.DPI_DEFAULT ? (sample.image.wScale || 1) : 1);
       return {
-        width:  `${Math.ceil(sample.image.w * dpi)}px`,
-        height: `${Math.ceil(sample.image.h * dpi)}px`,
+        width:  `${Math.ceil(sample.image.w * x)}px`,
+        height: `${Math.ceil(sample.image.h * x)}px`,
       };
     }, // imageStyleSize()
-
-    //------------------------------------------------------------------------------------------------------------------
-    /* MOVED to index.js
-    imageSrc(sample, dpi) {
-      return `${this.s.urlBase}${this.s.type === 'audio' ? 'audio' : 'items'}/${this.s.item}/${this.s.item}.${sample.id}(${dpi}).${sample.image.ext}`;
-    }, // imageSrc()
-    //*/
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -221,9 +233,6 @@ export default {
 
         let images = document.querySelectorAll(`.slider .frame.dpi${dpi} [data-src]`);
 
-        //console.log(images);
-
-        //images = window.$(`.slider .frame.dpi${dpi} [data-src]`);
         images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
         images.forEach(image => { observer.observe(image); });
       }
@@ -240,27 +249,40 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    imageError(i, dpi) {
+      return (i.image.loaded[dpi] !== undefined && i.image.loaded[dpi] === false ? 'failed' : null);
+    }, // imageError()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     onImageLoaded(i, dpi, event) {
       this.$store.commit('setImageLoaded', {i, dpi});
 
       // use 80-dpi image as scaled background until 120-dpi image loads
-      if (dpi === 80 && !this.s.samples[i].image.loaded['120']) {
-        //console.log(`.frame.dpi120 [data-index="${i}"] img > background-image: ${event.target.src}`);
+      if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
         window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
-      if (dpi === 120 && !this.s.samples[i].image.loaded['80']) {
+      if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
         window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
       }
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onResize() {
-      this.availHeight = document.documentElement.clientHeight;
-      this.availWidth  = document.documentElement.clientWidth;
+    onImageLoadError(i, dpi) {
+      this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
+      window.$(`.frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
+    }, // onImageLoadError()
 
-      //console.log(`onresize: ${this.availWidth}w X ${this.availHeight}h`);
+    //------------------------------------------------------------------------------------------------------------------
+
+    onResize() {
+      this.availWidth  = document.documentElement.clientWidth;
+      this.availHeight = document.documentElement.clientHeight;
+      this.windowWidth = window.innerWidth;
+
+      // delay autosize() until above settings are propagated in layout
 
       clearTimeout(window._resizeT);
 
@@ -315,7 +337,7 @@ export default {
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
-        //console.log(`autosize(${dpi}) width[${width}] xMargin[${xMargin}]`);
+        //console.log(`autosize(${dpi}) frameWidth[${frameWidth}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -363,28 +385,36 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    sampleStyleSize(sample, dpi = 80) {
+    sampleStyleSize(sample, dpi) {
       const xdpi = sample.image ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      const w    = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
-      let   h    = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
+      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
+      let h = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
 
-      // mouse interactions can scroll; non-mouse is presumed to be a touch device, which can use native pinch-zoom and pan
-      /* TODO: recalculates on first hover, which can cause shifting
-      if (w > this.availWidth && !this.s.hasMouse) {
-        const hRatio = h / w;
-        w = this.availWidth;
-        h = Math.floor(w * hRatio);
+      // at default zoom, contain slide within view
+      if (dpi === settings.DPI_DEFAULT) {
+        let wScale = 1;
+
+        if (w > this.windowWidth) {
+          const windowHRatio = document.documentElement.clientHeight / this.windowWidth;
+          const slideHRatio = h / w;
+
+          wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
+
+          w = Math.round(w * wScale);
+          h = Math.floor(h * wScale);
+        }
+
+        if (sample.image) this.$store.commit('setSampleImageWScale', {i:sample.index, wScale});
+
+        if (sample.index === this.s.currentIndex) this.set({currentWScale: wScale});
       }
-      //*/
 
       const width    = `${w}px`;
       const height   = sample.image ? `${h}px` : '';
       const maxWidth = sample.image ? '' : '650px'; // sheet music width
-
-      //console.log(`sampleStyleSize(): availWidth:${this.availWidth}`); // w:${width} h:${height}`);
 
       return {width, height, maxWidth};
     }, // sampleStyleSize()
@@ -393,6 +423,14 @@ export default {
 
     onTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
+
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 0;
+      //if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=.5, maximum-scale=2');
+      if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width');
+
+      this.debug = (e.touches && e.touches.length ? `${window.$('[name="viewport"]').attr('content')}@${e.touches.length}` : null);
+      //*/
 
       const $frame = window.$(touches.target).closest('.frame');
 
@@ -440,7 +478,7 @@ export default {
 
       if (!this.isScrolling) {
         this.isGrabbing = true;
-        window.$('.slider').addClass('no-transition');
+        window.$('.slider').addClass('no-transition'); // TODO
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
         const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
@@ -453,6 +491,12 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onTouchend(e) {
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 1;
+      if (!isMultiTouch) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1');
+      this.debug = (e.touches && e.touches.length ? e.touches.length : null);
+      //*/
+
       // cleanup
       const el = this.touchPoint.el;
       el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
@@ -467,8 +511,6 @@ export default {
       this.isGrabbing = false;
 
       window.$('.slider').removeClass('no-transition');
-
-      this.forceRepaint();
 
       // decide what the interaction means
       let action = 'click';
@@ -509,7 +551,10 @@ export default {
         this.$router.replace(`#${this.s.samples[index].id}`);
 
       } else {
-        this.autosize();
+        // [2018-09-12] ensure 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
+        this.$nextTick(() => {
+          this.autosize();
+        });
       }
     }, // onTouchend()
 
@@ -517,19 +562,33 @@ export default {
 
     toggleRulers() {
       const $rulers = window.$('.frame-rulers');
+
       if (this.s.showRulers) {
         $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
+
+        //this.$store.dispatch('alert', {msg:'drag rulers to measure in inches'});
       } else {
         $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
         window.removeEventListener('mousemove', this.positionRulers);
+
+        $rulers.css({
+          left: '',
+          top:  '',
+        });
       }
+
     }, // toggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    positionRulers(event) {
+    positionRulers(event, {touch = false} = {}) {
       const {clientX:x, clientY:y} = event;
+
+      // screen out touch taps, which trigger 'mousemove' events with no movement
+      if (event.movementX !== undefined && event.movementX + event.movementY === 0) return false;
+
+      if (!touch) this.isUseTouch = false;
 
       if (window.$(event.target).closest('.sidebar').length) return false;
 
@@ -543,6 +602,9 @@ export default {
 
     onRulersTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
+
+      this.noTransition = true;
+      this.isUseTouch = true;
 
       const $rulers = window.$('.frame-rulers');
 
@@ -574,8 +636,9 @@ export default {
 
       let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
       let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
+      const scale = settings.DPI_DEFAULT / this.s.currentWScale;
 
-      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / 80)) - 1) / 2;
+      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
 
       // keep within view
       x = Math.min(Math.max(x, offset), this.availWidth  - offset);
@@ -584,7 +647,7 @@ export default {
       this.positionRulers({
         clientX: x,
         clientY: y,
-      });
+      }, {touch:true});
 
     }, // onRulersTouchmove()
 
@@ -597,7 +660,22 @@ export default {
       $rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
       $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
 
+      this.noTransition = false;
+
     }, // onRulersTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    scaleRulers() {
+      if (this.s.dpi === settings.DPI_DEFAULT) {
+        window.$('.frame-rulers').css({
+          transform: `scale(${this.s.currentWScale}`,
+          width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
+        }).find('.target').css({
+          transform: `scaleY(${1 / this.s.currentWScale})`
+        });
+      }
+    }, // scaleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -623,12 +701,15 @@ export default {
 
       if (this.s.isZooming) return;
 
-      this.$store.commit('set', {isZooming:true});
+      this.set({isZooming:true});
 
-      const dpi = (this.s.dpi === 80 ? 120 : 80);
-      this.$store.commit('set', {dpi});
+      const dpi = (this.s.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
+      this.set({dpi});
 
-      const zoomIn = (dpi === 120);
+      // `user-scaleable=no` prevents zooming jank in mobile Chrome (caused by browser resizing window.innerWidth)
+      window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1, user-scalable=no'}`);
+
+      const zoomIn = (dpi === settings.DPI_ZOOM);
 
       const index = this.currentIndex;
 
@@ -654,9 +735,10 @@ export default {
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
         const yOffset = $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - xOffset);
-        const yDiff = Math.round((h * elY * (120 - 80)) - yOffset);
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -666,6 +748,7 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
+        // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
         window.scroll(xScrollTo, yScrollTo);
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
@@ -679,35 +762,32 @@ export default {
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
-        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width()  - $slide.width());
-        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
+        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width() - $slide.width());
+        const yPct = ($slide.offset().top - $slideZoom.offset().top) / ($slideZoom.height() - $slide.height());
 
         const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
         const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
-        $rulers.css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
+        $rulers.css({transform: `scale(${1 / scale})`});
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
-        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${settings.ZOOM_RATIO})`});
+        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
         $rulers.css({transform: ''});
 
         // zoom
         await sleep(settings.TRANSITION_TIME_MS);
-
-        this.isScaled = true;
 
         // fade
         $frame.css({'z-index': ''});
         $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
 
         await sleep(settings.TRANSITION_TIME_MS);
-
-        this.isScaled = false;
 
         // cleanup
         $el.addClass('no-transition');
@@ -721,9 +801,10 @@ export default {
       } else {
         const xOffset = $slide.offset().left;
         const yOffset = $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * (120 - 80)) - (xOffset - $slideZoom.offset().left));
-        const yDiff = Math.round((h * elY * (120 - 80)) - (yOffset - $slideZoom.offset().top));
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - $slideZoom.offset().left));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - $slideZoom.offset().top));
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
@@ -758,6 +839,7 @@ export default {
 
         const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
         const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
@@ -767,8 +849,8 @@ export default {
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
         $el.removeClass('no-transition');
-        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / settings.ZOOM_RATIO})`});
-        $rulers.css({transform: ''});
+        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
+        $rulers.css({transform: `scale(${this.s.currentWScale})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
@@ -794,7 +876,7 @@ export default {
         $el.removeClass('no-transition');
       } // zoom out
 
-      this.$store.commit('set', {isZooming:false});
+      this.set({isZooming:false});
 
     }, // toggleDpi()
 
@@ -853,13 +935,13 @@ $radius-lg: $radius * 2;
     transition: none;
   }
 
-  /*
+  //*
   &[data-debug]::before {
     content: attr(data-debug);
     z-index: 9;
     position: fixed;
-    top: 0;
-    left: 0;
+    top: 4rem;
+    right: 0;
     font-size: 2em;
     outline: 1px solid red;
     background: hsla(0,100%,100%,.75);
@@ -908,43 +990,73 @@ $radius-lg: $radius * 2;
   .frame-rulers {
     z-index: $layer-frame-rulers;
     pointer-events: none;
-    opacity: 0;
+    opacity: .75;
     position: fixed;
-    left: $frame-ruler-width-half;
-    top:  $frame-ruler-width-half;
-    width: 200%;
-    height: 200%;
-    transition: opacity $transition-time-ms ease-in-out, transform $transition-time-ms ease-in-out;
-    @at-root
-    .no-transition#{&} {
+    left: 1em + ($unit / 2);
+    top:  1em + ($unit / 2);
+    width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
+    transform-origin: 0 0;
+
+    &.rulers-leave-active,
+    .show-rulers &.rulers-enter-active {
+      @include short-transition;
+    }
+
+    transition: transform $transition-time-ms ease-in-out; // used for zooming
+    @at-root .no-transition#{&} { // applied while dragging
       transition: none;
     }
 
-    transform-origin: 0 0;
-    @at-root [data-dpi="120"] .frame-rulers {
-      //transform: scale($zoom-ratio);
-      left: ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
-      top:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
+    /* [2018-08-03] TODO: change to a hideable Tip component
+    @at-root .show-rulers:not(.has-mouse) &::before {
+      content: '';
+      position: absolute;
+      top: 4em;
+      font-size: 1.5em;
+      left: 0;
+      transform-origin: left center;
+      transform: translateX(2em);
+      border-top: 1.5em solid transparent;
+      border-right: 1.5em solid white;
+      border-bottom: 1.5em solid transparent;
+      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
+      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::before {
+        opacity: 0;
+        transform: translateX(1em);
+      }
     }
-  }
-  @at-root .show-rulers .frame-rulers {
-    opacity: .75;
+    @at-root .show-rulers:not(.has-mouse) &::after {
+      content: 'drag ruler to measure inches';
+      position: absolute;
+      top: 4em;
+      font-size: 1.5em;
+      transform-origin: left center;
+      transform: translateX(3.5em);
+      height: 3em;
+      line-height: 2.6;
+      background-color: white;
+      padding-right: 1em;
+      border-radius: 0 1.5em 1.5em 0;
+      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
+      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::after {
+        opacity: 0;
+        transform: translateX(2.5em);
+      }
+    }
+    //*/
   }
 
-  @at-root .show-rulers .frame-ruler {
-    pointer-events: all;
-  }
   .frame-ruler {
     position: absolute;
     left: $frame-ruler-width-half;
     top: -$frame-ruler-width-half;
-    width: 100%;
     height: $frame-ruler-width-nominal - 1;
-    overflow: hidden;
     background-color: hsl(60, 100%, 50%);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
     counter-reset: inches;
     transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
+    transition: width $transition-time-ms ease-in-out;
+
     @at-root [data-dpi="120"] & {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
       left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
@@ -952,9 +1064,34 @@ $radius-lg: $radius * 2;
       height: $frame-ruler-width-nominal * $zoom-ratio - 1;
       transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
     }
+    width: 0;
+    @at-root .show-rulers & {
+      width: 100% !important;
+      pointer-events: all;
+    }
+    overflow: hidden;
+    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active):not(.rulers-leave-active) .frame-ruler {
+      overflow: visible;
+    }
+
+    // used to make touch target physically consistent when ruler size is scaled down
+    .target {
+      height: 100%;
+      transform: scaleY(1);
+
+      // make ruler cross-axis hole targetable for dragging (this prevents tap-to-zoom within the hole)
+      @at-root .frame-rulers.touch .target::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: -50%;
+      }
+    }
 
     b {
       float: left;
+      margin-bottom: 200%; // when overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
       position: relative;
       width: $frame-ruler-inch;
       height: $frame-ruler-width-nominal - 1;
@@ -1054,11 +1191,13 @@ $radius-lg: $radius * 2;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
-    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
+    .has-zoom[data-dpi="80"] .frame-rulers .target {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current {
+    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
+    .has-zoom[data-dpi="120"] .frame-rulers .target {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
@@ -1079,6 +1218,7 @@ $radius-lg: $radius * 2;
     }
 
     &::before {
+      z-index: 1; // make sure it's above <img>
       content: '';
       position: absolute;
       left: 0;
@@ -1136,10 +1276,12 @@ $radius-lg: $radius * 2;
     }
 
     img {
-      max-width: 100%;
-      vertical-align: top;
-      object-position: top;
-      background-size: cover;
+      // audio icon sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cstyle type='text/css'%3E .c1, .c2 %7B transform-origin: 100px 100px; animation: x 2s ease-out infinite; %7D .c2 %7B animation-delay:-1s; %7D @keyframes x %7B from %7B transform: scale%280%29; opacity:.5; %7D to %7B transform:scale%281.0%29; opacity:0; %7D %7D %3C/style%3E%3Ccircle class='c1' cx='100' cy='100' r='20' fill='black' /%3E%3Ccircle class='c2' cx='100' cy='100' r='20' fill='black' /%3E%3C/svg%3E") no-repeat center / cover;
+
+      &[data-error] {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B transform-origin: 100px 100px; animation: sad 1s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; transform: scale(0); %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
+      }
     }
 
     .sample-title {

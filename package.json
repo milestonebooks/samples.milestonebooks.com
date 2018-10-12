@@ -1,16 +1,16 @@
 {
   "name": "samples",
-  "version": "0.9.9",
+  "version": "1.0.0",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
   "scripts": {
     "dev": "nuxt",
+    "analyze": "nuxt build --analyze",
+    "generate": "cross-env NODE_ENV=production nuxt generate",
     "build": "nuxt build",
     "spa": "nuxt build --spa",
-    "analyze": "nuxt build --analyze",
     "start": "nuxt start",
-    "generate": "nuxt generate",
     "lint": "eslint --fix --ext .js,.vue --ignore-path .gitignore .",
     "precommit": "npm run lint"
   },
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^8.2.3",
+    "cross-env": "^5.2.0",
     "eslint": "^4.19.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-loader": "^1.9.0",

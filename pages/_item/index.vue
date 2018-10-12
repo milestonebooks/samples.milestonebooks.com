@@ -8,6 +8,8 @@
 
     <TheOptPrint v-if="s.hasPrint" />
 
+    <TheOptRevert v-if="s.type === 'items'" />
+
     <TheNav v-if="s.samples.length > 1" />
 
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
@@ -20,6 +22,7 @@ import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
+import TheOptRevert from '~/components/TheOptRevert';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
@@ -27,12 +30,17 @@ import { mapMutations } from 'vuex';
 
 import axios from 'axios';
 
+// TODO: prev/next item in series
+// TODO: provide info/exit button in upper right to help with contextual awareness
+// TODO: implement behavior analytics (low priority)
+
 export default {
   components: {
     TheAlerts,
     TheSlider,
     TheOptRulers,
     TheOptPrint,
+    TheOptRevert,
     TheNav,
     ThePlayer,
   },
@@ -64,7 +72,7 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data&dev=true`; // TODO dev mode
+    const url = `${store.state.urlBase}${params.item}/?action=Data`;
 
     try {
       const res = await axios.get(url);
@@ -94,7 +102,7 @@ export default {
         'has-mouse':   this.s.hasMouse,
         'has-zoom':    this.s.hasZoom,
         'has-print':   this.s.hasPrint,
-        'show-rulers': this.s.showRulers,
+        'show-rulers': this.s.hasRulers && this.s.showRulers,
         'is-printing': this.s.isPrinting,
         'show-title':  true,
       }
@@ -147,10 +155,14 @@ export default {
       const d = this.data;
       const samples = d.samples;
 
+      let maxHRatio = null;
+
       // create object to monitor loaded state
       for (const i of samples) {
         if (!i.image) continue;
         i.image.loaded = {};
+        i.image.hRatio = i.image.h / i.image.w;
+        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
       }
 
       this.set({
@@ -165,6 +177,7 @@ export default {
         samples:   samples,
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
+        maxHRatio: maxHRatio,
       });
 
       console.timeEnd('index');
@@ -206,25 +219,30 @@ export default {
       // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
       const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
 
-      // replace url with the sample id
-      if (seq) {
-        const i = this.s.samples.find(i => i.index === seq - 1);
-        if (i) return this.$router.replace(`./#${i.id}`);
-      }
+      if (seq && this.getRouteFromSequence(seq)) return;
 
       // if id is not given in the hash, select the first in the samples list
       const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
 
       const index = this.s.samples.findIndex(i => i.id === id);
 
-      // if id is not found, return to default
+      // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
+        if (this.getRouteFromSequence(id)) return;
         return this.$router.replace('./');
       }
 
       this.set({currentIndex: index});
 
     }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getRouteFromSequence(seq) {
+      const i = this.s.samples.find(i => i.index === seq - 1);
+      if (i) this.$router.replace(`./#${i.id}`);
+      return i !== undefined;
+    }, // getIdFromSequence()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -251,7 +269,7 @@ main {
     direction: rtl;
   }
 
-  &::before {
+  &.show-title::before {
     content: attr(data-title);
     z-index: $layer-title;
     @include absolute-center(fixed);
@@ -265,9 +283,6 @@ main {
     color: $theme-color;
     box-shadow: 0 0 1em transparentize($theme-color, 0.5);
     pointer-events: none;
-  }
-
-  &.show-title::before {
     animation: a-titlefade 3s 1 forwards ease-in-out;
   }
 }

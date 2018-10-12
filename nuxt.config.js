@@ -8,7 +8,7 @@ module.exports = {
     title: 'samples.milestonebooks.com',
     meta: [
       { charset: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1, minimum-scale=1' },
       { hid: 'description', name: 'description', content: 'samples of products available from Milestone Books' }
     ],
     link: [
@@ -24,6 +24,7 @@ module.exports = {
       { src: 'https://cdn.jsdelivr.net/combine/npm/cash-dom@1.3.7,npm/howler@2.0.12' }, // combined
       // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
       { hid: 'ua', innerHTML: 'document.documentElement.setAttribute("data-browser", navigator.userAgent);', type: 'text/javascript' },
+      { hid: 'env', innerHTML: `document.documentElement.setAttribute("data-env", "${process.env.NODE_ENV}");`, type: 'text/javascript' },
     ],
     __dangerouslyDisableSanitizers: ["script"],
   },

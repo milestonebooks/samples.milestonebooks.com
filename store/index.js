@@ -12,11 +12,12 @@ export const state = () => ({
   item:     '',
   type:     'items', // 'items' | 'audio'
   samples:  [],
-  currentIndex: null,
   firstId:  '',
   lastId:   '',
+  currentIndex:  null,
+  currentWScale: 1,
 
-  direction: 'ltr', // 'ltr' | 'rtl' // TODO: implement 'ttb'
+  direction: 'ltr', // 'ltr' | 'rtl'
 
   isCompactList: true,
   isCompactListTitles: false,
@@ -34,7 +35,9 @@ export const state = () => ({
   hasZoom:    false,
   isZooming:  false,
 
-  scrollbarWidth: 0,
+  scrollbarWidth: 0, // 17px in many/(all?) desktop browsers
+
+  maxHRatio:  null, // tallest (height / width) slide image
 
   alerts: [],
 
@@ -98,8 +101,8 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setImageLoaded(state, {i, dpi}) {
-    state.samples[i].image.loaded[dpi] = true;
+  setImageLoaded(state, {i, dpi, loaded = true}) {
+    state.samples[i].image.loaded[dpi] = loaded;
   }, //setImageLoaded()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -107,6 +110,12 @@ export const mutations = {
   setAlert(state, {msg}) {
     state.alerts.push(msg);
   }, // setAlert()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  setSampleImageWScale(state, {i, wScale}) {
+    if (state.samples[i].image) state.samples[i].image.wScale = wScale;
+  }, // setSampleImageWScale()
 
   //--------------------------------------------------------------------------------------------------------------------
 

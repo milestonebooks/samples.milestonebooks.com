@@ -1,12 +1,10 @@
 <template>
-  <aside class="alerts" :data-length="s.alerts.length">
-    <div v-for="alert in s.alerts" class="alert">{{alert}}</div>
-  </aside>
+  <a class="btn-opt revert" @click="revert">
+      Revert to classic viewer
+  </a>
 </template>
 
 <script>
-
-// TODO: convert alerts component to handle multi-purpose notices (alerts and tips)
 
 export default {
 
@@ -16,6 +14,13 @@ export default {
     s() {
       return this.$store.state;
     },
+
+    btnRulerPath() {
+      // <https://codepen.io/livelysalt/pen/Emwzdj>
+      return 'M2,8 h24 v12 h-24 v-12' +
+        'h2 v10 h2 v-2 h1 v2 h2 v-4 h1 v4 h2 v-2 h1 v2 h2 v-4 h1 v4 h2 v-2 h1 v2 h2 v-4 h1 v4 h2' +
+        'v-8 h-22';
+    },
   }, // computed {}
 
   //====================================================================================================================
@@ -23,6 +28,11 @@ export default {
   methods: {
 
     //------------------------------------------------------------------------------------------------------------------
+
+    revert() {
+      if (window.ga) window.ga('send', 'event', 'version', 'old');
+      window.location = `${window.location.pathname}?ver=old`;
+    }, // toggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -36,37 +46,23 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-.alerts {
-  z-index: $layer-alerts;
-  pointer-events: none; // continue to allow interaction
+.btn-opt.revert {
+  cursor: pointer;
+  z-index: $layer-the-nav - 1;
+  right: 1em;
+  top: auto;
+  bottom: 1em;
+  width: auto;
+  height: auto;
   position: fixed;
-  left: 0;
-  top: 0;
-  height: 0;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  @include short-transition;
-}
-.alerts:not([data-length="0"]) {
-  height: 100%;
-}
+  color: blue;
+  padding: 0.5em;
+  background: white;
+  border: 1px solid gray;
 
-.alert {
-  position: relative;
-  align-self: center;
-  box-sizing: border-box;
-  margin: .5em;
-  border: 1px solid $alert-color;
-  box-shadow: 0 .25em 1em #999;
-  background-color: $alert-bg-color;
-  font-size: 2rem;
-  padding: .5em;
-  min-width: 10em;
-  max-width: 30em;
-  @include short-transition;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 </style>
