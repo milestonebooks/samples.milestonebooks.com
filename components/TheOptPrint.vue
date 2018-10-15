@@ -88,12 +88,12 @@ export default {
 .the-opt-print {
   z-index: $layer-the-nav - 1;
   top: 1em !important;
-  left: (1em + $unit + 1em) !important;
+  right: (1em + $unit + 1em) !important;
   width: $unit;
 
   @media screen and (max-width: 350px) {
     top: (1em + $unit + 1em) !important;
-    left: 1em !important;
+    right: 1em !important;
   }
 }
 

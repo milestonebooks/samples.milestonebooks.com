@@ -54,7 +54,7 @@ export default {
 .the-opt-rulers {
   z-index: $layer-the-nav - 1;
   top: 1em;
-  left: 1em;
+  right: 1em;
   width: $unit;
 }
 
