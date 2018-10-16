@@ -992,7 +992,7 @@ $radius-lg: $radius * 2;
     pointer-events: none;
     opacity: .75;
     position: fixed;
-    left: 1em + ($unit / 2);
+    left: calc(100% - (1em + (#{$unit} / 2)));
     top:  1em + ($unit / 2);
     width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
     transform-origin: 0 0;
