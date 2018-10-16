@@ -58,11 +58,6 @@ module.exports = {
       }
     },
 
-    // optimizes js and css bundles
-    vendor: [
-      'axios',
-    ],
-
     extractCSS: true,
   },
 
