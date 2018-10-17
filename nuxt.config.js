@@ -59,6 +59,7 @@ module.exports = {
     },
 
     extractCSS: true,
+    optimizeCSS: false,
   },
 
   generate: {
