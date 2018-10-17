@@ -1,6 +1,6 @@
 module.exports = {
   env: {
-    tracking: process.env.NODE_ENV === 'production' // TODO check to see if this is `true` on generate
+    tracking: (process.env.NODE_ENV === 'production'),
   },
 
   // headers of the page

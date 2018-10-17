@@ -42,7 +42,7 @@ export default {
     TheSlider,
     TheOptRulers,
     TheOptPrint,
-    TheOptRevert,
+    TheOptRevert, // TODO: temporary
     TheNav,
     ThePlayer,
   },
