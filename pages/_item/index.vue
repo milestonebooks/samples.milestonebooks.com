@@ -304,7 +304,7 @@ main {
   }
 }
 
-main:not(.is-init) {
+main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;
 }
