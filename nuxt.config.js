@@ -59,7 +59,18 @@ module.exports = {
     },
 
     extractCSS: true,
+    // disable these css optimizations to avoid corrupting data-uri svgs (see TheSlider.vue)
     optimizeCSS: false,
+    postcss: {
+      plugins: {
+        cssnano: {
+          preset: [
+            'default', {
+              svgo: false,
+            }]
+        },
+      }
+    }
   },
 
   generate: {
