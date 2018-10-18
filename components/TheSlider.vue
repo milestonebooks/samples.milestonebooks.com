@@ -910,7 +910,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "../assets/settings.scss";
 
 $frame-ruler-inch: 80px;
@@ -1303,45 +1303,46 @@ $radius-lg: $radius * 2;
     }
 
   } // .slide
-} // .slider
 
-.sidebar {
-  z-index: $layer-buttons;
-  height: 8em;
-  @include short-transition;
-
-  &.disabled {
-    pointer-events: none;
-    opacity: 0 !important;
-  }
-
-  @at-root
-  [data-dir="ltr"] &.prev,
-  [data-dir="rtl"] &.next {
-    left: 0;
-    border-radius: 0 $radius-lg $radius-lg 0;
-  }
-
-  @at-root
-  [data-dir="ltr"] &.next,
-  [data-dir="rtl"] &.prev {
-    right: 0;
-    border-radius: $radius-lg 0 0 $radius-lg;
-    svg {
-      transform: translate(-50%, -50%) rotate(180deg);
-    }
-  }
-
-  .btn {
-    width: 100%;
-    height: 100%;
+  .sidebar {
+    z-index: $layer-buttons;
+    height: 8em;
     @include short-transition;
 
-    svg {
-      width: 3em;
-      height: 6em;
+    &.disabled {
+      pointer-events: none;
+      opacity: 0 !important;
     }
-  }
-}
+
+    @at-root
+    [data-dir="ltr"] &.prev,
+    [data-dir="rtl"] &.next {
+      left: 0;
+      border-radius: 0 $radius-lg $radius-lg 0;
+    }
+
+    @at-root
+    [data-dir="ltr"] &.next,
+    [data-dir="rtl"] &.prev {
+      right: 0;
+      border-radius: $radius-lg 0 0 $radius-lg;
+      svg {
+        transform: translate(-50%, -50%) rotate(180deg);
+      }
+    }
+
+    .btn {
+      width: 100%;
+      height: 100%;
+      @include short-transition;
+
+      svg {
+        width: 3em;
+        height: 6em;
+      }
+    }
+  } // .sidebar
+
+} // .slider
 
 </style>

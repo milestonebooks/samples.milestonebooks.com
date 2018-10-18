@@ -14,6 +14,8 @@
 
     <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
+    <!--TheContext /-->
+
   </main>
 </template>
 
@@ -23,6 +25,7 @@ import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
+import TheContext   from '~/components/TheContext';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
@@ -43,6 +46,7 @@ export default {
     TheOptRulers,
     TheOptPrint,
     TheOptRevert, // TODO: temporary
+    TheContext,
     TheNav,
     ThePlayer,
   },
@@ -172,6 +176,7 @@ export default {
         title:     d.title,
         item:      this.$route.params.item,
         type:      d.type,
+        img:       d.img || '',
         direction: d.direction || 'ltr',
         hasRulers: d.type !== 'audio',
         hasZoom:   d.hasZoom  || false,

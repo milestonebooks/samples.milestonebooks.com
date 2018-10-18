@@ -393,9 +393,9 @@ export default {
 
   .is-list-shown & {
     margin: -.5 * $unit;
-    border-radius: 0; //$radius $radius 0 0;
+    border-radius: 0;
     box-shadow: $list-shadow;
-    transform: translate(0%, 0%) scale(1); // translate(0%, 0%) ensures expected transition when removing .is-list-shown
+    transform: translate(0%, 0%) scale(1) !important; // translate(0%, 0%) ensures expected transition when removing .is-list-shown
   }
 }
 
