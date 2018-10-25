@@ -733,15 +733,17 @@ export default {
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      const xScroll = el.scrollLeft; // window.scrollX;
-      const yScroll = el.scrollTop;  // window.scrollY;
+      const isScrollWindow = true;
+
+      const xScroll = (isScrollWindow ? window.scrollX : el.scrollLeft);
+      const yScroll = (isScrollWindow ? window.scrollY : el.scrollTop);
 
       // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
-        const yOffset = $slide.position().top;// $slide.offset().top;
+        const yOffset = $slide.offset().top;
         const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
         const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
@@ -755,10 +757,13 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
-        // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
-        //window.scroll(xScrollTo, yScrollTo);
-        el.scrollLeft = xScrollTo;
-        el.scrollTop  = yScrollTo;
+        if (isScrollWindow) {
+          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
+          window.scroll(xScrollTo, yScrollTo);
+        } else {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop  = yScrollTo;
+        }
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
         const xScrollAdj = el.scrollLeft - xScrollTo;
@@ -809,11 +814,11 @@ export default {
       // zoom out
       } else {
         const xOffset = $slide.offset().left;
-        const yOffset = $slide.position().top;  // $slide.offset().top;
+        const yOffset = $slide.offset().top;
         const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
-        const xDiff = Math.round((w * elX * dpiDiff) - (/*xOffset -*/ $slideZoom.offset().left));
-        const yDiff = Math.round((h * elY * dpiDiff) - (/*yOffset -*/ $slideZoom.offset().top));
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - $slideZoom.offset().left));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - $slideZoom.offset().top));
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
@@ -870,8 +875,8 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const xScrollTo = Math.max(el.scrollLeft - $frame.offset().left, 0);
-        const yScrollTo = Math.max(el.scrollTop  - $frame.offset().top,  0);
+        const xScrollTo = Math.max((isScrollWindow ? window.scrollX : el.scrollLeft) - $frame.offset().left, 0);
+        const yScrollTo = Math.max((isScrollWindow ? window.scrollY : el.scrollTop ) - $frame.offset().top,  0);
 
         $slider.addClass('no-transition');
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
@@ -879,9 +884,12 @@ export default {
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
         this.autosize({resize:true});
-        //window.scroll(xScrollTo, yScrollTo);
-        el.scrollLeft = xScrollTo;
-        el.scrollTop  = yScrollTo;
+        if (isScrollWindow) {
+          window.scroll(xScrollTo, yScrollTo);
+        } else {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop = yScrollTo;
+        }
 
         this.forceRepaint();
         $slider.removeClass('no-transition');
