@@ -399,10 +399,16 @@ export default {
         let wScale = 1;
 
         if (w > this.windowWidth) {
-          const windowHRatio = document.documentElement.clientHeight / this.windowWidth;
+          // if zoomed in, default slides should not count h scrollbar
+          const windowHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ?  window.innerHeight : document.documentElement.clientHeight) / this.windowWidth;
           const slideHRatio = h / w;
 
           wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
+
+          // if in the gap between toggling v scrollbar, expand to contain
+          if (w * wScale < this.windowWidth && h * wScale < window.innerHeight) {
+            wScale = Math.min(this.windowWidth / w, window.innerHeight / h);
+          }
 
           w = Math.round(w * wScale);
           h = Math.floor(h * wScale);
@@ -738,8 +744,11 @@ export default {
         const yOffset = $slide.offset().top;
         const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
 
+        // TODO:
         const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
         const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
+
+        console.log('zoomIn:', 'scale:', this.s.currentWScale, 'yDiff:',yDiff);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
