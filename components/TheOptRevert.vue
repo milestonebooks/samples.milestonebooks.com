@@ -32,6 +32,7 @@ export default {
 @import "../assets/settings.scss";
 
 .btn-opt.revert {
+  position: absolute;
   cursor: pointer;
   z-index: $layer-the-nav - 1;
   right: 1em;
@@ -39,7 +40,6 @@ export default {
   bottom: 1em;
   width: auto;
   height: auto;
-  position: fixed;
   color: blue;
   padding: 0.5em;
   background: white;

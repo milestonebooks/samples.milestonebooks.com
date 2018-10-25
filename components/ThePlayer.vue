@@ -1,5 +1,5 @@
 <template>
-  <aside :class="['audio-player sidebar bottom h', uiClass]">
+  <aside class="audio-player sidebar bottom h" :class="uiClass">
 
     <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
@@ -282,7 +282,7 @@ export default {
 
   @include below-sheet-music-min {
     width: 100%;
-    border-radius: 0;
+    border-radius: 0 !important;
   }
 }
 
