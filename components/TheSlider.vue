@@ -403,7 +403,8 @@ export default {
         let wScale = 1;
 
         if (w > this.windowWidth) {
-          const windowHRatio = document.documentElement.clientHeight / this.windowWidth;
+          // if zoomed in, default slides should not count h scrollbar
+          const windowHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ?  window.innerHeight : document.documentElement.clientHeight) / this.windowWidth;
           const slideHRatio = h / w;
 
           wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
