@@ -742,13 +742,10 @@ export default {
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
         const yOffset = $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
-        // TODO:
-        const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
-        const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
-
-        console.log('zoomIn:', 'scale:', this.s.currentWScale, 'yDiff:',yDiff);
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
