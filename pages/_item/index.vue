@@ -2,17 +2,19 @@
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <TheAlerts />
 
-    <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
+    <article class="the-item shellX" :class="itemShellClass">
+      <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <TheOptRulers v-if="s.hasRulers" />
+      <TheOptRulers v-if="s.hasRulers" />
 
-    <TheOptPrint v-if="s.hasPrint" />
+      <TheOptPrint v-if="s.hasPrint" />
 
-    <TheOptRevert v-if="s.type === 'items'" />
+      <TheNav v-if="s.samples.length > 1" />
 
-    <TheNav v-if="s.samples.length > 1" />
+      <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
-    <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+      <TheOptRevert v-if="s.type === 'items'" />
+    </article>
 
     <!--TheContext /-->
 
@@ -57,6 +59,10 @@ export default {
     return {
       title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
 
+      bodyAttrs: {
+        class: (this.s.showContext ? 'show-context' : '')
+      },
+
       link: [
         // audio speaker favicon
         this.s.type !== 'audio' ? {} :
@@ -78,7 +84,7 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data`;
+    const url = `${store.state.urlBase}${params.item}/?action=Data${document.cookie.match(/dev=true/) ? '&dev=true' : ''}`;
 
     try {
       const res = await axios.get(url);
@@ -111,6 +117,13 @@ export default {
         'show-rulers': this.s.hasRulers && this.s.showRulers,
         'is-printing': this.s.isPrinting,
         'show-title':  true,
+      }
+    },
+
+    itemShellClass() {
+      return {
+        'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
+        'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
       }
     },
 
@@ -160,23 +173,16 @@ export default {
     async initSamplesData() {
       const d = this.data;
       const samples = d.samples;
+      const series  = d.series;
 
-      let maxHRatio = null;
-
-      // create object to monitor loaded state
-      for (const i of samples) {
-        if (!i.image) continue;
-        i.image.loaded = {};
-        i.image.hRatio = i.image.h / i.image.w;
-        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
-      }
+      const {maxHRatio} = this.initImagesData(samples);
+      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series);
 
       this.set({
         isInit:    true,
         title:     d.title,
         item:      this.$route.params.item,
         type:      d.type,
-        img:       d.img || '',
         direction: d.direction || 'ltr',
         hasRulers: d.type !== 'audio',
         hasZoom:   d.hasZoom  || false,
@@ -185,12 +191,34 @@ export default {
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
         maxHRatio: maxHRatio,
+        context: {
+          currentIndex: series.findIndex(s => s.item === this.$route.params.item),
+          series:       series,
+          maxHRatio:    maxHRatioSeries,
+        }
       });
 
       console.timeEnd('index');
 
       this.update();
     }, // initSamplesData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    initImagesData(arr) {
+      let maxHRatio = null;
+
+      for (const i of arr) {
+        if (!i.image) continue;
+        i.image.loaded = {}; // create object to monitor loaded state
+        i.image.hRatio = i.image.h / i.image.w;
+        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
+      }
+
+      return {
+        maxHRatio,
+      };
+    }, // initImagesData()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -314,8 +342,11 @@ main:not(.is-init):not(.error) {
   opacity: 0;
 }
 
-.glue {
-  white-space: nowrap;
+.shell {
+  position: absolute;
+  width: 100%; // % instead of vw to avoid potential h scrollbar
+  height: 100vh;
+  overflow: auto;
 }
 
 </style>

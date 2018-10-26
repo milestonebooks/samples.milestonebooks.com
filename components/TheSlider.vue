@@ -1,5 +1,5 @@
 <template>
-  <article :class="sliderClass" :aria-grabbed="isGrabbing" :data-debug="debug">
+  <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing" :data-debug="debug">
 
     <div class="frame-masks">
       <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
@@ -84,9 +84,9 @@ export default {
       isScrolling:  null,
       noTransition: true,
       dpiImages:    settings.DPI_DEFAULT,
-      availHeight:  document.documentElement.clientHeight,
-      availWidth:   document.documentElement.clientWidth,
       windowWidth:  window.innerWidth,
+      availWidth:   document.documentElement.clientWidth,
+      availHeight:  document.documentElement.clientHeight,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
@@ -124,8 +124,7 @@ export default {
 
     sliderClass() {
       return {
-        'slider': true,
-        'is-init': this.isInit,
+        'is-init':  this.isInit,
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
@@ -228,7 +227,7 @@ export default {
           });
         }, {
           // root: use viewport instead of <div.frame> Chrome uses element net margin (negative margins are subtracted) for boundary instead of width/height like Firefox
-          //root: window.$(`.frame.dpi${dpi}`)[0],
+          //root: window.$(`.the-item .frame.dpi${dpi}`)[0],
           rootMargin: '100px',
         });
 
@@ -261,11 +260,11 @@ export default {
 
       // use 80-dpi image as scaled background until 120-dpi image loads
       if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
-        window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+        window.$(`.the-item .frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
       if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
-        window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
+        window.$(`.the-item .frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
       }
     }, // onImageLoaded()
 
@@ -273,15 +272,15 @@ export default {
 
     onImageLoadError(i, dpi) {
       this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
-      window.$(`.frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
+      window.$(`.the-item .frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
     }, // onImageLoadError()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
+      this.windowWidth = window.innerWidth;
       this.availWidth  = document.documentElement.clientWidth;
       this.availHeight = document.documentElement.clientHeight;
-      this.windowWidth = window.innerWidth;
 
       // delay autosize() until above settings are propagated in layout
 
@@ -301,12 +300,12 @@ export default {
       if (!dpi) dpi = this.s.dpi;
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
-      // this ensure the current image loads first, which is useful when scrolling past many slides via the nav list
+      // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
       if (this.s.samples[this.currentIndex].image) {
-        this.preloadImage(window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
+        this.preloadImage(window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
       }
 
-      const $slider = window.$('.slider');
+      const $slider = window.$('.the-item .slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${index}"]`);
@@ -342,16 +341,16 @@ export default {
 
         if (dpi === this.s.dpi) {
           $slider.css({
-            height: `${frameHeight}px`,
             width:  `${frameWidth}px`,
+            height: `${frameHeight}px`,
           });
-          window.$('.frame-mask.end').css({width: `${xMargin}px`});
-          window.$('.frame-mask.side').css({height: `${yMargin}px`});
+          window.$('.the-item .frame-mask.end').css({width: `${xMargin}px`});
+          window.$('.the-item .frame-mask.side').css({height: `${yMargin}px`});
         }
 
         $frame.css({
-          height: `${frameHeight}px`,
           width:  `${frameWidth}px`,
+          height: `${frameHeight}px`,
           left:            `${ xMargin}px`,
           'margin-left':   `${-xMargin}px`,
           'padding-left':  `${ xMargin}px`,
@@ -485,7 +484,7 @@ export default {
 
       if (!this.isScrolling) {
         this.isGrabbing = true;
-        window.$('.slider').addClass('no-transition'); // TODO
+        window.$('.the-item .slider').addClass('no-transition'); // TODO
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
         const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
@@ -517,7 +516,7 @@ export default {
 
       this.isGrabbing = false;
 
-      window.$('.slider').removeClass('no-transition');
+      window.$('.the-item .slider').removeClass('no-transition');
 
       // decide what the interaction means
       let action = 'click';
@@ -526,7 +525,7 @@ export default {
       const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
 
-      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+      const slideWidth = window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
       if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
@@ -720,15 +719,17 @@ export default {
 
       const index = this.currentIndex;
 
-      const $el        = window.$('.slider');
-      const $frame     = $el.find('.frame.dpi80');
-      const $frameZoom = $el.find('.frame.dpi120');
+      const $el        = window.$('.the-item');
+      const el         = $el[0];
+      const $slider    = $el.find('.slider');
+      const $frame     = $slider.find('.frame.dpi80');
+      const $frameZoom = $slider.find('.frame.dpi120');
       const $slide     = $frame.find(`[data-index="${index}"]`);
       const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
-      const $rulers    = $el.find('.frame-rulers');
+      const $rulers    = $slider.find('.frame-rulers');
 
       // ensure no transitions are in effect to delay prep layout
-      $el.addClass('no-transition');
+      $slider.addClass('no-transition');
 
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
@@ -783,7 +784,7 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
         $rulers.css({transform: ''});
 
@@ -797,12 +798,12 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        $el.addClass('no-transition');
+        $slider.addClass('no-transition');
         $frame.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
 
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
 
       // zoom out
       } else {
@@ -855,7 +856,7 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
         $rulers.css({transform: `scale(${this.s.currentWScale})`});
 
@@ -871,7 +872,7 @@ export default {
         const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
         const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
 
-        $el.addClass('no-transition');
+        $slider.addClass('no-transition');
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
@@ -880,7 +881,7 @@ export default {
         window.scroll(xScrollTo, yScrollTo);
 
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
       } // zoom out
 
       this.set({isZooming:false});
@@ -916,7 +917,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import "../assets/settings.scss";
 
 $frame-ruler-inch: 80px;
@@ -1198,12 +1199,12 @@ $radius-lg: $radius * 2;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
-    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
+    @at-root .has-zoom[data-dpi="80"] .the-item .slider:not([aria-grabbed]) .slide.current,
     .has-zoom[data-dpi="80"] .frame-rulers .target {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
+    @at-root .has-zoom[data-dpi="120"] .the-item .slider:not([aria-grabbed]) .slide.current,
     .has-zoom[data-dpi="120"] .frame-rulers .target {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
@@ -1221,7 +1222,9 @@ $radius-lg: $radius * 2;
 
     // TODO style slide height
     @include below-sheet-music-min {
-      height: calc(100vh - 10em);
+      @at-root .the-item & {
+        height: calc(100vh - 10em);
+      }
     }
 
     &::before {
@@ -1271,7 +1274,7 @@ $radius-lg: $radius * 2;
       height: 100%;
       overflow: hidden;
 
-      &::after {
+      @at-root .the-item &::after {
         pointer-events: none;
         @include absolute-center(x);
         content: 'COPYRIGHTED MATERIAL';
