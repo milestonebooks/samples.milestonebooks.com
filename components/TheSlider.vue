@@ -2,11 +2,11 @@
   <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing" :data-debug="debug">
 
     <div class="frame-masks">
-      <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
+      <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
     <transition name="rulers">
-      <div :class="'frame-rulers' + (isUseTouch ? ' touch' : '')" v-show="s.showRulers">
+      <div :class="`frame-rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
         <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
       </div>
     </transition>
@@ -438,11 +438,11 @@ export default {
       this.debug = (e.touches && e.touches.length ? `${window.$('[name="viewport"]').attr('content')}@${e.touches.length}` : null);
       //*/
 
-      const $frame = window.$(touches.target).closest('.frame');
+      const $slides = window.$(touches.target).closest('.slides');
 
-      if (!$frame.length) return;
+      if (!$slides.length) return;
 
-      const el = $frame[0];
+      const el = $slides.closest('.frame')[0];
 
       el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
@@ -451,7 +451,7 @@ export default {
 
       const {pageX, pageY} = touches;
 
-      const {xOffset, yOffset} = this.getSlideOffset($frame.find(`[data-index="${this.currentIndex}"]`));
+      const {xOffset, yOffset} = this.getSlideOffset($slides.find(`[data-index="${this.currentIndex}"]`));
 
       this.touchPoint = {
         time: Date.now(),
@@ -1159,14 +1159,6 @@ $radius-lg: $radius * 2;
       opacity: 0;
       font-size: #{$zoom-ratio}em;
     }
-
-    cursor: grab;
-    #{$isIE} & {
-      cursor: move;
-    }
-    @at-root [aria-grabbed]#{&} {
-      cursor: grabbing;
-    }
   } // .frame
 
   .slides {
@@ -1182,6 +1174,14 @@ $radius-lg: $radius * 2;
     @at-root .no-transition#{&} {
       transition: none;
     }
+
+    cursor: grab;
+    #{$isIE} & {
+      cursor: move;
+    }
+    @at-root [aria-grabbed]#{&} {
+      cursor: grabbing;
+    }
   }
 
   .slide {
@@ -1191,6 +1191,19 @@ $radius-lg: $radius * 2;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
+
+    @at-root
+    [data-dir="ltr"] &:first-child,
+    [data-dir="rtl"] &:last-child {
+      margin-left: 0;
+    }
+
+    @at-root
+    [data-dir="ltr"] &:last-child,
+    [data-dir="rtl"] &:first-child {
+      margin-right: 0;
+    }
+
     @include short-transition;
 
     &:not(.current) {
