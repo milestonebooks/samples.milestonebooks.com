@@ -74,6 +74,7 @@ export default {
   props: {
     samples: Array,
     currentIndex: Number,
+    isDebugShell: Boolean,
   },
 
   data () {
@@ -734,15 +735,18 @@ export default {
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      const xScroll = window.scrollX;
-      const yScroll = window.scrollY;
+      const isScrollShell = this.isDebugShell;
+
+      const xScroll = (isScrollShell ? el.scrollLeft : window.scrollX);
+      const yScroll = (isScrollShell ? el.scrollTop  : window.scrollY);
 
       // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+      const offset = (isScrollShell ? 'position' : 'offset');
 
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
-        const yOffset = $slide.offset().top;
+        const yOffset = $slide[offset]().top;
         const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
         const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
@@ -756,22 +760,34 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
-        // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
-        window.scroll(xScrollTo, yScrollTo);
+        if (isScrollShell) {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop  = yScrollTo;
+        } else {
+          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
+          window.scroll(xScrollTo, yScrollTo);
+        }
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
-        const xScrollAdj = window.scrollX - xScrollTo;
-        const yScrollAdj = window.scrollY - yScrollTo;
+        const xScrollAdj = (isScrollShell ? el.scrollLeft : window.scrollX) - xScrollTo;
+        const yScrollAdj = (isScrollShell ? el.scrollTop  : window.scrollY) - yScrollTo;
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
+
+        //*
+        console.log(`zoomIn... (shell:${isScrollShell}) offset:${$slide[offset]().top} (o:${$slide.offset().top} p:${$slide.position().top}) yDiff:${yDiff} yScrollAdj:${yScrollAdj}`);
+        $frameZoom.css({'z-index':1, opacity:.5});
+        let abort = false;
+        if (abort) return;
+        //*/
 
         // adjust non-zoom frame to original screen position
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
         const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width() - $slide.width());
-        const yPct = ($slide.offset().top - $slideZoom.offset().top) / ($slideZoom.height() - $slide.height());
+        const yPct = ($slide[offset]().top - $slideZoom[offset]().top) / ($slideZoom.height() - $slide.height());
 
         const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
         const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
@@ -869,8 +885,8 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
-        const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
+        const xScrollTo = Math.max((isScrollShell ? el.scrollLeft : window.scrollX) - $frame.offset().left, 0);
+        const yScrollTo = Math.max((isScrollShell ? el.scrollTop  : window.scrollY) - $frame.offset().top,  0);
 
         $slider.addClass('no-transition');
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
@@ -878,7 +894,13 @@ export default {
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
         this.autosize({resize:true});
-        window.scroll(xScrollTo, yScrollTo);
+
+        if (isScrollShell) {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop  = yScrollTo;
+        } else {
+          window.scroll(xScrollTo, yScrollTo);
+        }
 
         this.forceRepaint();
         $slider.removeClass('no-transition');

@@ -2,7 +2,9 @@
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <TheAlerts />
 
-    <article class="the-item shellX" :class="itemShellClass">
+    <input type="checkbox" id="isDebugShell" v-model="isDebugShell" title="isDebugShell" />
+
+    <article class="the-item shellX" :class="itemShellClass" :isDebugShell="isDebugShell">
       <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <TheOptRulers v-if="s.hasRulers" />
@@ -77,6 +79,7 @@ export default {
 
   data () {
     return {
+      isDebugShell:false,
     };
   }, // data()
 
@@ -122,6 +125,7 @@ export default {
 
     itemShellClass() {
       return {
+        'shell': this.isDebugShell,
         'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
         'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
       }
@@ -291,6 +295,14 @@ export default {
 @import "../../assets/settings.scss";
 
 @include base_styling;
+
+// TODO:
+#isDebugShell {
+  position: fixed;
+  left: 0;
+  z-index: 999;
+}
+///////////////////////////////////
 
 main {
   user-select: none; // expected to be more hindrance than useful in this app
