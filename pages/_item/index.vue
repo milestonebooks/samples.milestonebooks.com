@@ -1,5 +1,7 @@
 <template>
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
+    <TheDebugger v-if="s._showDebugger" />
+
     <TheAlerts />
 
     <article class="the-item shell" :class="itemShellClass">
@@ -24,6 +26,7 @@
 </template>
 
 <script>
+import TheDebugger  from '~/components/TheDebugger';
 import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
@@ -45,6 +48,7 @@ import axios from 'axios';
 
 export default {
   components: {
+    TheDebugger,
     TheAlerts,
     TheSlider,
     TheOptRulers,
@@ -296,7 +300,9 @@ export default {
 @include base_styling;
 
 main {
-  user-select: none; // expected to be more hindrance than useful in this app
+  &:not(.error) {
+    user-select: none; // expected to be more hindrance than useful in this app
+  }
   position: relative;
   display: flex;
   flex-direction: column;
