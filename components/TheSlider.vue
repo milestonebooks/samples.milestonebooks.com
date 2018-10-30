@@ -377,6 +377,11 @@ export default {
       const needsScrollbarX = width  > window.innerWidth  || (width  > this.availWidth  && height > window.innerHeight);
       const needsScrollbarY = height > window.innerHeight || (height > this.availHeight && width  > window.innerWidth);
 
+      this.set({
+        hasScrollbarX: needsScrollbarX,
+        hasScrollbarY: needsScrollbarY,
+      });
+
       return {
         hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
         needsScrollbar: {x:needsScrollbarX, y:needsScrollbarY},
@@ -744,7 +749,7 @@ export default {
 
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
-        const yOffset = Math.max($slide.offset().top, $slide.position().top);
+        const yOffset = Math.max($slide.offset().top, 0);
         const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
         const xDiff = Math.round((w * elX * dpiDiff) - xOffset);

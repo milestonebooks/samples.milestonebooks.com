@@ -12,7 +12,7 @@ export const state = () => ({
 
   item:       '',
   type:       'items', // 'items' | 'audio'
-  img:        '',
+  context:    {},
   samples:    [],
   firstId:    '',
   lastId:     '',
@@ -24,20 +24,25 @@ export const state = () => ({
   isCompactList: true,
   isCompactListTitles: false,
 
-  hasRulers:  false,
-  showRulers: false,
+  showContext:  false,
+  isContexting: false,
 
-  hasPrint:   false,
-  isPrinting: false,
+  hasRulers:    false,
+  showRulers:   false,
 
-  hasTouch:   false,
-  hasMouse:   false,
+  hasPrint:     false,
+  isPrinting:   false,
 
-  dpi:        80, // 80 | 120
-  hasZoom:    false,
-  isZooming:  false,
+  hasTouch:     false,
+  hasMouse:     false,
+
+  dpi:          80, // 80 | 120
+  hasZoom:      false,
+  isZooming:    false,
 
   scrollbarWidth: 0, // 17px in many/(all?) desktop browsers
+  hasScrollbarX:  false,
+  hasScrollbarY:  false,
 
   maxHRatio:  null, // tallest (height / width) slide image
 

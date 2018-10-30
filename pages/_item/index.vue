@@ -2,7 +2,7 @@
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <TheAlerts />
 
-    <article class="the-item shell" :class="itemShellClass">
+    <article class="the-item shellX" :class="itemShellClass">
       <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <TheOptRulers v-if="s.hasRulers" />
