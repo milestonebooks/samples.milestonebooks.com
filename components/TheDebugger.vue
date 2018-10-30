@@ -40,7 +40,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "../assets/settings.scss";
 
 #debugger {
@@ -60,5 +60,15 @@ export default {
   }
 }
 
+[data-debug]::before {
+  content: attr(data-debug);
+  z-index: 9;
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  font-size: 2em;
+  outline: 1px solid red;
+  background: hsla(0,100%,100%,.75);
+}
 
 </style>

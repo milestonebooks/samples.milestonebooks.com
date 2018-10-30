@@ -4,7 +4,7 @@ import storage from '../plugins/storage';
 
 export const state = () => ({
   _showDebugger: (process.env.NODE_ENV === 'development'),
-  _debugCheck: null,
+  _debugCheck:   null,
 
   isInit:     false,
   title:      'Samples',

@@ -821,7 +821,7 @@ export default {
       } else {
         const xOffset = el.scrollLeft + $slide.offset().left;
         const yOffset = el.scrollTop  + $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
         const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - (el.scrollLeft + $slideZoom.offset().left)));
         const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - (el.scrollTop  + $slideZoom.offset().top)));
@@ -960,19 +960,6 @@ $radius-lg: $radius * 2;
   &.no-transition {
     transition: none;
   }
-
-  //* TODO: debugging
-  &[data-debug]::before {
-    content: attr(data-debug);
-    z-index: 9;
-    position: fixed;
-    top: 4rem;
-    right: 0;
-    font-size: 2em;
-    outline: 1px solid red;
-    background: hsla(0,100%,100%,.75);
-  }
-  //*/
 
   .frame-mask {
     position: fixed;

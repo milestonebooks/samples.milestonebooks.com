@@ -4,7 +4,7 @@
 
     <TheAlerts />
 
-    <article class="the-item shell" :class="itemShellClass">
+    <article class="the-item shell_TODO" :class="itemShellClass">
       <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
@@ -129,6 +129,7 @@ export default {
 
     itemShellClass() {
       return {
+        'shell': this.s._debugCheck, // TODO
         'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
         'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
       }
