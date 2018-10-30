@@ -38,6 +38,7 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 //----------------------------------------------------------------------------------------------------------------------
 // timings
 $transition-time-ms: 250ms; // => TRANSITION_TIME_MS
+$transition-time-context-ms: 400ms; // => TRANSITION_TIME_CONTEXT_MS
 
 //----------------------------------------------------------------------------------------------------------------------
 // selectors
@@ -180,6 +181,13 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
       height: $unit;
       width: $unit;
       border-radius: 50%;
+    }
+
+    @at-root
+    .the-item-view &.floating,
+    .the-item-view &.h,
+    .the-item-view &.v {
+      position: absolute;
     }
 
     * {

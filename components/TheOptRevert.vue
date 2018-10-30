@@ -32,18 +32,18 @@ export default {
 @import "../assets/settings.scss";
 
 .btn-opt.revert {
-  cursor: pointer;
+  position: absolute;
   z-index: $layer-the-nav - 1;
   right: 1em;
   top: auto;
   bottom: 1em;
   width: auto;
   height: auto;
-  position: fixed;
-  color: blue;
   padding: 0.5em;
-  background: white;
   border: 1px solid gray;
+  background: white;
+  color: blue;
+  cursor: pointer;
 
   &:hover {
     text-decoration: underline;

@@ -2,21 +2,23 @@
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
     <TheAlerts />
 
-    <article class="the-item shellX" :class="itemShellClass">
+    <article class="the-item shell" :class="itemShellClass">
       <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-      <TheOptRulers v-if="s.hasRulers" />
+      <div class="the-item-view">
+        <TheOptRulers v-if="s.hasRulers" />
 
-      <TheOptPrint v-if="s.hasPrint" />
+        <TheOptPrint v-if="s.hasPrint" />
 
-      <TheNav v-if="s.samples.length > 1" />
+        <TheNav v-if="s.samples.length > 1" />
 
-      <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
-      <TheOptRevert v-if="s.type === 'items'" />
+        <TheOptRevert v-if="s.type === 'items'" />
+      </div>
     </article>
 
-    <!--TheContext /-->
+    <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
 
   </main>
 </template>
@@ -116,6 +118,7 @@ export default {
         'has-print':   this.s.hasPrint,
         'show-rulers': this.s.hasRulers && this.s.showRulers,
         'is-printing': this.s.isPrinting,
+        'show-context': this.s.showContext,
         'show-title':  true,
       }
     },
@@ -347,6 +350,26 @@ main:not(.is-init):not(.error) {
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
   overflow: auto;
+}
+
+.the-item-view {
+  position: fixed;
+  z-index: 2; // above <.frame-mask> layer
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  @include short-transition;
+
+  > * {
+    pointer-events: all;
+  }
+
+  @at-root .has-scrollbar-y & {
+    width: calc(100% - 17px);
+  }
+  @at-root .has-scrollbar-x & {
+    height: calc(100% - 17px);
+  }
 }
 
 </style>
