@@ -3,6 +3,9 @@ import storage from '../plugins/storage';
 //======================================================================================================================
 
 export const state = () => ({
+  _showDebugger: (process.env.NODE_ENV === 'development'),
+  _debugCheck:   null,
+
   isInit:     false,
   title:      'Samples',
   gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
@@ -10,18 +13,17 @@ export const state = () => ({
   urlBase:    'https://samples.milestonebooks.com/',
   urlBaseImg: 'https://www.milestonebooks.com/img/',
 
-  item:       '',
-  type:       'items', // 'items' | 'audio'
-  context:    {},
-  samples:    [],
-  firstId:    '',
-  lastId:     '',
+  item:          '',
+  type:          'items', // 'items' | 'audio'
+  context:       {},
+  samples:       [],
+  firstId:       '',
+  lastId:        '',
   currentIndex:  null,
   currentWScale: 1,
+  direction:    'ltr', // 'ltr' | 'rtl'
 
-  direction:  'ltr', // 'ltr' | 'rtl'
-
-  isCompactList: true,
+  isCompactList:       true,
   isCompactListTitles: false,
 
   showContext:  false,

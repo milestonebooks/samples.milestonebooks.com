@@ -1,8 +1,10 @@
 <template>
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
+    <TheDebugger v-if="s._showDebugger" />
+
     <TheAlerts />
 
-    <article class="the-item the-item-shell" :class="itemShellClass">
+    <article class="the-item shell" :class="itemShellClass">
       <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
@@ -24,6 +26,7 @@
 </template>
 
 <script>
+import TheDebugger  from '~/components/TheDebugger';
 import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
@@ -45,6 +48,7 @@ import axios from 'axios';
 
 export default {
   components: {
+    TheDebugger,
     TheAlerts,
     TheSlider,
     TheOptRulers,
@@ -111,15 +115,15 @@ export default {
 
     mainClass() {
       return {
-        'is-init':      this.s.isInit,
-        'has-touch':    this.s.hasTouch,
-        'has-mouse':    this.s.hasMouse,
-        'has-zoom':     this.s.hasZoom,
-        'has-print':    this.s.hasPrint,
-        'show-rulers':  this.s.hasRulers && this.s.showRulers,
-        'is-printing':  this.s.isPrinting,
+        'is-init':     this.s.isInit,
+        'has-touch':   this.s.hasTouch,
+        'has-mouse':   this.s.hasMouse,
+        'has-zoom':    this.s.hasZoom,
+        'has-print':   this.s.hasPrint,
+        'show-rulers': this.s.hasRulers && this.s.showRulers,
+        'is-printing': this.s.isPrinting,
         'show-context': this.s.showContext,
-        'show-title':   true,
+        'show-title':  true,
       }
     },
 
@@ -296,7 +300,9 @@ export default {
 @include base_styling;
 
 main {
-  user-select: none; // expected to be more hindrance than useful in this app
+  &:not(.error) {
+    user-select: none; // expected to be more hindrance than useful in this app
+  }
   position: relative;
   display: flex;
   flex-direction: column;
@@ -345,11 +351,7 @@ main:not(.is-init):not(.error) {
   opacity: 0;
 }
 
-.glue {
-  white-space: nowrap;
-}
-
-.the-item-shell {
+.shell {
   position: absolute;
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
@@ -362,6 +364,7 @@ main:not(.is-init):not(.error) {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  @include short-transition;
 
   > * {
     pointer-events: all;

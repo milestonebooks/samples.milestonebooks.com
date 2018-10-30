@@ -1,12 +1,10 @@
 <template>
-  <aside class="alerts" :data-length="s.alerts.length">
-    <div v-for="alert in s.alerts" class="alert">{{alert}}</div>
+  <aside id="debugger">
+    <input class="check" type="checkbox" v-model="_debugCheck" />
   </aside>
 </template>
 
 <script>
-
-// TODO: convert alerts component to handle multi-purpose notices (alerts and tips)
 
 export default {
 
@@ -16,6 +14,15 @@ export default {
     s() {
       return this.$store.state;
     },
+
+    _debugCheck: {
+      get() {
+        return this.s._debugCheck;
+      },
+      set(_debugCheck) {
+        this.$store.commit('set',{_debugCheck});
+      }
+    }
   }, // computed {}
 
   //====================================================================================================================
@@ -33,40 +40,35 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "../assets/settings.scss";
 
-.alerts {
-  z-index: $layer-the-alerts;
-  pointer-events: none; // continue to allow interaction
+#debugger {
+  z-index: $layer-the-debugger;
   position: fixed;
-  left: 0;
-  top: 0;
-  height: 0;
   width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  @include short-transition;
-}
-.alerts:not([data-length="0"]) {
-  height: 100%;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+
+  > * {
+    pointer-events: all;
+  }
+
+  .check {
+    position: absolute;
+  }
 }
 
-.alert {
-  position: relative;
-  align-self: center;
-  box-sizing: border-box;
-  margin: .5em;
-  border: 1px solid $alert-color;
-  box-shadow: 0 .25em 1em #999;
-  background-color: $alert-bg-color;
-  font-size: 2rem;
-  padding: .5em;
-  min-width: 10em;
-  max-width: 30em;
-  @include short-transition;
+[data-debug]::before {
+  content: attr(data-debug);
+  z-index: 9;
+  position: fixed;
+  top: 4rem;
+  right: 0;
+  font-size: 2em;
+  outline: 1px solid red;
+  background: hsla(0,100%,100%,.75);
 }
 
 </style>

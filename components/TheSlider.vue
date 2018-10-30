@@ -409,6 +409,11 @@ export default {
 
           wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
 
+          // if in the gap between toggling v scrollbar, expand to contain
+          if (w * wScale < this.windowWidth && h * wScale < window.innerHeight) {
+            wScale = Math.min(this.windowWidth / w, window.innerHeight / h);
+          }
+
           w = Math.round(w * wScale);
           h = Math.floor(h * wScale);
         }
@@ -734,21 +739,21 @@ export default {
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      const isScrollWindow = true;
+      const isScrollShell = $el.hasClass('shell'); // TODO
 
-      const xScroll = (isScrollWindow ? window.scrollX : el.scrollLeft);
-      const yScroll = (isScrollWindow ? window.scrollY : el.scrollTop);
+      const xScroll = (isScrollShell ? el.scrollLeft : window.scrollX);
+      const yScroll = (isScrollShell ? el.scrollTop  : window.scrollY);
 
       // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
-        const yOffset = $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const yOffset = Math.max($slide.offset().top, 0);
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
-        const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
-        const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -758,17 +763,17 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
-        if (isScrollWindow) {
-          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
-          window.scroll(xScrollTo, yScrollTo);
-        } else {
+        if (isScrollShell) {
           el.scrollLeft = xScrollTo;
           el.scrollTop  = yScrollTo;
+        } else {
+          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
+          window.scroll(xScrollTo, yScrollTo);
         }
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
-        const xScrollAdj = el.scrollLeft - xScrollTo;
-        const yScrollAdj = el.scrollTop  - yScrollTo;
+        const xScrollAdj = (isScrollShell ? el.scrollLeft : window.scrollX) - xScrollTo;
+        const yScrollAdj = (isScrollShell ? el.scrollTop  : window.scrollY) - yScrollTo;
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
@@ -814,12 +819,12 @@ export default {
 
       // zoom out
       } else {
-        const xOffset = $slide.offset().left;
-        const yOffset = $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const xOffset = el.scrollLeft + $slide.offset().left;
+        const yOffset = el.scrollTop  + $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
-        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - $slideZoom.offset().left));
-        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - $slideZoom.offset().top));
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - (el.scrollLeft + $slideZoom.offset().left)));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - (el.scrollTop  + $slideZoom.offset().top)));
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
@@ -849,11 +854,11 @@ export default {
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
-        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
-        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
+        const xPct = ((el.scrollLeft + $slide.offset().left) - (el.scrollLeft + $slideZoom.offset().left)) / ($slideZoom.width()  - $slide.width());
+        const yPct = ((el.scrollTop  + $slide.offset().top)  - (el.scrollTop  + $slideZoom.offset().top))  / ($slideZoom.height() - $slide.height());
 
-        const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
-        const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
+        const xOrigin = ((el.scrollLeft + $slideZoom.offset().left) + ($slideZoom.width()  * xPct)) / $frameZoom.width();
+        const yOrigin = ((el.scrollTop  + $slideZoom.offset().top)  + ($slideZoom.height() * yPct)) / $frameZoom.height();
         const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frameZoom.css({'z-index': 1});
@@ -876,8 +881,8 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const xScrollTo = Math.max((isScrollWindow ? window.scrollX : el.scrollLeft) - $frame.offset().left, 0);
-        const yScrollTo = Math.max((isScrollWindow ? window.scrollY : el.scrollTop ) - $frame.offset().top,  0);
+        const xScrollTo = Math.max((isScrollShell ? el.scrollLeft : window.scrollX) - (el.scrollLeft + $frame.offset().left), 0);
+        const yScrollTo = Math.max((isScrollShell ? el.scrollTop  : window.scrollY) - (el.scrollTop  + $frame.offset().top),  0);
 
         $slider.addClass('no-transition');
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
@@ -885,11 +890,12 @@ export default {
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
         this.autosize({resize:true});
-        if (isScrollWindow) {
-          window.scroll(xScrollTo, yScrollTo);
-        } else {
+
+        if (isScrollShell) {
           el.scrollLeft = xScrollTo;
-          el.scrollTop = yScrollTo;
+          el.scrollTop  = yScrollTo;
+        } else {
+          window.scroll(xScrollTo, yScrollTo);
         }
 
         this.forceRepaint();
@@ -929,7 +935,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import "../assets/settings.scss";
 
 $frame-ruler-inch: 80px;
@@ -954,19 +960,6 @@ $radius-lg: $radius * 2;
   &.no-transition {
     transition: none;
   }
-
-  //*
-  &[data-debug]::before {
-    content: attr(data-debug);
-    z-index: 9;
-    position: fixed;
-    top: 4rem;
-    right: 0;
-    font-size: 2em;
-    outline: 1px solid red;
-    background: hsla(0,100%,100%,.75);
-  }
-  //*/
 
   .frame-mask {
     position: fixed;
@@ -1203,6 +1196,19 @@ $radius-lg: $radius * 2;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
+
+    @at-root
+    [data-dir="ltr"] &:first-child,
+    [data-dir="rtl"] &:last-child {
+      margin-left: 0;
+    }
+
+    @at-root
+    [data-dir="ltr"] &:last-child,
+    [data-dir="rtl"] &:first-child {
+      margin-right: 0;
+    }
+
     @include short-transition;
 
     &:not(.current) {
