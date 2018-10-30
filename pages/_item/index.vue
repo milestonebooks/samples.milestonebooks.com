@@ -356,6 +356,7 @@ main:not(.is-init):not(.error) {
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
   overflow: auto;
+  @include short-transition;
 }
 
 .the-item-view {

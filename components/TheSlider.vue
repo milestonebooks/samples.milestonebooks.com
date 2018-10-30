@@ -393,7 +393,7 @@ export default {
     sampleStyleSize(sample, dpi) {
       const xdpi = sample.image ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
+      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(window.innerWidth, document.documentElement.clientHeight);
       let h = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
@@ -404,7 +404,7 @@ export default {
 
         if (w > this.windowWidth) {
           // if zoomed in, default slides should not count h scrollbar
-          const windowHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ?  window.innerHeight : document.documentElement.clientHeight) / this.windowWidth;
+          const windowHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ? window.innerHeight : document.documentElement.clientHeight) / this.windowWidth;
           const slideHRatio = h / w;
 
           wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
@@ -699,6 +699,10 @@ export default {
 
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+
+      /*
+      console.log(`getSlideOffset... xOffset:${xOffset} = ($slide:${$slide.offsetRect()[metric]} $slides:${$slides.offsetRect()[metric]})`);
+      //*/
 
       // [2018-07] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;

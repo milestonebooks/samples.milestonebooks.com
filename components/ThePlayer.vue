@@ -272,6 +272,21 @@ export default {
 };
 </script>
 
+<style lang="scss">
+@import "../assets/settings.scss";
+
+[data-type="audio"] .shell.has-scrollbar-y {
+  @include below-sheet-music-min {
+    height: calc(100vh - 4em);
+
+    .audio-player {
+      width: calc(100% + 17px);
+      margin-left: (17px / 2);
+    }
+  }
+}
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
