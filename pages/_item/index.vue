@@ -361,7 +361,7 @@ main:not(.is-init):not(.error) {
 
 .the-item-view {
   position: fixed;
-  z-index: 2; // above <.frame-mask> layer
+  z-index: $layer-item-view; // above <.frame-mask> layer
   width: 100%;
   height: 100%;
   pointer-events: none;
