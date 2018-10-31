@@ -1,12 +1,12 @@
 <template>
-  <article :class="sliderClass" :aria-grabbed="isGrabbing" :data-debug="debug">
+  <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing" :data-debug="debug">
 
     <div class="frame-masks">
-      <div v-for="cls of ['end prev','end next','side above','side below']" :class="`frame-mask ${cls}`"></div>
+      <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
     <transition name="rulers">
-      <div :class="'frame-rulers' + (isUseTouch ? ' touch' : '')" v-show="s.showRulers">
+      <div :class="`frame-rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
         <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
       </div>
     </transition>
@@ -84,9 +84,9 @@ export default {
       isScrolling:  null,
       noTransition: true,
       dpiImages:    settings.DPI_DEFAULT,
-      availHeight:  document.documentElement.clientHeight,
-      availWidth:   document.documentElement.clientWidth,
       windowWidth:  window.innerWidth,
+      availWidth:   document.documentElement.clientWidth,
+      availHeight:  document.documentElement.clientHeight,
       slideHeight:  null,
       slideWidth:   null,
       groupHeight:  null,
@@ -124,8 +124,7 @@ export default {
 
     sliderClass() {
       return {
-        'slider': true,
-        'is-init': this.isInit,
+        'is-init':  this.isInit,
         'no-transition': this.noTransition,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
@@ -228,7 +227,7 @@ export default {
           });
         }, {
           // root: use viewport instead of <div.frame> Chrome uses element net margin (negative margins are subtracted) for boundary instead of width/height like Firefox
-          //root: window.$(`.frame.dpi${dpi}`)[0],
+          //root: window.$(`.the-item .frame.dpi${dpi}`)[0],
           rootMargin: '100px',
         });
 
@@ -261,11 +260,11 @@ export default {
 
       // use 80-dpi image as scaled background until 120-dpi image loads
       if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
-        window.$(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+        window.$(`.the-item .frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
       if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
-        window.$(`.frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
+        window.$(`.the-item .frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
       }
     }, // onImageLoaded()
 
@@ -273,15 +272,15 @@ export default {
 
     onImageLoadError(i, dpi) {
       this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
-      window.$(`.frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
+      window.$(`.the-item .frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
     }, // onImageLoadError()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
+      this.windowWidth = window.innerWidth;
       this.availWidth  = document.documentElement.clientWidth;
       this.availHeight = document.documentElement.clientHeight;
-      this.windowWidth = window.innerWidth;
 
       // delay autosize() until above settings are propagated in layout
 
@@ -301,12 +300,12 @@ export default {
       if (!dpi) dpi = this.s.dpi;
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
-      // this ensure the current image loads first, which is useful when scrolling past many slides via the nav list
+      // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
       if (this.s.samples[this.currentIndex].image) {
-        this.preloadImage(window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
+        this.preloadImage(window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
       }
 
-      const $slider = window.$('.slider');
+      const $slider = window.$('.the-item .slider');
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${index}"]`);
@@ -342,16 +341,16 @@ export default {
 
         if (dpi === this.s.dpi) {
           $slider.css({
-            height: `${frameHeight}px`,
             width:  `${frameWidth}px`,
+            height: `${frameHeight}px`,
           });
-          window.$('.frame-mask.end').css({width: `${xMargin}px`});
-          window.$('.frame-mask.side').css({height: `${yMargin}px`});
+          window.$('.the-item .frame-mask.end').css({width: `${xMargin}px`});
+          window.$('.the-item .frame-mask.side').css({height: `${yMargin}px`});
         }
 
         $frame.css({
-          height: `${frameHeight}px`,
           width:  `${frameWidth}px`,
+          height: `${frameHeight}px`,
           left:            `${ xMargin}px`,
           'margin-left':   `${-xMargin}px`,
           'padding-left':  `${ xMargin}px`,
@@ -378,6 +377,11 @@ export default {
       const needsScrollbarX = width  > window.innerWidth  || (width  > this.availWidth  && height > window.innerHeight);
       const needsScrollbarY = height > window.innerHeight || (height > this.availHeight && width  > window.innerWidth);
 
+      this.set({
+        hasScrollbarX: needsScrollbarX,
+        hasScrollbarY: needsScrollbarY,
+      });
+
       return {
         hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
         needsScrollbar: {x:needsScrollbarX, y:needsScrollbarY},
@@ -389,7 +393,7 @@ export default {
     sampleStyleSize(sample, dpi) {
       const xdpi = sample.image ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(this.availWidth, document.documentElement.clientHeight);
+      let w = sample.image ? Math.ceil(sample.image.w * xdpi) : Math.min(window.innerWidth, document.documentElement.clientHeight);
       let h = sample.image ? Math.ceil(sample.image.h * xdpi) : null;
 
       if (sample.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
@@ -399,10 +403,16 @@ export default {
         let wScale = 1;
 
         if (w > this.windowWidth) {
-          const windowHRatio = document.documentElement.clientHeight / this.windowWidth;
+          // if zoomed in, default slides should not count h scrollbar
+          const windowHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ? window.innerHeight : document.documentElement.clientHeight) / this.windowWidth;
           const slideHRatio = h / w;
 
           wScale = (this.windowWidth - (slideHRatio > windowHRatio ? this.s.scrollbarWidth : 0)) / w;
+
+          // if in the gap between toggling v scrollbar, expand to contain
+          if (w * wScale < this.windowWidth && h * wScale < window.innerHeight) {
+            wScale = Math.min(this.windowWidth / w, window.innerHeight / h);
+          }
 
           w = Math.round(w * wScale);
           h = Math.floor(h * wScale);
@@ -433,11 +443,11 @@ export default {
       this.debug = (e.touches && e.touches.length ? `${window.$('[name="viewport"]').attr('content')}@${e.touches.length}` : null);
       //*/
 
-      const $frame = window.$(touches.target).closest('.frame');
+      const $slides = window.$(touches.target).closest('.slides');
 
-      if (!$frame.length) return;
+      if (!$slides.length) return;
 
-      const el = $frame[0];
+      const el = $slides.closest('.frame')[0];
 
       el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
@@ -446,7 +456,7 @@ export default {
 
       const {pageX, pageY} = touches;
 
-      const {xOffset, yOffset} = this.getSlideOffset($frame.find(`[data-index="${this.currentIndex}"]`));
+      const {xOffset, yOffset} = this.getSlideOffset($slides.find(`[data-index="${this.currentIndex}"]`));
 
       this.touchPoint = {
         time: Date.now(),
@@ -479,7 +489,7 @@ export default {
 
       if (!this.isScrolling) {
         this.isGrabbing = true;
-        window.$('.slider').addClass('no-transition'); // TODO
+        window.$('.the-item .slider').addClass('no-transition'); // TODO
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
         const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
@@ -511,7 +521,7 @@ export default {
 
       this.isGrabbing = false;
 
-      window.$('.slider').removeClass('no-transition');
+      window.$('.the-item .slider').removeClass('no-transition');
 
       // decide what the interaction means
       let action = 'click';
@@ -520,7 +530,7 @@ export default {
       const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
 
-      const slideWidth = window.$(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+      const slideWidth = window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
       if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
@@ -690,6 +700,10 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
+      /*
+      console.log(`getSlideOffset... xOffset:${xOffset} = ($slide:${$slide.offsetRect()[metric]} $slides:${$slides.offsetRect()[metric]})`);
+      //*/
+
       // [2018-07] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
 
@@ -714,32 +728,36 @@ export default {
 
       const index = this.currentIndex;
 
-      const $el        = window.$('.slider');
-      const $frame     = $el.find('.frame.dpi80');
-      const $frameZoom = $el.find('.frame.dpi120');
+      const $el        = window.$('.the-item');
+      const el         = $el[0];
+      const $slider    = $el.find('.slider');
+      const $frame     = $slider.find('.frame.dpi80');
+      const $frameZoom = $slider.find('.frame.dpi120');
       const $slide     = $frame.find(`[data-index="${index}"]`);
       const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
-      const $rulers    = $el.find('.frame-rulers');
+      const $rulers    = $slider.find('.frame-rulers');
 
       // ensure no transitions are in effect to delay prep layout
-      $el.addClass('no-transition');
+      $slider.addClass('no-transition');
 
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      const xScroll = window.scrollX;
-      const yScroll = window.scrollY;
+      const isScrollShell = $el.hasClass('shell'); // TODO
+
+      const xScroll = (isScrollShell ? el.scrollLeft : window.scrollX);
+      const yScroll = (isScrollShell ? el.scrollTop  : window.scrollY);
 
       // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
         const xOffset = $slide.offsetRect()[metric];
-        const yOffset = $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const yOffset = Math.max($slide.offset().top, 0);
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
-        const xDiff = Math.round((w * elX * dpiDiff) - xOffset) / this.s.currentWScale;
-        const yDiff = Math.round((h * elY * dpiDiff) - yOffset) / this.s.currentWScale;
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
 
         const xScrollTo = xScroll + xDiff;
         const yScrollTo = yScroll + yDiff;
@@ -749,12 +767,17 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
-        // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
-        window.scroll(xScrollTo, yScrollTo);
+        if (isScrollShell) {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop  = yScrollTo;
+        } else {
+          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
+          window.scroll(xScrollTo, yScrollTo);
+        }
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
-        const xScrollAdj = window.scrollX - xScrollTo;
-        const yScrollAdj = window.scrollY - yScrollTo;
+        const xScrollAdj = (isScrollShell ? el.scrollLeft : window.scrollX) - xScrollTo;
+        const yScrollAdj = (isScrollShell ? el.scrollTop  : window.scrollY) - yScrollTo;
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
@@ -777,7 +800,7 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
         $rulers.css({transform: ''});
 
@@ -791,21 +814,21 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        $el.addClass('no-transition');
+        $slider.addClass('no-transition');
         $frame.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
 
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
 
       // zoom out
       } else {
-        const xOffset = $slide.offset().left;
-        const yOffset = $slide.offset().top;
-        const dpiDiff = settings.DPI_ZOOM - settings.DPI_DEFAULT;
+        const xOffset = el.scrollLeft + $slide.offset().left;
+        const yOffset = el.scrollTop  + $slide.offset().top;
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
-        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - $slideZoom.offset().left));
-        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - $slideZoom.offset().top));
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - (el.scrollLeft + $slideZoom.offset().left)));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - (el.scrollTop  + $slideZoom.offset().top)));
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
@@ -835,11 +858,11 @@ export default {
         $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
 
         // find origin that will scale to final position
-        const xPct = ($slide.offset().left - $slideZoom.offset().left) / ($slideZoom.width()  - $slide.width());
-        const yPct = ($slide.offset().top  - $slideZoom.offset().top)  / ($slideZoom.height() - $slide.height());
+        const xPct = ((el.scrollLeft + $slide.offset().left) - (el.scrollLeft + $slideZoom.offset().left)) / ($slideZoom.width()  - $slide.width());
+        const yPct = ((el.scrollTop  + $slide.offset().top)  - (el.scrollTop  + $slideZoom.offset().top))  / ($slideZoom.height() - $slide.height());
 
-        const xOrigin = ($slideZoom.offset().left + ($slideZoom.width()  * xPct)) / $frameZoom.width();
-        const yOrigin = ($slideZoom.offset().top  + ($slideZoom.height() * yPct)) / $frameZoom.height();
+        const xOrigin = ((el.scrollLeft + $slideZoom.offset().left) + ($slideZoom.width()  * xPct)) / $frameZoom.width();
+        const yOrigin = ((el.scrollTop  + $slideZoom.offset().top)  + ($slideZoom.height() * yPct)) / $frameZoom.height();
         const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
 
         $frameZoom.css({'z-index': 1});
@@ -849,7 +872,7 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
         $rulers.css({transform: `scale(${this.s.currentWScale})`});
 
@@ -862,19 +885,25 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const xScrollTo = Math.max(window.scrollX - $frame.offset().left, 0);
-        const yScrollTo = Math.max(window.scrollY - $frame.offset().top,  0);
+        const xScrollTo = Math.max((isScrollShell ? el.scrollLeft : window.scrollX) - (el.scrollLeft + $frame.offset().left), 0);
+        const yScrollTo = Math.max((isScrollShell ? el.scrollTop  : window.scrollY) - (el.scrollTop  + $frame.offset().top),  0);
 
-        $el.addClass('no-transition');
+        $slider.addClass('no-transition');
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
         this.autosize({resize:true});
-        window.scroll(xScrollTo, yScrollTo);
+
+        if (isScrollShell) {
+          el.scrollLeft = xScrollTo;
+          el.scrollTop  = yScrollTo;
+        } else {
+          window.scroll(xScrollTo, yScrollTo);
+        }
 
         this.forceRepaint();
-        $el.removeClass('no-transition');
+        $slider.removeClass('no-transition');
       } // zoom out
 
       this.set({isZooming:false});
@@ -936,19 +965,6 @@ $radius-lg: $radius * 2;
     transition: none;
   }
 
-  //*
-  &[data-debug]::before {
-    content: attr(data-debug);
-    z-index: 9;
-    position: fixed;
-    top: 4rem;
-    right: 0;
-    font-size: 2em;
-    outline: 1px solid red;
-    background: hsla(0,100%,100%,.75);
-  }
-  //*/
-
   .frame-mask {
     position: fixed;
     z-index: $layer-frame-mask;
@@ -994,6 +1010,9 @@ $radius-lg: $radius * 2;
     opacity: .75;
     position: fixed;
     left: calc(100% - (1em + (#{$unit} / 2)));
+    @at-root .shell.has-scrollbar-y & {
+      left: calc(100% - 17px - (1em + (#{$unit} / 2)));
+    }
     top:  1em + ($unit / 2);
     width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
     transform-origin: 0 0;
@@ -1152,14 +1171,6 @@ $radius-lg: $radius * 2;
       opacity: 0;
       font-size: #{$zoom-ratio}em;
     }
-
-    cursor: grab;
-    #{$isIE} & {
-      cursor: move;
-    }
-    @at-root [aria-grabbed]#{&} {
-      cursor: grabbing;
-    }
   } // .frame
 
   .slides {
@@ -1175,6 +1186,14 @@ $radius-lg: $radius * 2;
     @at-root .no-transition#{&} {
       transition: none;
     }
+
+    cursor: grab;
+    #{$isIE} & {
+      cursor: move;
+    }
+    @at-root [aria-grabbed]#{&} {
+      cursor: grabbing;
+    }
   }
 
   .slide {
@@ -1184,6 +1203,19 @@ $radius-lg: $radius * 2;
     text-align: center;
     background-color: white;
     margin: 0 ($unit * 1/8);
+
+    @at-root
+    [data-dir="ltr"] &:first-child,
+    [data-dir="rtl"] &:last-child {
+      margin-left: 0;
+    }
+
+    @at-root
+    [data-dir="ltr"] &:last-child,
+    [data-dir="rtl"] &:first-child {
+      margin-right: 0;
+    }
+
     @include short-transition;
 
     &:not(.current) {
@@ -1192,12 +1224,12 @@ $radius-lg: $radius * 2;
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
-    @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
+    @at-root .has-zoom[data-dpi="80"] .the-item .slider:not([aria-grabbed]) .slide.current,
     .has-zoom[data-dpi="80"] .frame-rulers .target {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
-    @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
+    @at-root .has-zoom[data-dpi="120"] .the-item .slider:not([aria-grabbed]) .slide.current,
     .has-zoom[data-dpi="120"] .frame-rulers .target {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
@@ -1215,7 +1247,9 @@ $radius-lg: $radius * 2;
 
     // TODO style slide height
     @include below-sheet-music-min {
-      height: calc(100vh - 10em);
+      @at-root .the-item & {
+        height: calc(100vh - 10em);
+      }
     }
 
     &::before {
@@ -1265,7 +1299,7 @@ $radius-lg: $radius * 2;
       height: 100%;
       overflow: hidden;
 
-      &::after {
+      @at-root .the-item &::after {
         pointer-events: none;
         @include absolute-center(x);
         content: 'COPYRIGHTED MATERIAL';
@@ -1303,45 +1337,46 @@ $radius-lg: $radius * 2;
     }
 
   } // .slide
-} // .slider
 
-.sidebar {
-  z-index: $layer-buttons;
-  height: 8em;
-  @include short-transition;
-
-  &.disabled {
-    pointer-events: none;
-    opacity: 0 !important;
-  }
-
-  @at-root
-  [data-dir="ltr"] &.prev,
-  [data-dir="rtl"] &.next {
-    left: 0;
-    border-radius: 0 $radius-lg $radius-lg 0;
-  }
-
-  @at-root
-  [data-dir="ltr"] &.next,
-  [data-dir="rtl"] &.prev {
-    right: 0;
-    border-radius: $radius-lg 0 0 $radius-lg;
-    svg {
-      transform: translate(-50%, -50%) rotate(180deg);
-    }
-  }
-
-  .btn {
-    width: 100%;
-    height: 100%;
+  .sidebar {
+    z-index: $layer-buttons;
+    height: 8em;
     @include short-transition;
 
-    svg {
-      width: 3em;
-      height: 6em;
+    &.disabled {
+      pointer-events: none;
+      opacity: 0 !important;
     }
-  }
-}
+
+    @at-root
+    [data-dir="ltr"] &.prev,
+    [data-dir="rtl"] &.next {
+      left: 0;
+      border-radius: 0 $radius-lg $radius-lg 0;
+    }
+
+    @at-root
+    [data-dir="ltr"] &.next,
+    [data-dir="rtl"] &.prev {
+      right: 0;
+      border-radius: $radius-lg 0 0 $radius-lg;
+      svg {
+        transform: translate(-50%, -50%) rotate(180deg);
+      }
+    }
+
+    .btn {
+      width: 100%;
+      height: 100%;
+      @include short-transition;
+
+      svg {
+        width: 3em;
+        height: 6em;
+      }
+    }
+  } // .sidebar
+
+} // .slider
 
 </style>

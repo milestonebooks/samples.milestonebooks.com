@@ -3,39 +3,48 @@ import storage from '../plugins/storage';
 //======================================================================================================================
 
 export const state = () => ({
-  isInit:   false,
-  title:    'Samples',
-  gtmID:    'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
-  psID:     '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
-  urlBase:  'https://samples.milestonebooks.com/',
+  _showDebugger: (process.env.NODE_ENV === 'development'),
+  _debugCheck:   null,
 
-  item:     '',
-  type:     'items', // 'items' | 'audio'
-  samples:  [],
-  firstId:  '',
-  lastId:   '',
+  isInit:     false,
+  title:      'Samples',
+  gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
+  psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
+  urlBase:    'https://samples.milestonebooks.com/',
+  urlBaseImg: 'https://www.milestonebooks.com/img/',
+
+  item:          '',
+  type:          'items', // 'items' | 'audio'
+  context:       {},
+  samples:       [],
+  firstId:       '',
+  lastId:        '',
   currentIndex:  null,
   currentWScale: 1,
+  direction:    'ltr', // 'ltr' | 'rtl'
 
-  direction: 'ltr', // 'ltr' | 'rtl'
-
-  isCompactList: true,
+  isCompactList:       true,
   isCompactListTitles: false,
 
-  hasRulers:  false,
-  showRulers: false,
+  showContext:  false,
+  isContexting: false,
 
-  hasPrint:   false,
-  isPrinting: false,
+  hasRulers:    false,
+  showRulers:   false,
 
-  hasTouch:   false,
-  hasMouse:   false,
+  hasPrint:     false,
+  isPrinting:   false,
 
-  dpi:        80, // 80 | 120
-  hasZoom:    false,
-  isZooming:  false,
+  hasTouch:     false,
+  hasMouse:     false,
+
+  dpi:          80, // 80 | 120
+  hasZoom:      false,
+  isZooming:    false,
 
   scrollbarWidth: 0, // 17px in many/(all?) desktop browsers
+  hasScrollbarX:  false,
+  hasScrollbarY:  false,
 
   maxHRatio:  null, // tallest (height / width) slide image
 

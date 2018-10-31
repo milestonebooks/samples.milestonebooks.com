@@ -1,6 +1,6 @@
 module.exports = {
   env: {
-    tracking: process.env.NODE_ENV === 'production' // TODO check to see if this is `true` on generate
+    tracking: (process.env.NODE_ENV === 'production'),
   },
 
   // headers of the page
@@ -18,10 +18,10 @@ module.exports = {
     script: [
       // enable IE11 access
       { src: 'https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.includes,Array.prototype.find,Array.prototype.findIndex,IntersectionObserver' },
-      // cash (4.1KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
-      //{ src: 'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },
-      //{ src: 'https://cdn.jsdelivr.net/npm/howler@2.0.12/dist/howler.min.js' },
-      { src: 'https://cdn.jsdelivr.net/combine/npm/cash-dom@1.3.7,npm/howler@2.0.12' }, // combined
+      //{ src: 'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },  // (4.1 KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
+      //{ src: 'https://cdn.jsdelivr.net/npm/howler@2.0.15/dist/howler.min.js' }, // (9.3 KB) -- sound <https://github.com/goldfire/howler.js>
+      //{ src: 'https://cdn.jsdelivr.net/npm/animejs@2.2.0/anime.min.js' },       // (6.5 KB) -- animations <http://animejs.com/documentation/> [2018-10-23] NOT USED
+      { src: 'https://cdn.jsdelivr.net/combine/npm/cash-dom@1.3.7,npm/howler@2.0.15' }, // combined
       // <http://aslanbakan.com/en/blog/browser-and-device-specific-css-styles-with-sass-and-less-mixins/>
       { hid: 'ua', innerHTML: 'document.documentElement.setAttribute("data-browser", navigator.userAgent);', type: 'text/javascript' },
       { hid: 'env', innerHTML: `document.documentElement.setAttribute("data-env", "${process.env.NODE_ENV}");`, type: 'text/javascript' },

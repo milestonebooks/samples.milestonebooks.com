@@ -1,8 +1,11 @@
 //----------------------------------------------------------------------------------------------------------------------
 // layers
-$layer-alerts: 99;
-$layer-the-nav: 90;
-$layer-title: 50;
+$layer-the-debugger: 999;
+$layer-the-alerts:  99;
+$layer-the-context: 90;
+$layer-the-nav:     80;
+$layer-title:       50;
+$layer-item-view:   10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // sizes
@@ -37,6 +40,7 @@ $list-shadow: 0 0 1em transparentize(darken($disabled-color, 75%), .5);
 //----------------------------------------------------------------------------------------------------------------------
 // timings
 $transition-time-ms: 250ms; // => TRANSITION_TIME_MS
+$transition-time-context-ms: 400ms; // => TRANSITION_TIME_CONTEXT_MS
 
 //----------------------------------------------------------------------------------------------------------------------
 // selectors
@@ -142,7 +146,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     box-sizing: border-box;
     background-color: $sidebar-bg-color;
     @include drop-shadow;
-    @include short-transition; //TODO: relocate smoothly when scrollbar visiblity changes
+    @include short-transition;
 
     &.h {
       @include absolute-center(x, fixed);
@@ -179,6 +183,13 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
       height: $unit;
       width: $unit;
       border-radius: 50%;
+    }
+
+    @at-root
+    .the-item-view &.floating,
+    .the-item-view &.h,
+    .the-item-view &.v {
+      position: absolute;
     }
 
     * {

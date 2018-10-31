@@ -3,7 +3,6 @@
 import {state} from '../store/index.js';
 
 if (process.browser && process.env.tracking) {
-
   // include Google Tag Manager
   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});let f=d.getElementsByTagName(s)[0],

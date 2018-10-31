@@ -1,5 +1,5 @@
 <template>
-  <aside :class="['audio-player sidebar bottom h', uiClass]">
+  <aside class="audio-player sidebar bottom h" :class="uiClass">
 
     <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
@@ -142,9 +142,7 @@ export default {
 
     async load(index) {
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$store.dispatch('alert', {msg:`Error loading audio [${err_code}]`});
-        // TODO: implement custom error page
-        //this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
+        this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
       });
       this.refresh();
     }, // load()
@@ -274,6 +272,21 @@ export default {
 };
 </script>
 
+<style lang="scss">
+@import "../assets/settings.scss";
+
+[data-type="audio"] .shell.has-scrollbar-y {
+  @include below-sheet-music-min {
+    height: calc(100vh - 4em);
+
+    .audio-player {
+      width: calc(100% + 17px);
+      margin-left: (17px / 2);
+    }
+  }
+}
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
@@ -284,7 +297,7 @@ export default {
 
   @include below-sheet-music-min {
     width: 100%;
-    border-radius: 0;
+    border-radius: 0 !important;
   }
 }
 

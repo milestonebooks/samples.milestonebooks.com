@@ -1,28 +1,38 @@
 <template>
   <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
+    <TheDebugger v-if="s._showDebugger" />
+
     <TheAlerts />
 
-    <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
+    <article class="the-item shell" :class="itemShellClass">
+      <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
 
-    <TheOptRulers v-if="s.hasRulers" />
+      <div class="the-item-view">
+        <TheOptRulers v-if="s.hasRulers" />
 
-    <TheOptPrint v-if="s.hasPrint" />
+        <TheOptPrint v-if="s.hasPrint" />
 
-    <TheOptRevert v-if="s.type === 'items'" />
+        <TheNav v-if="s.samples.length > 1" />
 
-    <TheNav v-if="s.samples.length > 1" />
+        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
 
-    <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+        <TheOptRevert v-if="s.type === 'items'" />
+      </div>
+    </article>
+
+    <TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" />
 
   </main>
 </template>
 
 <script>
+import TheDebugger  from '~/components/TheDebugger';
 import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
+import TheContext   from '~/components/TheContext';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
@@ -38,11 +48,13 @@ import axios from 'axios';
 
 export default {
   components: {
+    TheDebugger,
     TheAlerts,
     TheSlider,
     TheOptRulers,
     TheOptPrint,
-    TheOptRevert,
+    TheOptRevert, // TODO: temporary
+    TheContext,
     TheNav,
     ThePlayer,
   },
@@ -52,6 +64,10 @@ export default {
 
     return {
       title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
+
+      bodyAttrs: {
+        class: (this.s.showContext ? 'show-context' : '')
+      },
 
       link: [
         // audio speaker favicon
@@ -74,7 +90,7 @@ export default {
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data`;
+    const url = `${store.state.urlBase}${params.item}/?action=Data${document.cookie.match(/dev=true/) ? '&dev=true' : ''}`;
 
     try {
       const res = await axios.get(url);
@@ -106,7 +122,15 @@ export default {
         'has-print':   this.s.hasPrint,
         'show-rulers': this.s.hasRulers && this.s.showRulers,
         'is-printing': this.s.isPrinting,
+        'show-context': this.s.showContext,
         'show-title':  true,
+      }
+    },
+
+    itemShellClass() {
+      return {
+        'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
+        'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
       }
     },
 
@@ -156,16 +180,10 @@ export default {
     async initSamplesData() {
       const d = this.data;
       const samples = d.samples;
+      const series  = d.series;
 
-      let maxHRatio = null;
-
-      // create object to monitor loaded state
-      for (const i of samples) {
-        if (!i.image) continue;
-        i.image.loaded = {};
-        i.image.hRatio = i.image.h / i.image.w;
-        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
-      }
+      const {maxHRatio} = this.initImagesData(samples);
+      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series);
 
       this.set({
         isInit:    true,
@@ -180,12 +198,34 @@ export default {
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
         maxHRatio: maxHRatio,
+        context: {
+          currentIndex: series.findIndex(s => s.item === this.$route.params.item),
+          series:       series,
+          maxHRatio:    maxHRatioSeries,
+        }
       });
 
       console.timeEnd('index');
 
       this.update();
     }, // initSamplesData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    initImagesData(arr) {
+      let maxHRatio = null;
+
+      for (const i of arr) {
+        if (!i.image) continue;
+        i.image.loaded = {}; // create object to monitor loaded state
+        i.image.hRatio = i.image.h / i.image.w;
+        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
+      }
+
+      return {
+        maxHRatio,
+      };
+    }, // initImagesData()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -260,7 +300,9 @@ export default {
 @include base_styling;
 
 main {
-  user-select: none; // expected to be more hindrance than useful in this app
+  &:not(.error) {
+    user-select: none; // expected to be more hindrance than useful in this app
+  }
   position: relative;
   display: flex;
   flex-direction: column;
@@ -304,13 +346,37 @@ main {
   }
 }
 
-main:not(.is-init) {
+main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;
 }
 
-.glue {
-  white-space: nowrap;
+.shell {
+  position: absolute;
+  width: 100%; // % instead of vw to avoid potential h scrollbar
+  height: 100vh;
+  overflow: auto;
+  @include short-transition;
+}
+
+.the-item-view {
+  position: fixed;
+  z-index: $layer-item-view; // above <.frame-mask> layer
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  @include short-transition;
+
+  > * {
+    pointer-events: all;
+  }
+
+  @at-root .has-scrollbar-y & {
+    width: calc(100% - 17px);
+  }
+  @at-root .has-scrollbar-x & {
+    height: calc(100% - 17px);
+  }
 }
 
 </style>

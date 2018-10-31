@@ -15,7 +15,7 @@
       </nuxt-link>
     </div>
 
-    <nav ref="list" :class="['list', listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
+    <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="pages">
         <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
             @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
@@ -148,7 +148,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     showList() {
-      this.$refs.list.style.display = 'block';
       this.isListShown = true;
       this.updateListFocus();
     }, // showList()
@@ -159,9 +158,6 @@ export default {
       if (!this.isListShown) return;
 
       this.isListShown = false;
-      setTimeout(() => {
-        this.$refs.list.style.display = 'none';
-      }, settings.TRANSITION_TIME_MS);
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -347,7 +343,7 @@ export default {
 }
 
 .btn-list {
-  z-index: 1; /* raise above .list shadow */
+  z-index: 1; // raise above .list shadow
   padding: 1em 1em 0 1em;
   transform: translateY(-50%) translateY(-.5em) translateX(-50%); // sequential because IE11 doesn't support calc() here
 
@@ -393,14 +389,14 @@ export default {
 
   .is-list-shown & {
     margin: -.5 * $unit;
-    border-radius: 0; //$radius $radius 0 0;
+    border-radius: 0;
     box-shadow: $list-shadow;
-    transform: translate(0%, 0%) scale(1); // translate(0%, 0%) ensures expected transition when removing .is-list-shown
+    transform: translate(0%, 0%) scale(1) !important; // translate(0%, 0%) ensures expected transition when removing .is-list-shown
   }
 }
 
 .list {
-  display: none;
+  //display: none;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);
@@ -413,13 +409,17 @@ export default {
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
   border-radius: $radius;
-  opacity: 0;
   overflow: auto;
   @include short-transition;
+
+  opacity: 0;
+  transform-origin: center -4em;
+  transform: translateX(-50%) scale(0);
 
   &:not([aria-hidden]) {
     pointer-events: all;
     opacity: 1;
+    transform: translateX(-50%) scale(1);
   }
 
   * {

@@ -8,21 +8,6 @@
 
 export default {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  computed: {
-    s() {
-      return this.$store.state;
-    },
-
-    btnRulerPath() {
-      // <https://codepen.io/livelysalt/pen/Emwzdj>
-      return 'M2,8 h24 v12 h-24 v-12' +
-        'h2 v10 h2 v-2 h1 v2 h2 v-4 h1 v4 h2 v-2 h1 v2 h2 v-4 h1 v4 h2 v-2 h1 v2 h2 v-4 h1 v4 h2' +
-        'v-8 h-22';
-    },
-  }, // computed {}
-
   //====================================================================================================================
 
   methods: {
@@ -47,18 +32,18 @@ export default {
 @import "../assets/settings.scss";
 
 .btn-opt.revert {
-  cursor: pointer;
+  position: absolute;
   z-index: $layer-the-nav - 1;
   right: 1em;
   top: auto;
   bottom: 1em;
   width: auto;
   height: auto;
-  position: fixed;
-  color: blue;
   padding: 0.5em;
-  background: white;
   border: 1px solid gray;
+  background: white;
+  color: blue;
+  cursor: pointer;
 
   &:hover {
     text-decoration: underline;
