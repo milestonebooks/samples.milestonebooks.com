@@ -1,6 +1,7 @@
 <template>
-  <aside v-if="false" :class="['the-context context-x',contextClass]" @click="toggleContext">
-    <div v-if="currentIndex !== undefined" class="slider context-y" :style="styleY">
+  <aside v-if="false /*currentIndex !== undefined*/" :class="['the-context',contextClass]" @click="toggleContext">
+
+    <div class="slider">
       <div class="frame" :style="frameStyle">
         <div class="slides">
           <section v-for="item in series" :key="item.index" :data-index="item.index"
@@ -12,6 +13,8 @@
         </div>
       </div>
     </div>
+
+    <div class="info"><div v-for="i of 20">Info</div></div>
   </aside>
 </template>
 
@@ -49,7 +52,8 @@
 
       contextClass() {
         return {
-          'is-init': this.isLoaded,
+          'is-debug': this.s._debugCheck, // TODO
+          'is-init':  this.isLoaded,
         }
       },
 
@@ -192,90 +196,90 @@
 </script>
 
 <style lang="scss" scoped>
-  @import "../assets/settings.scss";
+@import "../assets/settings.scss";
 
-  main > *:not(.the-context) {
-    @include short-transition;
+main > *:not(.the-context) {
+  @include short-transition;
 
-    @at-root .show-context & {
-      opacity: 0;
-      pointer-events: none;
-    }
-  }
-
-  #{$isIE} .the-context {
-    display: none; // [2018-10] not worth the effort
-  }
-
-  // transition timing is calibrated to produce an arc emphasizing horizontal movement 'rtl' or 'ltr' <https://uxdesign.cc/the-ultimate-guide-to-proper-use-of-animation-in-ux-10bd98614fa9>
-  .the-context {
+  @at-root .show-context & {
+    opacity: 0;
     pointer-events: none;
-    z-index: $layer-the-context;
-    position: fixed;
-    height: 100%;
+  }
+}
+
+#{$isIE} .the-context {
+  display: none; // [2018-10] not worth the effort
+}
+
+// transition timing is calibrated to produce an arc emphasizing horizontal movement 'rtl' or 'ltr' <https://uxdesign.cc/the-ultimate-guide-to-proper-use-of-animation-in-ux-10bd98614fa9>
+.the-context {
+  //pointer-events: none;
+  z-index: $layer-the-context;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+
+  &:not(.is-init) {
+    opacity: 0;
+  }
+
+  transition: all .2s ease-in-out, transform .4s ease-in-out;
+  &:not(.show) {
+    //transform: translateX(calc(-0% + 3em)); // TODO -%
+  }
+  &.hide {
+    transition: transform .3s ease-in-out;
+  }
+
+  .context-y {
+    display: flex;
     width: 100%;
+    height: 100%;
+    justify-content: center;
+    transition: all .25s ease-in-out, transform .3s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+  &.hide .context-y {
+    transition: transform .3s cubic-bezier(0.645, 0.045, 0.355, 1) .1s;
+  }
 
-    &:not(.is-init) {
-      opacity: 0;
-    }
+  &.show .slider {
+    pointer-events: all;
+  }
+  .slider {
+    overflow: visible;
+  }
 
-    transition: all .2s ease-in-out, transform .4s ease-in-out;
-    &:not(.show) {
-      transform: translateX(calc(-0% + 3em)); // TODO -%
-    }
-    &.hide {
-      transition: transform .3s ease-in-out;
-    }
+  .slides {
+    cursor: default; // TODO
+  }
 
-    .context-y {
-      display: flex;
-      width: 100%;
-      height: 100%;
-      justify-content: center;
-      transition: all .25s ease-in-out, transform .3s cubic-bezier(0.215, 0.61, 0.355, 1);
-    }
-    &.hide .context-y {
-      transition: transform .3s cubic-bezier(0.645, 0.045, 0.355, 1) .1s;
-    }
-
-    &.show .slider {
+  // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
+  // [2018-10] svg cursor only works in Chrome and Firefox
+  .slide {
+    &.current {
       pointer-events: all;
-    }
-    .slider {
-      overflow: visible;
-    }
+      cursor: pointer;
+      //box-shadow: 0 0 1em transparentize(darken($background-color, 50%), .5);
+      @include drop-shadow;
 
-    .slides {
-      cursor: default; // TODO
-    }
+      @at-root .show-context & {
+        cursor: zoom-in;
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cpath d='M 7,13 a 8 8 0 0 1 6,-6' stroke='#{$theme-color-data-uri}' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/svg%3E") 13 13, zoom-in;
+        box-shadow: 0 0 1em transparentize(darken($background-color, 25%), .5);
+        @include short-transition;
 
-    // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-    // [2018-10] svg cursor only works in Chrome and Firefox
-    .slide {
-      &.current {
-        pointer-events: all;
-        cursor: pointer;
-        //box-shadow: 0 0 1em transparentize(darken($background-color, 50%), .5);
-        @include drop-shadow;
-
-        @at-root .show-context & {
-          cursor: zoom-in;
-          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cpath d='M 7,13 a 8 8 0 0 1 6,-6' stroke='#{$theme-color-data-uri}' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/svg%3E") 13 13, zoom-in;
-          box-shadow: 0 0 1em transparentize(darken($background-color, 25%), .5);
-          @include short-transition;
-
-          &:hover {
-            box-shadow: 0 0 1.5em transparentize(darken($background-color, 50%), .5);
-          }
+        &:hover {
+          box-shadow: 0 0 1.5em transparentize(darken($background-color, 50%), .5);
         }
       }
+    }
 
-      img {
-        width: 100%;
-        height: 100%;
-        transition: all .4s ease-in-out;
-      }
-    } // .slide
-  } // .the-context
+    img {
+      width: 100%;
+      height: 100%;
+      transition: all .4s ease-in-out;
+    }
+  } // .slide
+} // .the-context
 
 </style>

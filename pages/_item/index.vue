@@ -140,8 +140,6 @@ export default {
 
   async mounted() {
     console.time('index');
-    console.time('Player');
-    console.time('Slider');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
     await this.$store.dispatch('initSettings');

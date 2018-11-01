@@ -1,15 +1,15 @@
 <template>
-  <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing" :data-debug="debug">
+  <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing">
 
     <div class="frame-masks">
       <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
-    <transition name="rulers">
-      <div :class="`frame-rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
-        <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
+    <!--transition name="rulers">
+      <div v-if="false" :class="`frame-rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
+        <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) --
       </div>
-    </transition>
+    </transition-->
 
     <div class="frame dpi80">
       <div class="slides">
@@ -78,7 +78,6 @@ export default {
 
   data () {
     return {
-      debug:        null,
       isInit:       false,
       isGrabbing:   false,
       isScrolling:  null,
@@ -151,23 +150,25 @@ export default {
       });
     },
 
-    's.showRulers'() { this.toggleRulers() },
+    //TODO: 's.showRulers'() { this.toggleRulers() },
 
-    's.currentWScale'() { this.scaleRulers() },
+    //TODO: 's.currentWScale'() { this.scaleRulers() },
 
-  },
+  }, // watch {}
 
   //====================================================================================================================
 
   mounted() {
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
+    //TODO: window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
+    /*TODO
     if (this.s.showRulers) {
       this.scaleRulers();
       this.toggleRulers();
     }
+    //*/
   },
 
   beforeDestroy () {
@@ -439,8 +440,6 @@ export default {
       const isMultiTouch = e.touches && e.touches.length > 0;
       //if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=.5, maximum-scale=2');
       if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width');
-
-      this.debug = (e.touches && e.touches.length ? `${window.$('[name="viewport"]').attr('content')}@${e.touches.length}` : null);
       //*/
 
       const $slides = window.$(touches.target).closest('.slides');
@@ -505,7 +504,6 @@ export default {
       /*
       const isMultiTouch = e.touches && e.touches.length > 1;
       if (!isMultiTouch) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1');
-      this.debug = (e.touches && e.touches.length ? e.touches.length : null);
       //*/
 
       // cleanup
@@ -570,17 +568,17 @@ export default {
     }, // onTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
-
+    /*
     toggleRulers() {
       const $rulers = window.$('.frame-rulers');
 
       if (this.s.showRulers) {
-        $rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
+        //$rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
 
         //this.$store.dispatch('alert', {msg:'drag rulers to measure in inches'});
       } else {
-        $rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
+        //$rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
         window.removeEventListener('mousemove', this.positionRulers);
 
         $rulers.css({
@@ -601,7 +599,7 @@ export default {
 
       if (!touch) this.isUseTouch = false;
 
-      if (window.$(event.target).closest('.sidebar').length) return false;
+      //if (window.$(event.target).closest('.sidebar').length) return false;
 
       window.$('.frame-rulers').css({
         left: `${x}px`,
@@ -687,6 +685,7 @@ export default {
         });
       }
     }, // scaleRulers()
+    //*/
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -735,7 +734,7 @@ export default {
       const $frameZoom = $slider.find('.frame.dpi120');
       const $slide     = $frame.find(`[data-index="${index}"]`);
       const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
-      const $rulers    = $slider.find('.frame-rulers');
+      const $rulers    = $el.find('.rulers');
 
       // ensure no transitions are in effect to delay prep layout
       $slider.addClass('no-transition');
@@ -942,12 +941,12 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
+//TODO: go
 $frame-ruler-inch: 80px;
 $frame-ruler-width-half: ($frame-ruler-width-nominal - 1) / 2;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
-$layer-frame-rulers: $layer-frame-mask + 1;
-$layer-buttons: $layer-frame-rulers + 1;
+//$layer-frame-rulers: $layer-frame-mask + 1;
 
 $radius-lg: $radius * 2;
 
@@ -1004,6 +1003,7 @@ $radius-lg: $radius * 2;
     }
   } // .frame-mask
 
+  /*
   .frame-rulers {
     z-index: $layer-frame-rulers;
     pointer-events: none;
@@ -1026,6 +1026,7 @@ $radius-lg: $radius * 2;
     @at-root .no-transition#{&} { // applied while dragging
       transition: none;
     }
+    //*/
 
     /* [2018-08-03] TODO: change to a hideable Tip component
     @at-root .show-rulers:not(.has-mouse) &::before {
@@ -1063,9 +1064,10 @@ $radius-lg: $radius * 2;
         transform: translateX(2.5em);
       }
     }
-    //*/
   }
+  //*/
 
+  /*
   .frame-ruler {
     position: absolute;
     left: $frame-ruler-width-half;
@@ -1151,6 +1153,7 @@ $radius-lg: $radius * 2;
   .frame-ruler.y.bottom {
     transform: rotate(-270deg);
   }
+  //*/
 
   .frame {
     position: absolute;
@@ -1225,12 +1228,12 @@ $radius-lg: $radius * 2;
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
     @at-root .has-zoom[data-dpi="80"] .the-item .slider:not([aria-grabbed]) .slide.current,
-    .has-zoom[data-dpi="80"] .frame-rulers .target {
+    .has-zoom[data-dpi="80"] .rulers .target {
       cursor: zoom-in;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
     }
     @at-root .has-zoom[data-dpi="120"] .the-item .slider:not([aria-grabbed]) .slide.current,
-    .has-zoom[data-dpi="120"] .frame-rulers .target {
+    .has-zoom[data-dpi="120"] .rulers .target {
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
@@ -1339,7 +1342,7 @@ $radius-lg: $radius * 2;
   } // .slide
 
   .sidebar {
-    z-index: $layer-buttons;
+    z-index: $layer-item-view + 1;
     height: 8em;
     @include short-transition;
 
