@@ -5,12 +5,6 @@
       <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
-    <!--transition name="rulers">
-      <div v-if="false" :class="`frame-rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
-        <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`frame-ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) --
-      </div>
-    </transition-->
-
     <div class="frame dpi80">
       <div class="slides">
         <section v-for="sample in samples" :key="sample.id" :data-index="sample.index"
@@ -150,25 +144,14 @@ export default {
       });
     },
 
-    //TODO: 's.showRulers'() { this.toggleRulers() },
-
-    //TODO: 's.currentWScale'() { this.scaleRulers() },
-
   }, // watch {}
 
   //====================================================================================================================
 
   mounted() {
     window.addEventListener('resize', this.onResize);
-    //TODO: window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
-    /*TODO
-    if (this.s.showRulers) {
-      this.scaleRulers();
-      this.toggleRulers();
-    }
-    //*/
   },
 
   beforeDestroy () {
@@ -337,8 +320,6 @@ export default {
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
-
-        //console.log(`autosize(${dpi}) frameWidth[${frameWidth}]`);
 
         if (dpi === this.s.dpi) {
           $slider.css({
@@ -568,126 +549,6 @@ export default {
     }, // onTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
-    /*
-    toggleRulers() {
-      const $rulers = window.$('.frame-rulers');
-
-      if (this.s.showRulers) {
-        //$rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
-        window.addEventListener('mousemove', this.positionRulers);
-
-        //this.$store.dispatch('alert', {msg:'drag rulers to measure in inches'});
-      } else {
-        //$rulers[0].removeEventListener('touchstart', this.onRulersTouchstart);
-        window.removeEventListener('mousemove', this.positionRulers);
-
-        $rulers.css({
-          left: '',
-          top:  '',
-        });
-      }
-
-    }, // toggleRulers()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    positionRulers(event, {touch = false} = {}) {
-      const {clientX:x, clientY:y} = event;
-
-      // screen out touch taps, which trigger 'mousemove' events with no movement
-      if (event.movementX !== undefined && event.movementX + event.movementY === 0) return false;
-
-      if (!touch) this.isUseTouch = false;
-
-      //if (window.$(event.target).closest('.sidebar').length) return false;
-
-      window.$('.frame-rulers').css({
-        left: `${x}px`,
-        top:  `${y}px`,
-      });
-    }, // positionRulers()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onRulersTouchstart(e) {
-      const touches = e.touches ? e.touches[0] : e;
-
-      this.noTransition = true;
-      this.isUseTouch = true;
-
-      const $rulers = window.$('.frame-rulers');
-
-      $rulers[0].addEventListener('touchmove', this.onRulersTouchmove);
-      $rulers[0].addEventListener('touchend',  this.onRulersTouchend);
-
-      this.touchPoint = {
-        $el: $rulers,
-        rulerX: $rulers.offset().left,
-        rulerY: $rulers.offset().top,
-        x: touches.pageX,
-        y: touches.pageY,
-        deltaX: 0,
-        deltaY: 0,
-      };
-
-      // avoid scrolling when moving rulers
-      e.preventDefault();
-
-    }, // onRulersTouchstart()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onRulersTouchmove(e) {
-      const touches = e.touches ? e.touches[0] : e;
-
-      this.touchPoint.deltaX = touches.pageX - this.touchPoint.x;
-      this.touchPoint.deltaY = touches.pageY - this.touchPoint.y;
-
-      let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
-      let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
-      const scale = settings.DPI_DEFAULT / this.s.currentWScale;
-
-      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
-
-      // keep within view
-      x = Math.min(Math.max(x, offset), this.availWidth  - offset);
-      y = Math.min(Math.max(y, offset), this.availHeight - offset);
-
-      this.positionRulers({
-        clientX: x,
-        clientY: y,
-      }, {touch:true});
-
-    }, // onRulersTouchmove()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    onRulersTouchend() {
-      // cleanup
-      const $rulers = window.$('.frame-rulers');
-
-      $rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
-      $rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
-
-      this.noTransition = false;
-
-    }, // onRulersTouchend()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    scaleRulers() {
-      if (this.s.dpi === settings.DPI_DEFAULT) {
-        window.$('.frame-rulers').css({
-          transform: `scale(${this.s.currentWScale}`,
-          width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
-        }).find('.target').css({
-          transform: `scaleY(${1 / this.s.currentWScale})`
-        });
-      }
-    }, // scaleRulers()
-    //*/
-
-    //------------------------------------------------------------------------------------------------------------------
 
     getSlideOffset($slide) {
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
@@ -698,10 +559,6 @@ export default {
 
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
-
-      /*
-      console.log(`getSlideOffset... xOffset:${xOffset} = ($slide:${$slide.offsetRect()[metric]} $slides:${$slides.offsetRect()[metric]})`);
-      //*/
 
       // [2018-07] IE11 (Trident) still has 5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
@@ -940,6 +797,7 @@ export default {
 
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
+@import "../assets/slider.scss";
 
 //TODO: go
 $frame-ruler-inch: 80px;
@@ -951,15 +809,13 @@ $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
 $radius-lg: $radius * 2;
 
 .slider {
+  /*
   position: absolute;
-  //min-width: 100%;
-  //min-height: 100vh;
   overflow: hidden;
   display: flex;
   justify-content: center;
   @include short-transition;
 
-  //&.is-resizing,
   &.no-transition {
     transition: none;
   }
@@ -1002,170 +858,21 @@ $radius-lg: $radius * 2;
       display: none;
     }
   } // .frame-mask
-
-  /*
-  .frame-rulers {
-    z-index: $layer-frame-rulers;
-    pointer-events: none;
-    opacity: .75;
-    position: fixed;
-    left: calc(100% - (1em + (#{$unit} / 2)));
-    @at-root .shell.has-scrollbar-y & {
-      left: calc(100% - 17px - (1em + (#{$unit} / 2)));
-    }
-    top:  1em + ($unit / 2);
-    width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
-    transform-origin: 0 0;
-
-    &.rulers-leave-active,
-    .show-rulers &.rulers-enter-active {
-      @include short-transition;
-    }
-
-    transition: transform $transition-time-ms ease-in-out; // used for zooming
-    @at-root .no-transition#{&} { // applied while dragging
-      transition: none;
-    }
-    //*/
-
-    /* [2018-08-03] TODO: change to a hideable Tip component
-    @at-root .show-rulers:not(.has-mouse) &::before {
-      content: '';
-      position: absolute;
-      top: 4em;
-      font-size: 1.5em;
-      left: 0;
-      transform-origin: left center;
-      transform: translateX(2em);
-      border-top: 1.5em solid transparent;
-      border-right: 1.5em solid white;
-      border-bottom: 1.5em solid transparent;
-      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::before {
-        opacity: 0;
-        transform: translateX(1em);
-      }
-    }
-    @at-root .show-rulers:not(.has-mouse) &::after {
-      content: 'drag ruler to measure inches';
-      position: absolute;
-      top: 4em;
-      font-size: 1.5em;
-      transform-origin: left center;
-      transform: translateX(3.5em);
-      height: 3em;
-      line-height: 2.6;
-      background-color: white;
-      padding-right: 1em;
-      border-radius: 0 1.5em 1.5em 0;
-      transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-      @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::after {
-        opacity: 0;
-        transform: translateX(2.5em);
-      }
-    }
-  }
-  //*/
-
-  /*
-  .frame-ruler {
-    position: absolute;
-    left: $frame-ruler-width-half;
-    top: -$frame-ruler-width-half;
-    height: $frame-ruler-width-nominal - 1;
-    background-color: hsl(60, 100%, 50%);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch}' height='#{$frame-ruler-width-nominal - 1}' viewBox='0 0 #{$frame-ruler-inch} #{$frame-ruler-width-nominal - 1}'%3E%3Cpath d='M0,16 l 80,0 M10,12 l 0,7 M20,9 l 0,13 M30,12 l 0,7 M40,6 l 0,19 M50,12 l 0,7 M60,9 l 0,13 M70,12 l 0,7 M80,0 l 0,31' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
-    counter-reset: inches;
-    transform-origin: -#{$frame-ruler-width-half} #{$frame-ruler-width-half};
-    transition: width $transition-time-ms ease-in-out;
-
-    @at-root [data-dpi="120"] & {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$frame-ruler-inch * $zoom-ratio}' height='#{$frame-ruler-width-nominal * $zoom-ratio - 1}' viewBox='0 0 #{$frame-ruler-inch * $zoom-ratio} #{$frame-ruler-width-nominal * $zoom-ratio - 1}'%3E%3Cpath d='M0,24 l 120,0 M15,19 l 0,9 M30,14 l 0,19 M45,19 l 0,9 M60,10 l 0,29 M75,19 l 0,9 M90,14 l 0,19 M105,19 l 0,9 M119.9,0 l 0,47' stroke='black' shape-rendering='crispEdges' /%3E%3C/svg%3E");
-      left:  ($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
-      top:  -($frame-ruler-width-nominal * $zoom-ratio - 1) / 2;
-      height: $frame-ruler-width-nominal * $zoom-ratio - 1;
-      transform-origin: -#{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2} #{($frame-ruler-width-nominal * $zoom-ratio - 1) / 2};
-    }
-    width: 0;
-    @at-root .show-rulers & {
-      width: 100% !important;
-      pointer-events: all;
-    }
-    overflow: hidden;
-    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active):not(.rulers-leave-active) .frame-ruler {
-      overflow: visible;
-    }
-
-    // used to make touch target physically consistent when ruler size is scaled down
-    .target {
-      height: 100%;
-      transform: scaleY(1);
-
-      // make ruler cross-axis hole targetable for dragging (this prevents tap-to-zoom within the hole)
-      @at-root .frame-rulers.touch .target::before {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        left: -50%;
-      }
-    }
-
-    b {
-      float: left;
-      margin-bottom: 200%; // when overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
-      position: relative;
-      width: $frame-ruler-inch;
-      height: $frame-ruler-width-nominal - 1;
-      @at-root [data-dpi="120"] & {
-        width: $frame-ruler-inch * $zoom-ratio;
-        height: $frame-ruler-width-nominal * $zoom-ratio - 1;
-      }
-
-      &::after {
-        counter-increment: inches;
-        content: counter(inches);
-        position: absolute;
-        left: 100%;
-        top: 50%;
-        transform: translate(-50%, -50%) translate(-0.5px, 0); // sequential because IE11 doesn't support calc() here
-        @at-root .frame-ruler.r b::after {
-          transform: translate(-50%, -50%) translate(0.5px, 0) rotate(180deg); // sequential because IE11 doesn't support calc() here
-        }
-        font: 900 16px Arial, Helvetica, sans-serif;
-        background: hsl(60, 100%, 50%);
-        line-height: 12px;
-        padding: 2px;
-        @at-root [data-dpi="120"] & {
-          font-size: 24px;
-          line-height: 18px;
-          padding: 3px;
-        }
-      }
-    }
-  } // .frame-ruler
-  .frame-ruler.y.top {
-    transform: rotate(-90deg);
-  }
-  .frame-ruler.x.left {
-    transform: rotate(-180deg);
-  }
-  .frame-ruler.y.bottom {
-    transform: rotate(-270deg);
-  }
   //*/
 
   .frame {
-    position: absolute;
-    box-sizing: border-box;
-    overflow: hidden;
-    white-space: nowrap;
-    @include short-transition;
+    /*
+      position: absolute;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: nowrap;
+      @include short-transition;
 
-    @at-root
-    .no-transition#{&} {
-      transition: none;
-    }
+      @at-root
+      .no-transition#{&} {
+        transition: none;
+      }
+    //*/
 
     &.dpi120 {
       display: none;
@@ -1176,6 +883,7 @@ $radius-lg: $radius * 2;
     }
   } // .frame
 
+  /*
   .slides {
     box-sizing: border-box;
     display: inline-flex;
@@ -1198,8 +906,10 @@ $radius-lg: $radius * 2;
       cursor: grabbing;
     }
   }
+  //*/
 
   .slide {
+    /*
     position: relative;
     display: inline-block;
     vertical-align: text-top;
@@ -1224,6 +934,7 @@ $radius-lg: $radius * 2;
     &:not(.current) {
       opacity: 0.25;
     }
+    //*/
 
     // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
     // [2018-07] svg cursor only works in Chrome and Firefox
@@ -1237,6 +948,7 @@ $radius-lg: $radius * 2;
       cursor: zoom-out;
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
     }
+    /*
     @at-root
     [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
     [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
@@ -1247,6 +959,7 @@ $radius-lg: $radius * 2;
     [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
     }
+    //*/
 
     // TODO style slide height
     @include below-sheet-music-min {
@@ -1255,6 +968,7 @@ $radius-lg: $radius * 2;
       }
     }
 
+    /*
     &::before {
       z-index: 1; // make sure it's above <img>
       content: '';
@@ -1265,6 +979,7 @@ $radius-lg: $radius * 2;
       bottom: 0;
       border: 1px solid hsl(0, 0%, 60%);
     }
+    //*/
 
     @at-root [data-dir="ltr"] &.non-sequential-after {
       margin-right: 5.5em;
@@ -1295,12 +1010,14 @@ $radius-lg: $radius * 2;
     }
 
     .slide-liner {
+      /*
       display: flex;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
       height: 100%;
       overflow: hidden;
+      //*/
 
       @at-root .the-item &::after {
         pointer-events: none;
@@ -1313,6 +1030,7 @@ $radius-lg: $radius * 2;
       }
     }
 
+    /*
     img {
       // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cstyle type='text/css'%3E .c1, .c2 %7B transform-origin: 100px 100px; animation: x 2s ease-out infinite; %7D .c2 %7B animation-delay:-1s; %7D @keyframes x %7B from %7B transform: scale%280%29; opacity:.5; %7D to %7B transform:scale%281.0%29; opacity:0; %7D %7D %3C/style%3E%3Ccircle class='c1' cx='100' cy='100' r='20' fill='black' /%3E%3Ccircle class='c2' cx='100' cy='100' r='20' fill='black' /%3E%3C/svg%3E") no-repeat center / cover;
@@ -1321,6 +1039,7 @@ $radius-lg: $radius * 2;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B transform-origin: 100px 100px; animation: sad 1s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; transform: scale(0); %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
       }
     }
+    //*/
 
     .sample-title {
       font-size: 2.5em;
@@ -1341,6 +1060,7 @@ $radius-lg: $radius * 2;
 
   } // .slide
 
+  /*
   .sidebar {
     z-index: $layer-item-view + 1;
     height: 8em;
@@ -1379,6 +1099,7 @@ $radius-lg: $radius * 2;
       }
     }
   } // .sidebar
+  //*/
 
 } // .slider
 

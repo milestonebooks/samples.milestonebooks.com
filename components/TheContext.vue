@@ -1,5 +1,5 @@
 <template>
-  <aside v-if="false /*currentIndex !== undefined*/" :class="['the-context',contextClass]" @click="toggleContext">
+  <aside v-if="currentIndex !== undefined" :class="['the-context shell',contextClass]" @click="toggleContext">
 
     <div class="slider">
       <div class="frame" :style="frameStyle">
@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <div class="info"><div v-for="i of 20">Info</div></div>
+    <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
   </aside>
 </template>
 
@@ -36,7 +36,7 @@
       return {
         isLoaded:     false,
         minW:         settings.CONTEXT_MIN_WIDTH,
-        show:         false,
+        show:         true,
         windowWidth:  window.innerWidth,
         availWidth:   document.documentElement.clientWidth,
         availHeight:  document.documentElement.clientHeight,
@@ -57,6 +57,7 @@
         }
       },
 
+      /*
       styleY() {
         if (this.show) return false;
         const c = this.s.context;
@@ -66,6 +67,7 @@
           transform: `translateY(calc(-0% + 1em + ${Math.ceil(img.h / 2 * scale)}px))`, // TODO -%
         }
       },
+      //*/
 
       frameStyle() {
         return {
@@ -118,7 +120,8 @@
 
       slideStyleSize() {
         const img = this.s.context.series[this.s.context.currentIndex].image;
-        const x = (!this.show ? settings.CONTEXT_MIN_WIDTH / img.w : 1) * (img.wScale || 1);
+        //const x = (!this.show ? settings.CONTEXT_MIN_WIDTH / img.w : 1) * (img.wScale || 1);
+        const x = (img.wScale || 1);
         return {
           width:  `${Math.ceil(img.w * x)}px`,
           height: `${Math.ceil(img.h * x)}px`,
@@ -195,16 +198,28 @@
   };
 </script>
 
+<style lang="scss">
+.show-context main > *:not(.the-context) {
+  opacity: 0;
+  pointer-events: none;
+}
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
+@import "../assets/slider.scss";
+
+$slider-height: 75%;
 
 main > *:not(.the-context) {
   @include short-transition;
 
+  /*
   @at-root .show-context & {
     opacity: 0;
     pointer-events: none;
   }
+  //*/
 }
 
 #{$isIE} .the-context {
@@ -215,14 +230,13 @@ main > *:not(.the-context) {
 .the-context {
   //pointer-events: none;
   z-index: $layer-the-context;
-  position: absolute;
-  height: 100%;
-  width: 100%;
+  width: 50%; // TODO
 
   &:not(.is-init) {
     opacity: 0;
   }
 
+  /*
   transition: all .2s ease-in-out, transform .4s ease-in-out;
   &:not(.show) {
     //transform: translateX(calc(-0% + 3em)); // TODO -%
@@ -245,8 +259,11 @@ main > *:not(.the-context) {
   &.show .slider {
     pointer-events: all;
   }
+  //*/
+
   .slider {
-    overflow: visible;
+    width: 100%;
+    height: $slider-height;
   }
 
   .slides {
@@ -280,6 +297,15 @@ main > *:not(.the-context) {
       transition: all .4s ease-in-out;
     }
   } // .slide
+
+  .info {
+    position: absolute;
+    top: $slider-height;
+    width: 100%;
+    background: white;
+    @include drop-shadow;
+  } // .info
+
 } // .the-context
 
 </style>
