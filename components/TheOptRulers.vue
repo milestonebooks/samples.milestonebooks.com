@@ -61,12 +61,18 @@ export default {
   mounted() {
     this.$rulers = window.$('.the-item-view .rulers');
 
+    window.addEventListener('resize', this.positionRulers);
     window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
 
     if (this.s.showRulers) {
       this.scaleRulers();
       this.onToggleRulers();
     }
+  },
+
+  beforeDestroy () {
+    window.removeEventListener('resize', this.positionRulers);
+    window.removeEventListener('orientationchange', this.scaleRulers);
   },
 
   //====================================================================================================================
@@ -101,14 +107,23 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     positionRulers(event, {touch = false} = {}) {
-      const {clientX:x, clientY:y} = event;
+      let {clientX:x, clientY:y} = event;
 
       // screen out touch taps, which trigger 'mousemove' events with no movement
       if (event.movementX !== undefined && event.movementX + event.movementY === 0) return false;
 
       if (!touch) this.isUseTouch = false;
 
-      //if (window.$(event.target).closest('.sidebar').length) return false;
+      if (x === undefined) x = this.$rulers.offset().left;
+      if (y === undefined) y = this.$rulers.offset().top;
+
+      // keep within view
+      const scale  = settings.DPI_DEFAULT / this.s.currentWScale;
+      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
+      const $el    = window.$('.the-item');
+
+      x = Math.min(Math.max(x, offset), $el.width()  - offset);
+      y = Math.min(Math.max(y, offset), $el.height() - offset);
 
       this.$rulers.css({
         left: `${x}px`,
@@ -150,15 +165,8 @@ export default {
       this.touchPoint.deltaX = touches.pageX - this.touchPoint.x;
       this.touchPoint.deltaY = touches.pageY - this.touchPoint.y;
 
-      let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
-      let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
-      const scale = settings.DPI_DEFAULT / this.s.currentWScale;
-
-      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
-
-      // keep within view
-      x = Math.min(Math.max(x, offset), this.availWidth  - offset);
-      y = Math.min(Math.max(y, offset), this.availHeight - offset);
+      const x = this.touchPoint.rulerX + this.touchPoint.deltaX;
+      const y = this.touchPoint.rulerY + this.touchPoint.deltaY;
 
       this.positionRulers({
         clientX: x,
