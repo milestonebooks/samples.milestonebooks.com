@@ -61,12 +61,18 @@ export default {
   mounted() {
     this.$rulers = window.$('.the-item-view .rulers');
 
+    window.addEventListener('resize', this.positionRulers);
     window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
 
     if (this.s.showRulers) {
       this.scaleRulers();
       this.onToggleRulers();
     }
+  },
+
+  beforeDestroy () {
+    window.removeEventListener('resize', this.positionRulers);
+    window.removeEventListener('orientationchange', this.scaleRulers);
   },
 
   //====================================================================================================================
@@ -101,14 +107,23 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     positionRulers(event, {touch = false} = {}) {
-      const {clientX:x, clientY:y} = event;
+      let {clientX:x, clientY:y} = event;
 
       // screen out touch taps, which trigger 'mousemove' events with no movement
       if (event.movementX !== undefined && event.movementX + event.movementY === 0) return false;
 
       if (!touch) this.isUseTouch = false;
 
-      //if (window.$(event.target).closest('.sidebar').length) return false;
+      if (x === undefined) x = this.$rulers.offset().left;
+      if (y === undefined) y = this.$rulers.offset().top;
+
+      // keep within view
+      const scale  = settings.DPI_DEFAULT / this.s.currentWScale;
+      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
+      const $el    = window.$('.the-item');
+
+      x = Math.min(Math.max(x, offset), $el.width()  - offset);
+      y = Math.min(Math.max(y, offset), $el.height() - offset);
 
       this.$rulers.css({
         left: `${x}px`,
@@ -150,15 +165,8 @@ export default {
       this.touchPoint.deltaX = touches.pageX - this.touchPoint.x;
       this.touchPoint.deltaY = touches.pageY - this.touchPoint.y;
 
-      let x = this.touchPoint.rulerX + this.touchPoint.deltaX - window.scrollX;
-      let y = this.touchPoint.rulerY + this.touchPoint.deltaY - window.scrollY;
-      const scale = settings.DPI_DEFAULT / this.s.currentWScale;
-
-      const offset = ((settings.FRAME_RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
-
-      // keep within view
-      x = Math.min(Math.max(x, offset), this.availWidth  - offset);
-      y = Math.min(Math.max(y, offset), this.availHeight - offset);
+      const x = this.touchPoint.rulerX + this.touchPoint.deltaX;
+      const y = this.touchPoint.rulerY + this.touchPoint.deltaY;
 
       this.positionRulers({
         clientX: x,
@@ -183,8 +191,8 @@ export default {
     scaleRulers() {
       if (this.s.dpi === settings.DPI_DEFAULT) {
         this.$rulers.css({
-          transform: `scale(${this.s.currentWScale}`,
-          width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
+          transform: `scale(${this.s.currentWScale})`,
+          width: `${200 / this.s.currentWScale}%`, // see style rule: .rulers { width }
         }).find('.target').css({
           transform: `scaleY(${1 / this.s.currentWScale})`
         });
@@ -278,7 +286,7 @@ $layer-rulers: 1;
     border-right: 1.5em solid white;
     border-bottom: 1.5em solid transparent;
     transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::before {
+    @at-root .show-rulers .rulers:not(.rulers-enter-active)::before {
       opacity: 0;
       transform: translateX(1em);
     }
@@ -296,7 +304,7 @@ $layer-rulers: 1;
     padding-right: 1em;
     border-radius: 0 1.5em 1.5em 0;
     transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::after {
+    @at-root .show-rulers .rulers:not(.rulers-enter-active)::after {
       opacity: 0;
       transform: translateX(2.5em);
     }
@@ -339,7 +347,7 @@ $layer-rulers: 1;
     pointer-events: all;
   }
   overflow: hidden;
-  @at-root .show-rulers .frame-rulers:not(.rulers-enter-active):not(.rulers-leave-active) .frame-ruler {
+  @at-root .show-rulers .rulers:not(.rulers-enter-active):not(.rulers-leave-active) .ruler {
     overflow: visible;
   }
 
@@ -349,7 +357,7 @@ $layer-rulers: 1;
     transform: scaleY(1);
 
     // make ruler cross-axis hole targetable for dragging (this prevents tap-to-zoom within the hole)
-    @at-root .frame-rulers.touch .target::before {
+    @at-root .rulers.touch .target::before {
       content: '';
       position: absolute;
       width: 100%;
@@ -360,7 +368,7 @@ $layer-rulers: 1;
 
   b {
     float: left;
-    margin-bottom: 200%; // when overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
+    margin-bottom: 200%; // when overflow:hidden is not used on .ruler, margin ensures any wrapped elements are offscreen
     position: relative;
     width: $ruler-inch;
     height: $ruler-width-nominal - 1;

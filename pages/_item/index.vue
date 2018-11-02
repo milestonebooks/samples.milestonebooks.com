@@ -115,6 +115,7 @@ export default {
 
     mainClass() {
       return {
+        'debug':       this.s._showDebugger,
         'is-init':     this.s.isInit,
         'has-touch':   this.s.hasTouch,
         'has-mouse':   this.s.hasMouse,
