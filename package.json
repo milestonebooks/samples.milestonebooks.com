@@ -1,12 +1,13 @@
 {
   "name": "samples",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
   "scripts": {
     "dev": "nuxt",
     "analyze": "nuxt build --analyze",
+    "generatedebug": "cross-env NUXT_ENV_DEBUG=on nuxt generate",
     "generate": "cross-env NODE_ENV=production nuxt generate",
     "build": "nuxt build",
     "spa": "nuxt build --spa",

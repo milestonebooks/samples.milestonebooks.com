@@ -191,8 +191,8 @@ export default {
     scaleRulers() {
       if (this.s.dpi === settings.DPI_DEFAULT) {
         this.$rulers.css({
-          transform: `scale(${this.s.currentWScale}`,
-          width: `${200 / this.s.currentWScale}%`, // see .frame-rulers { width }
+          transform: `scale(${this.s.currentWScale})`,
+          width: `${200 / this.s.currentWScale}%`, // see style rule: .rulers { width }
         }).find('.target').css({
           transform: `scaleY(${1 / this.s.currentWScale})`
         });
@@ -286,7 +286,7 @@ $layer-rulers: 1;
     border-right: 1.5em solid white;
     border-bottom: 1.5em solid transparent;
     transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::before {
+    @at-root .show-rulers .rulers:not(.rulers-enter-active)::before {
       opacity: 0;
       transform: translateX(1em);
     }
@@ -304,7 +304,7 @@ $layer-rulers: 1;
     padding-right: 1em;
     border-radius: 0 1.5em 1.5em 0;
     transition: opacity 1s ease-out 2s, transform 2s cubic-bezier(.5,-2,.5,1);
-    @at-root .show-rulers .frame-rulers:not(.rulers-enter-active)::after {
+    @at-root .show-rulers .rulers:not(.rulers-enter-active)::after {
       opacity: 0;
       transform: translateX(2.5em);
     }
@@ -347,7 +347,7 @@ $layer-rulers: 1;
     pointer-events: all;
   }
   overflow: hidden;
-  @at-root .show-rulers .frame-rulers:not(.rulers-enter-active):not(.rulers-leave-active) .frame-ruler {
+  @at-root .show-rulers .rulers:not(.rulers-enter-active):not(.rulers-leave-active) .ruler {
     overflow: visible;
   }
 
@@ -357,7 +357,7 @@ $layer-rulers: 1;
     transform: scaleY(1);
 
     // make ruler cross-axis hole targetable for dragging (this prevents tap-to-zoom within the hole)
-    @at-root .frame-rulers.touch .target::before {
+    @at-root .rulers.touch .target::before {
       content: '';
       position: absolute;
       width: 100%;
@@ -368,7 +368,7 @@ $layer-rulers: 1;
 
   b {
     float: left;
-    margin-bottom: 200%; // when overflow:hidden is not used on .frame-ruler, margin ensures any wrapped elements are offscreen
+    margin-bottom: 200%; // when overflow:hidden is not used on .ruler, margin ensures any wrapped elements are offscreen
     position: relative;
     width: $ruler-inch;
     height: $ruler-width-nominal - 1;

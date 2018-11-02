@@ -1,5 +1,5 @@
 <template>
-  <aside id="debugger">
+  <aside id="debugger" :data-debug="s._debugText">
     <input class="check" type="checkbox" v-model="_debugCheck" />
   </aside>
 </template>
@@ -60,11 +60,11 @@ export default {
   }
 }
 
-[data-debug]::before {
+.debug [data-debug]::before {
   content: attr(data-debug);
   z-index: 9;
   position: fixed;
-  top: 4rem;
+  top: 6rem;
   right: 0;
   font-size: 2em;
   outline: 1px solid red;
