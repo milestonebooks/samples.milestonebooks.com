@@ -20,7 +20,7 @@
       </div>
     </article>
 
-    <TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" />
+    <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
 
   </main>
 </template>

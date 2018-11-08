@@ -199,7 +199,7 @@
 </script>
 
 <style lang="scss">
-.show-context main > *:not(.the-context) {
+.show-context main > *:not(.the-context):not(#debugger) {
   opacity: 0;
   pointer-events: none;
 }

@@ -56,9 +56,11 @@ import supportsPassive from '~/plugins/supportsPassive';
 import { mapGetters, mapMutations } from 'vuex';
 
 // jQuery-style custom function
+//*
 window.$.fn.offsetRect = function() {
   return this[0].getBoundingClientRect();
 };
+//*/
 
 export default {
   components: {
@@ -76,7 +78,6 @@ export default {
       isGrabbing:   false,
       isScrolling:  null,
       noTransition: true,
-      dpiImages:    settings.DPI_DEFAULT,
       windowWidth:  window.innerWidth,
       availWidth:   document.documentElement.clientWidth,
       availHeight:  document.documentElement.clientHeight,
@@ -85,7 +86,6 @@ export default {
       groupHeight:  null,
       touchPoint:   null,
       supports3d:   supports3d(),
-      isUseTouch:   false,
       eTouchParams: supportsPassive() ? { passive: true } : false,
     }
   },

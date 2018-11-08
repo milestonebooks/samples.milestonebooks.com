@@ -86,8 +86,8 @@ export const getters = {
 
     return 'item'
       + ` ${i < state.currentIndex ? 'before-' : i > state.currentIndex ? 'after-' : ''}current`
-      + (!sample.sequential ? ' non-' : ' ') + 'sequential-before'
-      + (i < state.samples.length - 1 && !state.samples[i + 1].sequential ? ' non-' : ' ') + 'sequential-after';
+      + (sample.nonsequential ? ' non-' : ' ') + 'sequential-before'
+      + (i < state.samples.length - 1 && state.samples[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after';
   }, // listItemClass()
 
   //--------------------------------------------------------------------------------------------------------------------
