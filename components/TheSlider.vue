@@ -130,18 +130,16 @@ export default {
 
   watch: {
 
-    currentIndex() {
+    async currentIndex() {
       // defer to ensure dom is updated
-      this.$nextTick(() => {
-        this.update();
-      });
+      await this.$nextTick();
+      this.update();
     },
 
-    isInit() {
+    async isInit() {
       // ensure that transitions are only enabled after init is complete
-      this.$nextTick(() => {
-        if (this.isInit) this.noTransition = false;
-      });
+      await this.$nextTick();
+      if (this.isInit) this.noTransition = false;
     },
 
   }, // watch {}
@@ -170,13 +168,12 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    update() {
+    async update() {
       //if (process.env.NODE_ENV !== 'production') console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
       this.autosize();
       if (!this.isInit) this.init();
-      this.$nextTick(() => {
-        this.forceRepaint();
-      });
+      await this.$nextTick();
+      this.forceRepaint();
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -210,12 +207,11 @@ export default {
             }
           });
         }, {
-          // root: use viewport instead of <div.frame> Chrome uses element net margin (negative margins are subtracted) for boundary instead of width/height like Firefox
-          //root: window.$(`.the-item .frame.dpi${dpi}`)[0],
+          // root: use viewport instead of <div.frame>; Chrome uses element net margin (negative margins on .frame are subtracted) for boundary instead of width/height like Firefox
           rootMargin: '100px',
         });
 
-        let images = document.querySelectorAll(`.slider .frame.dpi${dpi} [data-src]`);
+        let images = this.$el.querySelectorAll(`.frame.dpi${dpi} [data-src]`);
 
         images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
         images.forEach(image => { observer.observe(image); });
@@ -244,11 +240,11 @@ export default {
 
       // use 80-dpi image as scaled background until 120-dpi image loads
       if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
-        window.$(`.the-item .frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+        this.$el.querySelector(`.frame.dpi120 [data-index="${i}"] img`).style.backgroundImage = `url("${event.target.src}")`;
       }
       // use 120-dpi image to avoid unnecessary downloads
       if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
-        window.$(`.the-item .frame.dpi80 [data-index="${i}"] img`)[0].src = event.target.src;
+        this.$el.querySelector(`.frame.dpi80 [data-index="${i}"] img`).src = event.target.src;
       }
     }, // onImageLoaded()
 
@@ -256,7 +252,7 @@ export default {
 
     onImageLoadError(i, dpi) {
       this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
-      window.$(`.the-item .frame.dpi${dpi} [data-index="${i}"] img`)[0].removeAttribute('src');
+      this.$el.querySelector(`.frame.dpi${dpi} [data-index="${i}"] img`).removeAttribute('src');
     }, // onImageLoadError()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -286,10 +282,10 @@ export default {
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
       if (this.s.samples[this.currentIndex].image) {
-        this.preloadImage(window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`)[0]);
+        this.preloadImage(this.$el.querySelector(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"] img`));
       }
 
-      const $slider = window.$('.the-item .slider');
+      const $slider = window.$(this.$el);
       const $frame  = $slider.find(`.frame.dpi${dpi}`);
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${index}"]`);
@@ -326,8 +322,8 @@ export default {
             width:  `${frameWidth}px`,
             height: `${frameHeight}px`,
           });
-          window.$('.the-item .frame-mask.end').css({width: `${xMargin}px`});
-          window.$('.the-item .frame-mask.side').css({height: `${yMargin}px`});
+          window.$(this.$el).find('.frame-mask.end').css({width: `${xMargin}px`});
+          window.$(this.$el).find('.frame-mask.side').css({height: `${yMargin}px`});
         }
 
         $frame.css({
@@ -469,7 +465,7 @@ export default {
 
       if (!this.isScrolling) {
         this.isGrabbing = true;
-        window.$('.the-item .slider').addClass('no-transition'); // TODO
+        this.noTransition = true;
 
         const $slides = window.$(this.touchPoint.el).find('.slides');
         const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
@@ -500,7 +496,7 @@ export default {
 
       this.isGrabbing = false;
 
-      window.$('.the-item .slider').removeClass('no-transition');
+      this.noTransition = false;
 
       // decide what the interaction means
       let action = 'click';
@@ -509,7 +505,7 @@ export default {
       const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
 
-      const slideWidth = window.$(`.the-item .frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+      const slideWidth = window.$(this.$el).find(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
       if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
@@ -594,15 +590,14 @@ export default {
       const $rulers    = $el.find('.rulers');
 
       // ensure no transitions are in effect to delay prep layout
-      $slider.addClass('no-transition');
+      this.noTransition = true;
+      await this.$nextTick();
 
       const w = this.s.samples[index].image.w;
       const h = this.s.samples[index].image.h;
 
-      const isScrollShell = $el.hasClass('shell'); // TODO
-
-      const xScroll = (isScrollShell ? el.scrollLeft : window.scrollX);
-      const yScroll = (isScrollShell ? el.scrollTop  : window.scrollY);
+      const xScroll = el.scrollLeft;
+      const yScroll = el.scrollTop;
 
       // TODO: 'rtl' zoom-in is buggy
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
@@ -623,17 +618,12 @@ export default {
         this.autosize({resize:true});
 
         // position view to compensate for new layout
-        if (isScrollShell) {
-          el.scrollLeft = xScrollTo;
-          el.scrollTop  = yScrollTo;
-        } else {
-          // TODO: [2018-08-03] window.scroll doesn't seem to work on Chrome mobile (tested in desktop mobile mode and in Chrome for Android)
-          window.scroll(xScrollTo, yScrollTo);
-        }
+        el.scrollLeft = xScrollTo;
+        el.scrollTop  = yScrollTo;
 
         // when non-zoom frame is contained within view, desired scroll position may not be possible
-        const xScrollAdj = (isScrollShell ? el.scrollLeft : window.scrollX) - xScrollTo;
-        const yScrollAdj = (isScrollShell ? el.scrollTop  : window.scrollY) - yScrollTo;
+        const xScrollAdj = el.scrollLeft - xScrollTo;
+        const yScrollAdj = el.scrollTop - yScrollTo;
 
         const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
         const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
@@ -656,7 +646,9 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $slider.removeClass('no-transition');
+        this.noTransition = false;
+        await this.$nextTick();
+
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
         $rulers.css({transform: ''});
 
@@ -670,12 +662,11 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        $slider.addClass('no-transition');
+        this.noTransition = true;
+        await this.$nextTick();
+
         $frame.css({opacity: 0, 'pointer-events': 'none'});
         $frame.removeClass('is-zooming').css({transform: ''});
-
-        this.forceRepaint();
-        $slider.removeClass('no-transition');
 
       // zoom out
       } else {
@@ -728,7 +719,9 @@ export default {
 
         // ensure dom is updated before running zoom transition
         this.forceRepaint();
-        $slider.removeClass('no-transition');
+        this.noTransition = false;
+        await this.$nextTick();
+
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
         $rulers.css({transform: `scale(${this.s.currentWScale})`});
 
@@ -741,26 +734,24 @@ export default {
         await sleep(settings.TRANSITION_TIME_MS);
 
         // cleanup
-        const xScrollTo = Math.max((isScrollShell ? el.scrollLeft : window.scrollX) - (el.scrollLeft + $frame.offset().left), 0);
-        const yScrollTo = Math.max((isScrollShell ? el.scrollTop  : window.scrollY) - (el.scrollTop  + $frame.offset().top),  0);
+        const xScrollTo = -$frame.offset().left;
+        const yScrollTo = -$frame.offset().top;
 
-        $slider.addClass('no-transition');
+        this.noTransition = true;
+        await this.$nextTick();
+
         $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
         $frameZoom.removeClass('is-zooming').css({transform: ''});
         $frame.css({transform: ''});
         $frameZoom.css({position: 'fixed'});
         this.autosize({resize:true});
 
-        if (isScrollShell) {
-          el.scrollLeft = xScrollTo;
-          el.scrollTop  = yScrollTo;
-        } else {
-          window.scroll(xScrollTo, yScrollTo);
-        }
-
-        this.forceRepaint();
-        $slider.removeClass('no-transition');
+        el.scrollLeft = xScrollTo;
+        el.scrollTop  = yScrollTo;
       } // zoom out
+
+      this.forceRepaint();
+      this.noTransition = false;
 
       this.set({isZooming:false});
 
