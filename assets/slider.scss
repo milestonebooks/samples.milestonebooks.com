@@ -28,19 +28,6 @@ $radius-lg: $radius * 2;
     }
 
     @at-root
-    [data-dir="ltr"] .frame-mask.prev,
-    [data-dir="rtl"] .frame-mask.next {
-      left: 0;
-    }
-    @at-root
-    [data-dir="ltr"] .frame-mask.next,
-    [data-dir="rtl"] .frame-mask.prev {
-      right: 0;
-    }
-
-    @at-root
-    .slider.has-prev .frame-mask.prev,
-    .slider.has-next .frame-mask.next,
     [aria-grabbed] .frame-mask {
       display: none;
     }

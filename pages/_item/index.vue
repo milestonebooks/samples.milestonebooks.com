@@ -20,6 +20,13 @@
       </div>
     </article>
 
+    <AppFrame id="the-samples">
+      <AppSlider :slides="s.samples" :currentIndex="s.currentIndex" slot="view"></AppSlider>
+      <template slot="frameX">
+        <a href="#" class="button">Button</a>
+      </template>
+    </AppFrame>
+
     <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
 
   </main>
@@ -36,6 +43,9 @@ import TheContext   from '~/components/TheContext';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
+import AppFrame  from '~/components/AppFrame';
+import AppSlider from '~/components/AppSlider';
+
 import { mapMutations } from 'vuex';
 
 import axios from 'axios';
@@ -48,6 +58,8 @@ import axios from 'axios';
 
 export default {
   components: {
+    AppFrame,
+    AppSlider,
     TheDebugger,
     TheAlerts,
     TheSlider,
@@ -376,6 +388,14 @@ main:not(.is-init):not(.error) {
   @at-root .has-scrollbar-x & {
     height: calc(100% - 17px);
   }
+}
+
+#the-samples {
+  left: 5vw;
+  top: 25vh;
+  width: 40%;
+  height: 60vh;
+  outline: 1px solid red;
 }
 
 </style>

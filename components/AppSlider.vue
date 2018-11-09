@@ -1,5 +1,10 @@
 <template>
   <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing">
+
+    <div class="frame-masks">
+      <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
+    </div>
+
   </article>
 </template>
 
@@ -31,20 +36,22 @@ export default {
 
   data () {
     return {
-      isInit:       false,
-      isGrabbing:   false,
-      isScrolling:  null,
-      noTransition: true,
-      width:        this.$el.offsetWidth,
-      height:       this.$el.offsetHeight,
-      availWidth:   this.$el.clientWidth,
-      availHeight:  this.$el.clientHeight,
-      slideHeight:  null,
-      slideWidth:   null,
-      groupHeight:  null,
-      touchPoint:   null,
-      supports3d:   supports3d(),
-      eTouchParams: supportsPassive() ? { passive: true } : false,
+      isInit:        false,
+      isGrabbing:    false,
+      isScrolling:   null,
+      noTransition:  true,
+      width:         null,
+      height:        null,
+      availWidth:    null,
+      availHeight:   null,
+      hasScrollbarX: false,
+      hasScrollbarY: false,
+      slideHeight:   null,
+      slideWidth:    null,
+      groupHeight:   null,
+      touchPoint:    null,
+      supports3d:    supports3d(),
+      eTouchParams:  supportsPassive() ? { passive: true } : false,
     }
   },
 
@@ -52,12 +59,15 @@ export default {
 
   computed: {
 
-    isFirst() {
-      return this.getSlide && !this.getSlide(-1);
+    s() {
+      return this.$store.state;
     },
 
-    isLast() {
-      return this.getSlide && !this.getSlide(+1);
+    shellClass() {
+      return {
+        'has-scrollbar-x': this.hasScrollbarX && this.s.scrollbarWidth,
+        'has-scrollbar-y': this.hasScrollbarY && this.s.scrollbarWidth,
+      }
     },
 
     sliderClass() {
@@ -69,9 +79,24 @@ export default {
       }
     },
 
+    isFirst() {
+      return this.getSlide && !this.getSlide(-1);
+    },
+
+    isLast() {
+      return this.getSlide && !this.getSlide(+1);
+    },
+
   }, // computed {}
 
   //--------------------------------------------------------------------------------------------------------------------
+
+  mounted() {
+    this.width  = this.$el.offsetWidth;
+    this.height = this.$el.offsetHeight;
+    this.availWidth  = this.$el.clientWidth;
+    this.availHeight = this.$el.clientHeight;
+  },
 
   //====================================================================================================================
 
@@ -104,3 +129,31 @@ export default {
 
 }
 </script>
+
+<style lang="scss" scoped>
+@import "../assets/settings.scss";
+
+$layer-frame-mask: 2; // above both <.frame>s to mask grab zones
+
+.frame-mask {
+  position: absolute;
+  z-index: $layer-frame-mask;
+
+  &.side {
+    left: 0;
+    right: 0;
+    &.above {
+      top: 0;
+    }
+    &.below {
+      bottom: 0;
+    }
+  }
+
+  @at-root
+  [aria-grabbed] .frame-mask {
+    display: none;
+  }
+} // .frame-mask
+
+</style>
