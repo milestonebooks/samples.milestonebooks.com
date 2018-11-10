@@ -5,7 +5,7 @@
     <TheAlerts />
 
     <article class="the-item shell" :class="itemShellClass">
-      <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
+      <!--TheSlider :samples="s.samples" :currentIndex="s.currentIndex" /-->
 
       <div class="the-item-view">
         <TheOptRulers v-if="s.hasRulers" />
@@ -20,12 +20,9 @@
       </div>
     </article>
 
-    <AppFrame id="the-samples">
-      <AppSlider :slides="s.samples" :currentIndex="s.currentIndex" slot="view"></AppSlider>
-      <template slot="frameX">
-        <a href="#" class="button">Button</a>
-      </template>
-    </AppFrame>
+    <TheSamples v-if="!true" />
+
+    <TheContext />
 
     <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
 
@@ -39,12 +36,11 @@ import TheSlider    from '~/components/TheSlider';
 import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
-import TheContext   from '~/components/TheContext';
 import TheNav       from '~/components/TheNav';
 import ThePlayer    from '~/components/ThePlayer';
 
-import AppFrame  from '~/components/AppFrame';
-import AppSlider from '~/components/AppSlider';
+import TheSamples   from '~/components/TheSamples';
+import TheContext   from '~/components/TheContext';
 
 import { mapMutations } from 'vuex';
 
@@ -58,15 +54,14 @@ import axios from 'axios';
 
 export default {
   components: {
-    AppFrame,
-    AppSlider,
+    TheSamples,
+    TheContext,
     TheDebugger,
     TheAlerts,
     TheSlider,
     TheOptRulers,
     TheOptPrint,
     TheOptRevert, // TODO: temporary
-    TheContext,
     TheNav,
     ThePlayer,
   },
@@ -94,8 +89,7 @@ export default {
   },
 
   data () {
-    return {
-    };
+    return {};
   }, // data()
 
   async asyncData({params, store, error}) {
@@ -315,6 +309,8 @@ main {
     user-select: none; // expected to be more hindrance than useful in this app
   }
   position: relative;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   margin: auto;
@@ -388,14 +384,6 @@ main:not(.is-init):not(.error) {
   @at-root .has-scrollbar-x & {
     height: calc(100% - 17px);
   }
-}
-
-#the-samples {
-  left: 5vw;
-  top: 25vh;
-  width: 40%;
-  height: 60vh;
-  outline: 1px solid red;
 }
 
 </style>

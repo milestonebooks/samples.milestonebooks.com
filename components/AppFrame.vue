@@ -1,6 +1,6 @@
 <template>
-  <article :id="id" class="frame">
-    <article class="view">
+  <article :id="id" class="app-frame">
+    <article class="app-view">
       <slot name="view"></slot>
     </article>
     <slot name="frame"></slot>
@@ -18,24 +18,26 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "../assets/settings.scss";
 
-.frame {
+.app-frame {
   position: absolute;
+  z-index: 1;
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
   @include short-transition;
+}
 
-  .view {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    @include short-transition;
-    background-color: hsla(0,100%,50%,.5);
-  }
+.app-view {
+  position: absolute;
+  z-index: -1; // behind the "frame" objects
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  @include short-transition;
+  background-color: hsla(0,100%,50%,.1); // TODO: remove
+}
 
-} // .frame
 </style>

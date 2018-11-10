@@ -240,7 +240,8 @@ export default {
 
       // use 80-dpi image as scaled background until 120-dpi image loads
       if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
-        this.$el.querySelector(`.frame.dpi120 [data-index="${i}"] img`).style.backgroundImage = `url("${event.target.src}")`;
+        // jQuery avoids throwing errors if no match found
+        window.$(this.$el).find(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
       if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {

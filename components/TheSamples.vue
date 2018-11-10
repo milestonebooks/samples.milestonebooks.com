@@ -1,10 +1,9 @@
 <template>
-  <AppFrame id="the-context">
-    <AppSlider slot="view" :slides="s.context.series" :currentIndex="s.context.currentIndex" v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
+  <AppFrame id="the-samples">
+    <AppSlider slot="view" :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      TheContext ({{ this.s.context.currentIndex }})
-      <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
+      TheSamples
     </template>
   </AppFrame>
 </template>
@@ -12,6 +11,8 @@
 <script>
 import AppFrame  from '~/components/AppFrame';
 import AppSlider from '~/components/AppSlider';
+
+import { mapGetters } from 'vuex';
 
 export default {
   components: {
@@ -22,6 +23,10 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
+    ...mapGetters([
+      'imageSrc',
+    ]),
+
     s() {
       return this.$store.state;
     },
@@ -36,20 +41,25 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imageSrc(i) {
-      return `${this.s.urlBaseImg}${i.image.file}`;
-    }, // imageSrc()
+    onImageLoaded(i, dpi, event) {
+      this.$store.commit('setImageLoaded', {i, dpi});
 
-    //------------------------------------------------------------------------------------------------------------------
-
-    onImageLoaded(i) {
-      this.isLoaded = true;
+      // use 80-dpi image as scaled background until 120-dpi image loads
+      if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
+        // jQuery avoids throwing errors if no match found
+        window.$(this.$el).find(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
+      }
+      // use 120-dpi image to avoid unnecessary downloads
+      if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
+        this.$el.querySelector(`.frame.dpi80 [data-index="${i}"] img`).src = event.target.src;
+      }
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onImageLoadError(i) {
-      this.$store.dispatch('alert', {msg: `Error: unable to load image [${i}].`});
+    onImageLoadError(i, dpi) {
+      this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
+      this.$el.querySelector(`.frame.dpi${dpi} [data-index="${i}"] img`).removeAttribute('src');
     }, // onImageLoadError()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -64,28 +74,12 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-$slider-height: 75%;
-
-#the-context {
-  left: 50px;
-  top: 50px;
+#the-samples {
+  right: 50px;
+  bottom: 50px;
   width: 40%;
   height: 50vh;
-  outline: 1px solid orange;
-
-  /deep/ .app-view {
-    height: $slider-height;
-    background-color: hsla(60,100%,50%,.1); // TODO: remove
-  }
-
-}
-
-.info {
-  position: absolute;
-  top: $slider-height;
-  width: 100%;
-  background: white;
-  @include drop-shadow;
+  outline: 1px solid red;
 }
 
 </style>

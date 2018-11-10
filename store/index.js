@@ -16,7 +16,10 @@ export const state = () => ({
 
   item:          '',
   type:          'items', // 'items' | 'audio'
-  context:       {},
+  context:       {
+    currentIndex: null,
+    series: [],
+  },
   samples:       [],
   firstId:       '',
   lastId:        '',
