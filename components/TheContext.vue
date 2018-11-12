@@ -1,9 +1,11 @@
 <template>
   <AppFrame id="the-context">
-    <AppSlider slot="view" :slides="s.context.series" :currentIndex="s.context.currentIndex" v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
+    <AppSlider slot="view"
+               :slides="s.context.series" :currentIndex="s.context.currentIndex"
+               v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      TheContext ({{ this.s.context.currentIndex }})
+      TheContext [{{ this.s.context.currentIndex }}] of {{ this.s.context.series.length }}
       <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
     </template>
   </AppFrame>
@@ -36,14 +38,14 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    imageSrc(i) {
-      return `${this.s.urlBaseImg}${i.image.file}`;
+    imageSrc(slide) {
+      return `${this.s.urlBaseImg}${slide.image.file}`;
     }, // imageSrc()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onImageLoaded(i) {
-      this.isLoaded = true;
+      this.isLoaded = true; // TODO
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------

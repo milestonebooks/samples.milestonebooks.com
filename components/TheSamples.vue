@@ -1,9 +1,11 @@
 <template>
   <AppFrame id="the-samples">
-    <AppSlider slot="view" :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
+    <AppSlider slot="view"
+               :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" :zoomDpi="120"
+               v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      TheSamples
+      TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}
     </template>
   </AppFrame>
 </template>
@@ -11,6 +13,8 @@
 <script>
 import AppFrame  from '~/components/AppFrame';
 import AppSlider from '~/components/AppSlider';
+
+import settings from '~/assets/settings';
 
 import { mapGetters } from 'vuex';
 

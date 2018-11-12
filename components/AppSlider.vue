@@ -5,13 +5,13 @@
       <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
     </div>
 
-    <div :class="`frame default dpi${defaultDpi}`">
+    <div v-for="frame of frames" :class="`frame ${frame.type} dpi${frame.dpi}`">
       <div class="slides">
         <section v-for="slide in slides" :key="slide.index" :data-index="slide.index"
-                 :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, defaultDpi)">
+                 :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
           <div class="slide-liner">
-            <img v-if="slide.image" :style="imageStyleSize(slide, defaultDpi)" :data-src="imageSrc(slide, defaultDpi)" :data-error="imageError(slide, defaultDpi)" draggable="false"
-                 @load="onImageLoaded(slide.index, defaultDpi, $event)" @error="onImageLoadError(slide.index, defaultDpi)" />
+            <img v-if="slide.image" :style="imageStyleSize(slide, frame.dpi)" :data-src="imageSrc(slide, frame.dpi)" :data-error="imageError(slide, frame.dpi)" draggable="false"
+                 @load="onImageLoaded(slide.index, frame.dpi, $event)" @error="onImageLoadError(slide.index, frame.dpi)" />
             <h1 v-else class="slide-title">{{slide.title ? slide.title : `(${slide.id})` }}</h1>
           </div>
         </section>
@@ -26,17 +26,14 @@ import SvgIcon from './SvgIcon.vue';
 
 import settings from '~/assets/settings';
 
+import '~/plugins/jQuery.offsetRect';
+
 import sleep from '~/plugins/sleep';
 import forceRepaint from '~/plugins/forceRepaint';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
 
 import { mapGetters, mapMutations } from 'vuex';
-
-// jQuery-style custom function
-window.$.fn.offsetRect = function() {
-  return this[0].getBoundingClientRect();
-};
 
 export default {
   components: {
@@ -56,6 +53,10 @@ export default {
     onImageLoadError: Function,
 
     defaultDpi: {
+      type: Number,
+      default: 0,
+    },
+    zoomDpi: {
       type: Number,
       default: 0,
     }
@@ -90,20 +91,26 @@ export default {
       return this.$store.state;
     },
 
-    shellClass() {
-      return {
-        'has-scrollbar-x': this.hasScrollbarX && this.s.scrollbarWidth,
-        'has-scrollbar-y': this.hasScrollbarY && this.s.scrollbarWidth,
-      }
-    },
-
     sliderClass() {
       return {
         'is-init':  this.isInit,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
-        'no-transition': this.noTransition,
+        'has-zoom': this.hasZoom,
+        'no-transition':   this.noTransition,
+        'has-scrollbar-x': this.hasScrollbarX && this.s.scrollbarWidth,
+        'has-scrollbar-y': this.hasScrollbarY && this.s.scrollbarWidth,
       }
+    },
+
+    hasZoom() {
+      return (this.zoomDpi !== 0);
+    },
+
+    frames() {
+      const frames = [{type:'default', dpi:this.defaultDpi}];
+      if (this.zoomDpi) frames.push({type:'zoom', dpi:this.zoomDpi});
+      return frames;
     },
 
     isFirst() {
@@ -112,6 +119,10 @@ export default {
 
     isLast() {
       return this.getSlide && !this.getSlide(+1);
+    },
+
+    btnPrevPath() {
+      return 'M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z'; // right-pointing: 'M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z'
     },
 
   }, // computed {}
@@ -155,7 +166,7 @@ export default {
 
     async update() {
       //if (process.env.NODE_ENV !== 'production') console.log(`TheSlider update() ${this.currentIndex} @ ${this.s.dpi}`);
-      //TODO: this.autosize();
+      this.autosize();
       if (!this.isInit) this.init();
       await this.$nextTick();
       forceRepaint();
@@ -281,6 +292,111 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    autosize({resize = false} = {}) {
+      const frameType = 'default'; // TODO 'default'|'zoom'
+
+      // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
+      // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
+      if (this.slides[this.currentIndex].image) {
+        this.preloadImage(this.$el.querySelector(`.frame.${frameType} [data-index="${this.currentIndex}"] img`));
+      }
+
+      const $slider = window.$(this.$el);
+      const $frame  = $slider.find(`.frame.${frameType}`);
+      const $slides = $frame.find('.slides');
+      const $slide  = $slides.find(`.slide[data-index="${this.currentIndex}"]`);
+
+      const height = Math.ceil($slide.height());
+      const width  = Math.ceil($slide.width());
+
+      const $slidePrev = $slide.prev();
+      const $slideNext = $slide.next();
+
+      // scrollbars can sometimes be present that won't actually be needed for the actual slide size
+      const {needsScrollbar} = this.checkScrollbars({width, height});
+
+      this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+      this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
+
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+      const frameWidth  = Math.ceil(Math.max(width,  this.availWidth));
+
+      // this determines how much gutter space is masked from being grabbable for sliding
+      const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+
+      if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
+
+        this.slideHeight = height;
+        this.slideWidth  = width;
+        this.groupHeight = groupHeight;
+
+        const xMargin = Math.max(this.availWidth - width, 0) / 2;
+        const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
+
+        $slider.css({
+          width:  `${frameWidth}px`,
+          height: `${frameHeight}px`,
+        });
+        window.$(this.$el).find('.frame-mask.side').css({height: `${yMargin}px`});
+
+        $frame.css({
+          width:  `${frameWidth}px`,
+          height: `${frameHeight}px`,
+          left:            `${ xMargin}px`,
+          'margin-left':   `${-xMargin}px`,
+          'padding-left':  `${ xMargin}px`,
+          'margin-right':  `${-xMargin}px`,
+          'padding-right': `${ xMargin}px`,
+        });
+      }
+
+      const {xOffset, yOffset} = this.getSlideOffset($slide);
+      const XY = `${-xOffset}px, ${-yOffset}px`;
+
+      $slides.css({
+        transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+      });
+
+      if (this.noTransition) forceRepaint();
+    }, // autosize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    checkScrollbars({width, height}) {
+      const hasScrollbarX = this.availHeight < this.height;
+      const hasScrollbarY = this.availWidth  < this.width;
+      const needsScrollbarX = width  > this.width  || (width  > this.availWidth  && height > this.height);
+      const needsScrollbarY = height > this.height || (height > this.availHeight && width  > this.width);
+
+      this.hasScrollbarX = needsScrollbarX;
+      this.hasScrollbarY = needsScrollbarY;
+
+      return {
+        hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
+        needsScrollbar: {x:needsScrollbarX, y:needsScrollbarY},
+      };
+    }, // checkScrollbars()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getSlideOffset($slide) {
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
+      const $slides = $slide.closest('.slides');
+      const height = Math.ceil($slide.height());
+      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+
+      const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
+      let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+
+      // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
+      if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
+
+      return {xOffset, yOffset};
+    }, // getSlideOffset()
+
+    //------------------------------------------------------------------------------------------------------------------
+
   }, // methods {}
 
   //====================================================================================================================
@@ -300,7 +416,7 @@ $radius-lg: $radius * 2;
   position: absolute;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   justify-content: center;
   @include short-transition;
@@ -346,6 +462,15 @@ $radius-lg: $radius * 2;
   .no-transition#{&} {
     transition: none;
   }
+
+  &.zoom {
+    display: none;
+    position: fixed;
+    pointer-events: none;
+    opacity: 0;
+    font-size: #{$zoom-ratio}em;
+  }
+
 } // .frame
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -401,6 +526,28 @@ $radius-lg: $radius * 2;
     opacity: 0.25;
   }
 
+  // TODO: specific to #the-samples
+  // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
+  // [2018-07] svg cursor only works in Chrome and Firefox
+  @at-root .has-zoom[data-dpi="80"] #the-samples .slider:not([aria-grabbed]) .slide.current,
+  .has-zoom[data-dpi="80"] .rulers .target {
+    cursor: zoom-in;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
+  }
+  @at-root .has-zoom[data-dpi="120"] #the-samples .slider:not([aria-grabbed]) .slide.current,
+  .has-zoom[data-dpi="120"] .rulers .target {
+    cursor: zoom-out;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+  }
+
+  // TODO style slide height
+  @include below-sheet-music-min {
+    @at-root #the-samples & {
+      height: calc(100vh - 10em);
+    }
+  }
+  // ^^^
+
   // prev/next cursors
   @at-root
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
@@ -411,6 +558,34 @@ $radius-lg: $radius * 2;
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
   [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
+  }
+
+  @at-root [data-dir="ltr"] &.non-sequential-after {
+    margin-right: 5.5em;
+  }
+  @at-root [data-dir="rtl"] &.non-sequential-after {
+    margin-left: 5.5em;
+  }
+  &.non-sequential-after::after {
+    content: '\2022\2009\2022\2009\2022'; // three dots
+    font-size: 3em;
+    pointer-events: none;
+    position: absolute;
+    color: transparentize(darken($background-color, 95%), .5);
+    @include short-transition;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    @at-root [data-dir="ltr"] & {
+      left: calc(100% + 1em);
+    }
+    @at-root [data-dir="rtl"] & {
+      right: calc(100% + 1em);
+      transform: translate(50%, -50%);
+    }
+  }
+  &.non-sequential-after.current::after {
+    opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
   }
 
   &::before {
@@ -431,6 +606,18 @@ $radius-lg: $radius * 2;
     box-sizing: border-box;
     height: 100%;
     overflow: hidden;
+
+    // TODO specific to #the-samples
+    @at-root #the-samples &::after {
+      pointer-events: none;
+      @include absolute-center(x);
+      content: 'COPYRIGHTED MATERIAL';
+      white-space: nowrap;
+      bottom: .5em;
+      color: darken($alert-color, 25%);
+      text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
+    }
+    // ^^^
   }
 
   img {

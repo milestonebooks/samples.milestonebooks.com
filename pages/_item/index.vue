@@ -5,7 +5,7 @@
     <TheAlerts />
 
     <article class="the-item shell" :class="itemShellClass">
-      <!--TheSlider :samples="s.samples" :currentIndex="s.currentIndex" /-->
+      <TheSlider v-if="!true" :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
         <TheOptRulers v-if="s.hasRulers" />
@@ -20,7 +20,7 @@
       </div>
     </article>
 
-    <TheSamples v-if="!true" />
+    <TheSamples v-if="true" />
 
     <TheContext />
 

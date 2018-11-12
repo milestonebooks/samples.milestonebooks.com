@@ -49,18 +49,13 @@ import SvgIcon from './SvgIcon.vue';
 
 import settings from '~/assets/settings';
 
+import '~/plugins/jQuery.offsetRect';
+
 import sleep from '~/plugins/sleep';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
 
 import { mapGetters, mapMutations } from 'vuex';
-
-// jQuery-style custom function
-//*
-window.$.fn.offsetRect = function() {
-  return this[0].getBoundingClientRect();
-};
-//*/
 
 export default {
   components: {
@@ -537,7 +532,7 @@ export default {
         this.$router.replace(`#${this.s.samples[index].id}`);
 
       } else {
-        // [2018-09-12] ensure 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
+        // [2018-09-12] ensures 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
         this.$nextTick(() => {
           this.autosize();
         });
