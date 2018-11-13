@@ -10,7 +10,7 @@
       <div class="the-item-view">
         <TheOptRulers v-if="s.hasRulers && !true" />
 
-        <TheOptPrint v-if="s.hasPrint" />
+        <TheOptPrint v-if="s.hasPrint && !true" />
 
         <TheNav v-if="s.samples.length > 1" />
 

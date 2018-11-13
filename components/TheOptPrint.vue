@@ -48,7 +48,7 @@ export default {
     print() {
       if (!this.s.isPrinting) {
         this.$store.commit('set', {isPrinting: true});
-        window.$('.thumbnail').attr('src', this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200));
+        window.$(this.$el).find('.thumbnail').attr('src', this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200));
       } else {
         this.onAfterPrint();
       }

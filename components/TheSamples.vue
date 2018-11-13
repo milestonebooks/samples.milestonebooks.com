@@ -9,6 +9,8 @@
 
       <TheOptRulers v-if="s.hasRulers" />
 
+      <TheOptPrint v-if="s.hasPrint" />
+
       <TheNav v-if="s.samples.length > 1" />
 
       <TheOptRevert v-if="s.type === 'items'" />
@@ -21,6 +23,7 @@ import AppFrame  from '~/components/AppFrame';
 import AppSlider from '~/components/AppSlider';
 
 import TheOptRulers from '~/components/TheOptRulers';
+import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
 import TheNav       from '~/components/TheNav';
 
@@ -33,6 +36,7 @@ export default {
     AppFrame,
     AppSlider,
     TheOptRulers,
+    TheOptPrint,
     TheOptRevert, // TODO: temporary
     TheNav,
   },
