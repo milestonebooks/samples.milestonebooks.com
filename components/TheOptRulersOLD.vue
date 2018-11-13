@@ -1,5 +1,5 @@
 <template>
-  <div class="the-samples-rulers">
+  <div class="the-item-rulers">
     <aside class="the-opt-rulers controls sidebar floating">
       <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${s.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
         <SvgIcon view="28" :d="btnRulerPath" />
@@ -59,7 +59,7 @@ export default {
   //====================================================================================================================
 
   mounted() {
-    this.$rulers = window.$(this.$el).find('.rulers');
+    this.$rulers = window.$('.the-item-view .rulers');
 
     window.addEventListener('resize', this.positionRulers);
     window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
@@ -114,21 +114,13 @@ export default {
 
       if (!touch) this.isUseTouch = false;
 
-      if (x === undefined) {
-        x = this.$rulers.offset().left;
-      } else {
-        x -= window.$(this.$el).offsetRect().left;
-      }
-      if (y === undefined) {
-        y = this.$rulers.offset().top;
-      } else {
-        y -= window.$(this.$el).offsetRect().top;
-      }
+      if (x === undefined) x = this.$rulers.offset().left;
+      if (y === undefined) y = this.$rulers.offset().top;
 
       // keep within view
       const scale  = settings.DPI_DEFAULT / this.s.currentWScale;
       const offset = ((settings.RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
-      const $el    = window.$('#the-samples');
+      const $el    = window.$('.the-item');
 
       x = Math.min(Math.max(x, offset), $el.width()  - offset);
       y = Math.min(Math.max(y, offset), $el.height() - offset);
@@ -224,7 +216,7 @@ $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
 $layer-rulers: 1;
 
-.the-samples-rulers {
+.the-item-rulers {
   position: absolute;
   top: 0;
   width: 100%;
@@ -278,7 +270,7 @@ $layer-rulers: 1;
   }
 
   transition: transform $transition-time-ms ease-in-out; // used for zooming
-  @at-root .no-transition + .the-samples-rulers #{&} { // applied while dragging
+  @at-root .no-transition + .the-item-view #{&} { // applied while dragging
     transition: none;
   }
 

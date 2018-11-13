@@ -1,40 +1,38 @@
 <template>
-  <div :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
-    <aside class="sidebar top h">
+  <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
-      <div class="controls">
-        <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
-          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-        </nuxt-link>
-        <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
-          <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
-            <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
-          </span></span>
+    <div class="controls">
+      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+      </nuxt-link>
+      <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+        <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
+          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
+        </span></span>
+      </button>
+      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+      </nuxt-link>
+    </div>
+
+    <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
+      <div class="pages">
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
+            @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
+          <span class="item-flex">
+            <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
+            <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+          </span>
         </button>
-        <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
-          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-        </nuxt-link>
       </div>
+      <ul class="settings">
+        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+      </ul>
+    </nav>
 
-      <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
-        <div class="pages">
-          <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
-              @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
-            <span class="item-flex">
-              <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
-              <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
-            </span>
-          </button>
-        </div>
-        <ul class="settings">
-          <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-          <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-          <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
-        </ul>
-      </nav>
-
-    </aside>
-  </div>
+  </aside>
 </template>
 
 <script>
@@ -247,7 +245,7 @@ export default {
 
     updateListFocus(id = null) {
       if (!id) id = this.getSample(0, 'id');
-      window.$(this.$el).find(`.list .item[data-id="${id}"]`)[0].focus();
+      window.$(`.list .item[data-id="${id}"]`)[0].focus();
     }, // updateListFocus()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -265,7 +263,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onMaskClick(e) {
-      if (e.target === window.$(this.$el).filter('.is-list-shown')[0]) this.hideList();
+      if (e.target === window.$('.is-list-shown')[0]) this.hideList();
     }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -282,13 +280,13 @@ export default {
 
 .the-nav {
   z-index: $layer-the-nav;
+  width: 3 * $unit;
 
   &::before {
     content: '';
     @include absolute-center(x);
-    top: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     background: white;
     opacity: 0;
     pointer-events: none;
@@ -298,11 +296,6 @@ export default {
   &.is-list-shown::before {
     opacity: .5;
     pointer-events: auto;
-  }
-
-  .sidebar {
-    z-index: $layer-the-nav;
-    width: 3 * $unit;
   }
 
   .controls {

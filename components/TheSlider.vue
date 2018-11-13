@@ -30,12 +30,12 @@
       </div>
     </div>
 
-    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
+    <aside :class="`sidebar prev v fixed ${isFirst ? 'disabled' : ''}`">
       <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
         <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
       </nuxt-link>
     </aside>
-    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
+    <aside :class="`sidebar next v fixed ${isLast ? 'disabled' : ''}`">
       <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
         <SvgIcon view="24 48" :d="btnSliderPath"></SvgIcon>
       </nuxt-link>
@@ -854,7 +854,7 @@ $radius-lg: $radius * 2;
       opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
     }
 
-    @at-root .the-item &.slide-liner::after {
+    @at-root .the-item & .slide-liner::after {
       pointer-events: none;
       @include absolute-center(x);
       content: 'COPYRIGHTED MATERIAL';

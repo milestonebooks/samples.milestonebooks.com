@@ -5,7 +5,7 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      TheContext [{{ this.s.context.currentIndex }}] of {{ this.s.context.series.length }}
+      <span style="color:orange">TheContext [{{ this.s.context.currentIndex }}] of {{ this.s.context.series.length }}</span>
       <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
     </template>
   </AppFrame>

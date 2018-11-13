@@ -1,22 +1,39 @@
 <template>
-  <article :class="['slider',sliderClass]" :aria-grabbed="isGrabbing">
+  <article class="slider-frame" :class="frameClass">
 
-    <div class="frame-masks">
-      <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
-    </div>
+    <article class="slider-view">
+      <article ref="slider" :class="['slider',sliderClass]" :aria-grabbed="isGrabbing">
 
-    <div v-for="frame of frames" :class="`frame ${frame.type} dpi${frame.dpi}`">
-      <div class="slides">
-        <section v-for="slide in slides" :key="slide.index" :data-index="slide.index"
-                 :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
-          <div class="slide-liner">
-            <img v-if="slide.image" :style="imageStyleSize(slide, frame.dpi)" :data-src="imageSrc(slide, frame.dpi)" :data-error="imageError(slide, frame.dpi)" draggable="false"
-                 @load="onImageLoaded(slide.index, frame.dpi, $event)" @error="onImageLoadError(slide.index, frame.dpi)" />
-            <h1 v-else class="slide-title">{{slide.title ? slide.title : `(${slide.id})` }}</h1>
+        <div class="frame-masks">
+          <div v-for="cls of ['side above','side below']" :class="`frame-mask ${cls}`"></div>
+        </div>
+
+        <div v-for="frame of frames" :class="`frame ${frame.type} dpi${frame.dpi}`">
+          <div class="slides">
+            <section v-for="slide in slides" :key="slide.index" :data-index="slide.index"
+                     :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
+              <div class="slide-liner">
+                <img v-if="slide.image" :style="imageStyleSize(slide, frame.dpi)" :data-src="imageSrc(slide, frame.dpi)" :data-error="imageError(slide, frame.dpi)" draggable="false"
+                     @load="onImageLoaded(slide.index, frame.dpi, $event)" @error="onImageLoadError(slide.index, frame.dpi)" />
+                <h1 v-else class="slide-title">{{slide.title ? slide.title : `(${slide.id})` }}</h1>
+              </div>
+            </section>
           </div>
-        </section>
-      </div>
-    </div>
+        </div>
+
+      </article>
+    </article>
+
+    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
+    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample" tag="button">
+        <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
+      </nuxt-link>
+    </aside>
 
   </article>
 </template>
@@ -80,6 +97,7 @@ export default {
       touchPoint:    null,
       supports3d:    supports3d(),
       eTouchParams:  supportsPassive() ? { passive: true } : false,
+      tResize:       null,
     }
   },
 
@@ -91,6 +109,13 @@ export default {
       return this.$store.state;
     },
 
+    frameClass() {
+      return {
+        'has-scrollbar-x': this.hasScrollbarX && this.s.scrollbarWidth,
+        'has-scrollbar-y': this.hasScrollbarY && this.s.scrollbarWidth,
+      }
+    },
+
     sliderClass() {
       return {
         'is-init':  this.isInit,
@@ -98,8 +123,6 @@ export default {
         'has-next': !this.isLast,
         'has-zoom': this.hasZoom,
         'no-transition':   this.noTransition,
-        'has-scrollbar-x': this.hasScrollbarX && this.s.scrollbarWidth,
-        'has-scrollbar-y': this.hasScrollbarY && this.s.scrollbarWidth,
       }
     },
 
@@ -148,10 +171,14 @@ export default {
   //====================================================================================================================
 
   mounted() {
-    this.width  = this.$el.offsetWidth;
-    this.height = this.$el.offsetHeight;
-    this.availWidth  = this.$el.clientWidth;
-    this.availHeight = this.$el.clientHeight;
+    window.addEventListener('resize', this.onResize);
+    this.onResize();
+  },
+
+  beforeDestroy () {
+    window.removeEventListener('resize', this.onResize);
+    //this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    //this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
   //====================================================================================================================
@@ -171,6 +198,26 @@ export default {
       await this.$nextTick();
       forceRepaint();
     }, // update()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onResize() {
+      console.log('AppSlider onResize');
+      const el = this.$refs.slider;
+      this.width       = el.offsetWidth;
+      this.height      = el.offsetHeight;
+      this.availWidth  = el.clientWidth;
+      this.availHeight = el.clientHeight;
+
+      // delay autosize() until above settings are propagated in layout
+
+      clearTimeout(this.tResize);
+
+      this.tResize = setTimeout(async () => {
+        this.autosize({resize:true});
+      }, settings.TRANSITION_TIME_MS);
+
+    }, // onResize()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -197,7 +244,7 @@ export default {
           rootMargin: '100px',
         });
 
-        let images = this.$el.querySelectorAll(`.frame.${frameType} [data-src]`);
+        let images = this.$refs.slider.querySelectorAll(`.frame.${frameType} [data-src]`);
 
         images = Array.prototype.slice.call(images, 0); // cast NodeList to Array to support IE/Edge
         images.forEach(image => { observer.observe(image); });
@@ -293,15 +340,16 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false} = {}) {
+      console.log('autosize');
       const frameType = 'default'; // TODO 'default'|'zoom'
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
       if (this.slides[this.currentIndex].image) {
-        this.preloadImage(this.$el.querySelector(`.frame.${frameType} [data-index="${this.currentIndex}"] img`));
+        this.preloadImage(this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${this.currentIndex}"] img`));
       }
 
-      const $slider = window.$(this.$el);
+      const $slider = window.$(this.$refs.slider);
       const $frame  = $slider.find(`.frame.${frameType}`);
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${this.currentIndex}"]`);
@@ -337,7 +385,7 @@ export default {
           width:  `${frameWidth}px`,
           height: `${frameHeight}px`,
         });
-        window.$(this.$el).find('.frame-mask.side').css({height: `${yMargin}px`});
+        window.$(this.$refs.slider).find('.frame-mask.side').css({height: `${yMargin}px`});
 
         $frame.css({
           width:  `${frameWidth}px`,
@@ -409,6 +457,16 @@ export default {
 
 $layer-frame-mask: 2; // above <.frame> to mask grab zones
 $radius-lg: $radius * 2;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+.slider-frame,
+.slider-view {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 

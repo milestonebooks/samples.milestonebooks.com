@@ -37,7 +37,7 @@ export default {
   height: 100%;
   overflow: auto;
   @include short-transition;
-  background-color: hsla(0,100%,50%,.1); // TODO: remove
+  background-color: $background-color;
 }
 
 </style>

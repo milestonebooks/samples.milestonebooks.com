@@ -149,13 +149,19 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     @include short-transition;
 
     &.h {
-      @include absolute-center(x, fixed);
+      @include absolute-center(x);
       height: $unit;
+      &.fixed {
+        @include absolute-center(x, fixed);
+      }
     }
 
     &.v {
-      @include absolute-center(y, fixed);
+      @include absolute-center(y);
       width: $unit;
+      &.fixed {
+        @include absolute-center(y, fixed);
+      }
     }
 
     &.top {
@@ -179,7 +185,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
     }
 
     &.floating {
-      position: fixed;
+      position: absolute;
       height: $unit;
       width: $unit;
       border-radius: 50%;

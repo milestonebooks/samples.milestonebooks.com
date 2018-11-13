@@ -5,10 +5,10 @@
     <TheAlerts />
 
     <article class="the-item shell" :class="itemShellClass">
-      <TheSlider v-if="!true" :samples="s.samples" :currentIndex="s.currentIndex" />
+      <TheSlider v-if="true" :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
-        <TheOptRulers v-if="s.hasRulers" />
+        <TheOptRulers v-if="s.hasRulers && !true" />
 
         <TheOptPrint v-if="s.hasPrint" />
 
@@ -33,10 +33,10 @@
 import TheDebugger  from '~/components/TheDebugger';
 import TheAlerts    from '~/components/TheAlerts';
 import TheSlider    from '~/components/TheSlider';
-import TheOptRulers from '~/components/TheOptRulers';
+import TheOptRulers from '~/components/TheOptRulersOLD';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
-import TheNav       from '~/components/TheNav';
+import TheNav       from '~/components/TheNavOLD';
 import ThePlayer    from '~/components/ThePlayer';
 
 import TheSamples   from '~/components/TheSamples';

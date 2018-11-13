@@ -5,7 +5,13 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}
+      <span style="color:red;">TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}</span>
+
+      <TheOptRulers v-if="s.hasRulers" />
+
+      <TheNav v-if="s.samples.length > 1" />
+
+      <TheOptRevert v-if="s.type === 'items'" />
     </template>
   </AppFrame>
 </template>
@@ -13,6 +19,10 @@
 <script>
 import AppFrame  from '~/components/AppFrame';
 import AppSlider from '~/components/AppSlider';
+
+import TheOptRulers from '~/components/TheOptRulers';
+import TheOptRevert from '~/components/TheOptRevert';
+import TheNav       from '~/components/TheNav';
 
 import settings from '~/assets/settings';
 
@@ -22,6 +32,9 @@ export default {
   components: {
     AppFrame,
     AppSlider,
+    TheOptRulers,
+    TheOptRevert, // TODO: temporary
+    TheNav,
   },
 
   //--------------------------------------------------------------------------------------------------------------------
