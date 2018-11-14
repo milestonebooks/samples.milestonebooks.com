@@ -16,24 +16,26 @@
         </nuxt-link>
       </div>
 
-      <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
-        <div class="pages">
-          <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
-              @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
+    </aside>
+
+    <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
+      <div class="pages">
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
+                @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
             <span class="item-flex">
               <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
               <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
             </span>
-          </button>
-        </div>
-        <ul class="settings">
-          <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-          <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-          <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
-        </ul>
-      </nav>
+        </button>
+      </div>
+      <ul class="settings">
+        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+      </ul>
+    </nav>
+    <div class="list-shadow-mask"></div>
 
-    </aside>
   </div>
 </template>
 
@@ -281,11 +283,12 @@ export default {
 @import "../assets/settings.scss";
 
 .the-nav {
-  z-index: $layer-the-nav;
-
+  // modal mask
   &::before {
+    z-index: $layer-the-nav;
     content: '';
-    @include absolute-center(x);
+    position: absolute;
+    left: 0;
     top: 0;
     width: 100%;
     height: 100%;
@@ -311,13 +314,21 @@ export default {
   }
 }
 
+.has-scrollbar-y .the-nav {
+  .sidebar,
+  .list,
+  .list-shadow-mask {
+    left: calc(50% - #{$scrollbar-width / 2});
+  }
+}
+
 .btn:not(:disabled) {
   &:focus,
   &:hover {
-    & .id-indicator-frame {
+    & .id-indicator-frame,
+    & .id-indicator {
       color: $focus-color;
       border-color: $focus-color;
-      @include short-transition;
     }
   }
 }
@@ -365,7 +376,7 @@ export default {
     background-color: white;
     white-space: nowrap;
     overflow: hidden;
-    //@include short-transition;
+    @include short-transition;
   }
 
   & .id-indicator-tray {
@@ -385,7 +396,7 @@ export default {
     width: 2.8rem;
     height: 1.8rem;
     overflow: hidden;
-    //transition: transform $transition-time ease-in-out; // match slide transition time
+    @include short-transition;
   }
 } // .btn-list
 
@@ -402,16 +413,37 @@ export default {
   }
 }
 
+// decoration to make list appear seamless with button
+.list-shadow-mask {
+  pointer-events: none;
+  position: absolute;
+  z-index: $layer-the-nav + 1;
+  @include absolute-center(x);
+  background: $background-color;
+  top: 3.25em;
+  width: 4em;
+  height: .75em;
+  @include short-transition;
+
+  opacity: 0;
+  transform: translateX(-50%) scale(0);
+
+  @at-root .is-list-shown & {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
 .list {
-  //display: none;
+  z-index: $layer-the-nav;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);
   box-sizing: border-box;
-  top: 100%;
-  width: 100vw;
+  top: 4em;
+  width: 100%;
   max-width: 10 * $unit;
-  max-height: calc(100vh - 6em);
+  max-height: calc(100% - 6em);
   padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
@@ -429,8 +461,20 @@ export default {
     transform: translateX(-50%) scale(1);
   }
 
+  &::before {
+    content: '';
+    width: 4em;
+    height: .75em;
+    @include absolute-center(x);
+    bottom: 100%;
+  }
+
   * {
     position: relative;
+  }
+
+  :focus {
+    outline: none;
   }
 
   .pages {

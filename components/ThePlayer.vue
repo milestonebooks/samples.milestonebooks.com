@@ -280,7 +280,7 @@ export default {
     height: calc(100vh - 4em);
 
     .audio-player {
-      width: calc(100% + 17px);
+      width: calc(100% + 17px); // TODO
       margin-left: (17px / 2);
     }
   }

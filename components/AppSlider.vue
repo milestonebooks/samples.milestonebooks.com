@@ -35,6 +35,12 @@
       </nuxt-link>
     </aside>
 
+    <slot name="frame"></slot>
+
+    <article class="slider-pane">
+      <slot name="pane"></slot>
+    </article>
+
   </article>
 </template>
 
@@ -202,8 +208,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
-      console.log('AppSlider onResize');
-      const el = this.$refs.slider;
+      //console.log('AppSlider onResize');
+      const el = window.$(this.$el).find('.slider-view')[0];
       this.width       = el.offsetWidth;
       this.height      = el.offsetHeight;
       this.availWidth  = el.clientWidth;
@@ -340,7 +346,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false} = {}) {
-      console.log('autosize');
+      //console.log('autosize');
       const frameType = 'default'; // TODO 'default'|'zoom'
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
@@ -418,6 +424,7 @@ export default {
 
       this.hasScrollbarX = needsScrollbarX;
       this.hasScrollbarY = needsScrollbarY;
+      console.log(`checkScrollbars .height:${height} .availHeight:${this.availHeight} needsScrollbarY:${needsScrollbarY}`);
 
       return {
         hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
@@ -466,6 +473,27 @@ $radius-lg: $radius * 2;
   width: 100%;
   height: 100%;
   overflow: auto;
+}
+
+.slider-pane {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  @include short-transition;
+  pointer-events: none;
+
+  > * {
+    pointer-events: all;
+  }
+}
+
+// TODO:
+.has-scrollbar-y .slider-pane {
+  width: calc(100% - #{$scrollbar-width});
+}
+.has-scrollbar-x .slider-pane {
+  height: calc(100% - #{$scrollbar-width});
 }
 
 //----------------------------------------------------------------------------------------------------------------------

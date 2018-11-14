@@ -46,7 +46,7 @@ export const state = () => ({
   hasZoom:      false,
   isZooming:    false,
 
-  scrollbarWidth: 0, // 17px in many/(all?) desktop browsers
+  scrollbarWidth: 0, // 17px in major Windows desktop browsers (2018) <https://codepen.io/sambible/post/browser-scrollbar-widths>
   hasScrollbarX:  false,
   hasScrollbarY:  false,
 

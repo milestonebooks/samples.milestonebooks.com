@@ -2,18 +2,23 @@
   <AppFrame id="the-samples">
     <AppSlider slot="view"
                :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" :zoomDpi="120"
-               v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
+               v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
+
+      <template slot="frame">
+        <TheNav v-if="s.samples.length > 1" />
+      </template>
+
+      <template slot="pane">
+        <TheOptRulers v-if="s.hasRulers" />
+
+        <TheOptPrint v-if="s.hasPrint" />
+
+        <TheOptRevert v-if="s.type === 'items'" />
+      </template>
+    </AppSlider>
 
     <template slot="frame">
-      <span style="color:red;">TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}</span>
-
-      <TheOptRulers v-if="s.hasRulers" />
-
-      <TheOptPrint v-if="s.hasPrint" />
-
-      <TheNav v-if="s.samples.length > 1" />
-
-      <TheOptRevert v-if="s.type === 'items'" />
+      <span style="position:relative; color:red;">TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}</span>
     </template>
   </AppFrame>
 </template>

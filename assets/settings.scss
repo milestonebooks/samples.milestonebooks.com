@@ -18,6 +18,7 @@ $sheet-music-width: 650px;
 $zoom-ratio: 120 / 80; // => ZOOM_RATIO
 $frame-ruler-width-nominal: 32px; //TODO: => FRAME_RULER_WIDTH_NOMINAL
 $ruler-width-nominal: 32px; // => RULER_WIDTH_NOMINAL
+$scrollbar-width: 17px; // major browsers on Windows <https://codepen.io/sambible/post/browser-scrollbar-widths>
 
 //----------------------------------------------------------------------------------------------------------------------
 // colors
@@ -139,6 +140,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
 
     &:disabled {
       color: $disabled-color;
+      pointer-events: none;
     }
   }
 

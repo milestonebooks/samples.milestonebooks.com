@@ -32,7 +32,6 @@ export default {
 
 .app-view {
   position: absolute;
-  z-index: -1; // behind the "frame" objects
   width: 100%;
   height: 100%;
   overflow: auto;
