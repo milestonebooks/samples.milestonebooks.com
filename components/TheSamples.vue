@@ -13,6 +13,8 @@
 
         <TheOptPrint v-if="s.hasPrint" />
 
+        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+
         <TheOptRevert v-if="s.type === 'items'" />
       </template>
     </AppSlider>
@@ -31,6 +33,7 @@ import TheOptRulers from '~/components/TheOptRulers';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
 import TheNav       from '~/components/TheNav';
+import ThePlayer    from '~/components/ThePlayer';
 
 import settings from '~/assets/settings';
 
@@ -44,6 +47,7 @@ export default {
     TheOptPrint,
     TheOptRevert, // TODO: temporary
     TheNav,
+    ThePlayer,
   },
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -106,6 +110,7 @@ export default {
   width: 40%;
   height: 50vh;
   outline: 1px solid red;
+  z-index: 999;
 }
 
 </style>

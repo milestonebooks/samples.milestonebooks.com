@@ -37,7 +37,7 @@ import TheOptRulers from '~/components/TheOptRulersOLD';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';
 import TheNav       from '~/components/TheNavOLD';
-import ThePlayer    from '~/components/ThePlayer';
+import ThePlayer    from '~/components/ThePlayerOLD';
 
 import TheSamples   from '~/components/TheSamples';
 import TheContext   from '~/components/TheContext';

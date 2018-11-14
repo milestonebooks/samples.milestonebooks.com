@@ -74,6 +74,7 @@ $slider-height: 75%;
   width: 40%;
   height: 50vh;
   outline: 1px solid orange;
+  z-index: 999;
 
   /deep/ .app-view {
     height: $slider-height;

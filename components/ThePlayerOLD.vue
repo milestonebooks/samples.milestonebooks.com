@@ -104,7 +104,7 @@ export default {
 
     init() {
       this.$store.dispatch('player/initSettings');
-      this.$slider = window.$(this.$el).find(this.selSlider);
+      this.$slider = window.$(this.selSlider);
       this.set({isInit:true});
       this.refresh();
       this.update();
@@ -295,7 +295,6 @@ export default {
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   width: 10 * $unit;
 
-  // TODO: media query may not render correctly if view narrower than viewport
   @include below-sheet-music-min {
     width: 100%;
     border-radius: 0 !important;
