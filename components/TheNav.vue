@@ -19,7 +19,7 @@
     </aside>
 
     <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
-      <div class="pages">
+      <div class="slides">
         <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
             <span class="item-flex">
@@ -283,6 +283,16 @@ export default {
 @import "../assets/settings.scss";
 
 .the-nav {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+
+  > * {
+    pointer-events: all;
+  }
+
   // modal mask
   &::before {
     z-index: $layer-the-nav;
@@ -318,7 +328,8 @@ export default {
   .sidebar,
   .list,
   .list-shadow-mask {
-    left: calc(50% - #{$scrollbar-width / 2});
+    // TODO: [2018-11] IE seems to subtract half the width of .sidebar (6em) in calculating left edge
+    left: calc(50% - #{round($scrollbar-width / 2)}); // decimal values can produce misalignments in Edge
   }
 }
 
@@ -477,11 +488,11 @@ export default {
     outline: none;
   }
 
-  .pages {
+  .slides {
     display: flex;
     flex-direction: column;
   }
-  &.compact .pages {
+  &.compact .slides {
     flex-direction: row;
     flex-wrap: wrap;
     padding: $list-padding;
@@ -516,7 +527,7 @@ export default {
     width: 1 * $unit;
     margin-bottom: ($list-padding * 2);
   }
-  &.compact .pages {
+  &.compact .slides {
     margin-bottom: -($list-padding * 2);
   }
 
