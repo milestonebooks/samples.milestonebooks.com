@@ -32,7 +32,7 @@
 <script>
 import TheDebugger  from '~/components/TheDebugger';
 import TheAlerts    from '~/components/TheAlerts';
-import TheSlider    from '~/components/TheSlider';
+import TheSlider    from '~/components/TheSliderOLD';
 import TheOptRulers from '~/components/TheOptRulersOLD';
 import TheOptPrint  from '~/components/TheOptPrint';
 import TheOptRevert from '~/components/TheOptRevert';

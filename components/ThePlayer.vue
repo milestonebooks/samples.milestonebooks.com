@@ -275,15 +275,8 @@ export default {
 <style lang="scss">
 @import "../assets/settings.scss";
 
-[data-type="audio"] .shell.has-scrollbar-y {
-  @include below-sheet-music-min {
-    height: calc(100vh - 4em);
-
-    .audio-player {
-      width: calc(100% + 17px); // TODO
-      margin-left: (17px / 2);
-    }
-  }
+[data-type="audio"] .below-sheet-music-width .has-scrollbar-y .slider-view {
+  height: calc(100% - 4em);
 }
 </style>
 
@@ -295,8 +288,7 @@ export default {
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   width: 10 * $unit;
 
-  // TODO: media query may not render correctly if view narrower than viewport
-  @include below-sheet-music-min {
+  @at-root .below-sheet-music-width & {
     width: 100%;
     border-radius: 0 !important;
   }

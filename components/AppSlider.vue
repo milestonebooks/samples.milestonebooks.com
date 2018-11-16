@@ -95,6 +95,7 @@ export default {
       height:        null,
       availWidth:    null,
       availHeight:   null,
+      minSheetMusicWidth: null,
       hasScrollbarX: false,
       hasScrollbarY: false,
       slideHeight:   null,
@@ -172,6 +173,12 @@ export default {
       if (this.isInit) this.noTransition = false;
     },
 
+    minSheetMusicWidth() {
+      window.$(this.$el).closest('.app-frame')
+        .toggleClass('below-sheet-music-width', !this.minSheetMusicWidth)
+        .toggleClass('min-sheet-music-width',    this.minSheetMusicWidth);
+    },
+
   }, // watch {}
 
   //====================================================================================================================
@@ -214,6 +221,8 @@ export default {
       this.height      = el.offsetHeight;
       this.availWidth  = el.clientWidth;
       this.availHeight = el.clientHeight;
+
+      this.minSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
 
       // delay autosize() until above settings are propagated in layout
 
@@ -629,10 +638,8 @@ $radius-lg: $radius * 2;
   }
 
   // TODO style slide height
-  @include below-sheet-music-min {
-    @at-root #the-samples & {
-      height: calc(100vh - 10em);
-    }
+  @at-root #the-samples.below-sheet-music-width & {
+    height: calc(100% - 10em) !important;
   }
   // ^^^
 

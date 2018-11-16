@@ -101,7 +101,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
 }
 
 @mixin below-sheet-music-min() {
-  @media (max-width: #{$sheet-music-width - 1px}) {
+  @at-root .below-sheet-music-width & {
     @content;
   }
 }
