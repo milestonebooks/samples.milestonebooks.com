@@ -100,12 +100,14 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   }
 }
 
+// TODO: obsolete...
 @mixin below-sheet-music-min() {
   @at-root .below-sheet-music-width & {
     @content;
   }
 }
 
+// TODO: obsolete...
 @mixin sheet-music-min {
   @media (min-width: #{$sheet-music-width}) {
     @content;

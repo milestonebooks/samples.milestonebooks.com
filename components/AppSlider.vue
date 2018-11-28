@@ -215,12 +215,11 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
-      //console.log('AppSlider onResize');
       const el = window.$(this.$el).find('.slider-view')[0];
-      this.width       = el.offsetWidth;
-      this.height      = el.offsetHeight;
-      this.availWidth  = el.clientWidth;
-      this.availHeight = el.clientHeight;
+      this.width       = el.getBoundingClientRect().width;
+      this.height      = el.getBoundingClientRect().height;
+      this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
+      this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
 
       this.minSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
 
@@ -381,8 +380,8 @@ export default {
       this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
       this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
-      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
-      const frameWidth  = Math.ceil(Math.max(width,  this.availWidth));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight));
+      const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);

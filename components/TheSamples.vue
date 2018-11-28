@@ -107,7 +107,7 @@ export default {
 #the-samples {
   right: 50px;
   bottom: 50px;
-  width: 40%;
+  width: 50%;
   height: 50vh;
   outline: 1px solid red;
   z-index: 999;
