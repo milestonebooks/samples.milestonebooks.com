@@ -84,7 +84,9 @@ export default {
   }, // beforeDestroy ()
 
   watch: {
-    currentIndex() { this.update() },
+    currentIndex() {
+      this.update();
+    },
 
     'p.isAutoPlay'() {
       this.$store.dispatch('player/togglePlay', {play: this.p.isAutoPlay});
@@ -141,6 +143,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async load(index) {
+      if (this.currentIndex === null) return;
+
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
         this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
       });
