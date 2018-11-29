@@ -11,4 +11,5 @@ export default {
   RULER_WIDTH_NOMINAL: 32,            // => $ruler-width-nominal (action width is 1 pixel less to make a single-pixel center line)
   CONTEXT_MIN_WIDTH: 40,              // ~4em
   SHEET_MUSIC_WIDTH: 650,             // => $sheet-music-width
+  CONTROLS_HEIGHT: 40,
 }

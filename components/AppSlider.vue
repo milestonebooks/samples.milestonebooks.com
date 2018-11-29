@@ -304,16 +304,16 @@ export default {
     slideStyleSize(slide, dpi) {
       const xdpi = slide.image && dpi ? dpi : 1;
       // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      let w = slide.image ? Math.ceil(slide.image.w * xdpi) : Math.min(this.availWidth, this.availHeight);
+      let w = slide.image ? Math.ceil(slide.image.w * xdpi) : Math.floor(Math.min(this.availWidth, this.availHeight));
       let h = slide.image ? Math.ceil(slide.image.h * xdpi) : null;
 
-      if (slide.audio) h += 40; // add some vertical padding so sheet music won't be obscured by controls
+      if (slide.audio && slide.image) h += settings.CONTROLS_HEIGHT; // add some vertical padding so sheet music won't be obscured by controls
 
       // at default zoom, contain slide within view
       if (dpi === settings.DPI_DEFAULT) {
         let wScale = 1;
 
-        if (w > this.width) {
+        if (w > this.availWidth) {
           // if zoomed in, default slides should not count h scrollbar
           const sliderHRatio = (this.s.dpi !== settings.DPI_DEFAULT || this.s.isZooming ? this.height : this.availHeight) / this.width;
           const slideHRatio = h / w;
@@ -325,7 +325,7 @@ export default {
             wScale = Math.min(this.width / w, this.height / h);
           }
 
-          w = Math.round(w * wScale);
+          w = Math.floor(w * wScale);
           h = Math.floor(h * wScale);
         }
 
@@ -334,11 +334,12 @@ export default {
         if (slide.index === this.currentIndex) this.set({currentWScale: wScale});
       } // end default dpi
 
-      const width    = `${w}px`;
-      const height   = slide.image ? `${h}px` : '';
-      const maxWidth = slide.image ? '' : `${settings.SHEET_MUSIC_WIDTH}px`;
+      const width     = `${w}px`;
+      const height    = slide.image ? `${h}px` : '';
+      const maxWidth  = !slide.image ? `${settings.SHEET_MUSIC_WIDTH}px` : '';
+      const maxHeight = !slide.image ? `${this.availHeight - settings.CONTROLS_HEIGHT}px` : '';
 
-      return {width, height, maxWidth};
+      return {width, height, maxWidth, maxHeight};
     }, // slideStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -378,7 +379,7 @@ export default {
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
       this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
-      this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
+      this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0) - (this.slides[this.currentIndex].audio && !this.minSheetMusicWidth ? 40 : 0);
 
       const frameHeight = Math.floor(Math.max(height, this.availHeight));
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
@@ -427,12 +428,11 @@ export default {
     checkScrollbars({width, height}) {
       const hasScrollbarX = this.availHeight < this.height;
       const hasScrollbarY = this.availWidth  < this.width;
-      const needsScrollbarX = width  > this.width  || (width  > this.availWidth  && height > this.height);
-      const needsScrollbarY = height > this.height || (height > this.availHeight && width  > this.width);
+      const needsScrollbarX = (width  > this.width  || (width  > this.availWidth  && height > this.height)) && this.s.dpi !== settings.DPI_DEFAULT;
+      const needsScrollbarY = (height > this.height || (height > this.availHeight && width  > this.width ));
 
       this.hasScrollbarX = needsScrollbarX;
       this.hasScrollbarY = needsScrollbarY;
-      console.log(`checkScrollbars .height:${height} .availHeight:${this.availHeight} needsScrollbarY:${needsScrollbarY}`);
 
       return {
         hasScrollbar: {x:hasScrollbarX, y:hasScrollbarY},
@@ -602,6 +602,7 @@ $radius-lg: $radius * 2;
   vertical-align: text-top;
   text-align: center;
   background-color: white;
+  overflow: hidden;
   margin: 0 ($unit * 1/8);
 
   @at-root
@@ -636,11 +637,11 @@ $radius-lg: $radius * 2;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
   }
 
-  // TODO style slide height
+  /* TODO style slide height
   @at-root #the-samples.below-sheet-music-width & {
     height: calc(100% - 10em) !important;
   }
-  // ^^^
+  //*/
 
   // prev/next cursors
   @at-root
@@ -732,8 +733,8 @@ $radius-lg: $radius * 2;
       content: '';
       display: block;
       width: 100%;
-      margin-top: 5vh;
-      height: 20vh;
+      margin-top: 0.25em;
+      height: 4em;
       // icon sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
       background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M0,6 v6 h4 l5,5 v-16 l-5,5 h-4 z' /%3E%3Cpath d='M13.5,9 c0,-1.8 -1,-3.3 -2.5,-4 v8 c1.5,-0.7 2.5,-2.2 2.5,-4 z' /%3E%3Cpath d='M11,.2 v2 c3,1 5,3.6 5,6.8 s-2,5.8 -5,6.7 v2 c4,-0.8 7,-4.4 7,-8.7 s-3,-8 -7,-8.8 z' /%3E%3C/svg%3E") no-repeat center;
       opacity: .05;
