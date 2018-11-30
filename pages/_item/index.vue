@@ -4,7 +4,7 @@
 
     <TheAlerts />
 
-    <article class="the-item shell" :class="itemShellClass">
+    <article v-if="true" class="the-item shell" :class="itemShellClass">
       <TheSlider v-if="true" :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
@@ -22,7 +22,7 @@
 
     <TheSamples v-if="true" />
 
-    <TheContext />
+    <TheContext v-if="!true" />
 
     <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
 
@@ -41,6 +41,8 @@ import ThePlayer    from '~/components/ThePlayerOLD';
 
 import TheSamples   from '~/components/TheSamples';
 import TheContext   from '~/components/TheContext';
+
+import settings from '~/assets/settings';
 
 import { mapMutations } from 'vuex';
 
@@ -67,7 +69,7 @@ export default {
       title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
 
       bodyAttrs: {
-        class: (this.s.showContext ? 'show-context' : '')
+        class: (this.s.showContext ? 'show-context' : '') + (this.s.isResizing ? 'is-resizing' : '')
       },
 
       link: [
@@ -83,7 +85,8 @@ export default {
   },
 
   data () {
-    return {};
+    return {
+    }
   }, // data()
 
   async asyncData({params, store, error}) {
@@ -115,16 +118,16 @@ export default {
 
     mainClass() {
       return {
-        'debug':       this.s._showDebugger,
-        'is-init':     this.s.isInit,
-        'has-touch':   this.s.hasTouch,
-        'has-mouse':   this.s.hasMouse,
-        'has-zoom':    this.s.hasZoom,
-        'has-print':   this.s.hasPrint,
-        'show-rulers': this.s.hasRulers && this.s.showRulers,
-        'is-printing': this.s.isPrinting,
+        'debug':        this.s._showDebugger,
+        'is-init':      this.s.isInit,
+        'has-touch':    this.s.hasTouch,
+        'has-mouse':    this.s.hasMouse,
+        'has-zoom':     this.s.hasZoom,
+        'has-print':    this.s.hasPrint,
+        'show-rulers':  this.s.hasRulers && this.s.showRulers,
+        'is-printing':  this.s.isPrinting,
         'show-context': this.s.showContext,
-        'show-title':  true,
+        'show-title':   true,
       }
     },
 
@@ -142,6 +145,8 @@ export default {
   async mounted() {
     console.time('index');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
+
+    window.addEventListener('resize', this.onResize);
 
     await this.$store.dispatch('initSettings');
 
@@ -166,6 +171,10 @@ export default {
     this.initSamplesData();
   }, // mounted()
 
+  beforeDestroy () {
+    window.removeEventListener('resize', this.onResize);
+  },
+
   //====================================================================================================================
 
   methods: {
@@ -173,6 +182,18 @@ export default {
     ...mapMutations([
       'set',
     ]),
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onResize: function() {
+      this.set({'isResizing': true});
+
+      clearTimeout(this.tResize);
+
+      this.tResize = setTimeout(() => {
+        this.set({'isResizing': false});
+      }, settings.TRANSITION_TIME_MS);
+    }, // onResize()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -308,7 +329,7 @@ main {
   display: flex;
   flex-direction: column;
   margin: auto;
-  @include short-transition;
+  //@include short-transition;
 
   &[data-dir="rtl"] {
     direction: rtl;

@@ -13,6 +13,7 @@ export const state = () => ({
   psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
   urlBase:    'https://samples.milestonebooks.com/',
   urlBaseImg: 'https://www.milestonebooks.com/img/',
+  isResizing:  false,
 
   item:          '',
   type:          'items', // 'items' | 'audio'

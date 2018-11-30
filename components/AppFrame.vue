@@ -27,7 +27,10 @@ export default {
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
   overflow: auto;
-  @include short-transition;
+
+  @at-root body:not(.is-resizing) & {
+    @include short-transition;
+  }
 }
 
 .app-view {
@@ -35,8 +38,11 @@ export default {
   width: 100%;
   height: 100%;
   overflow: auto;
-  @include short-transition;
   background-color: $background-color;
+
+  @at-root body:not(.is-resizing) & {
+    @include short-transition;
+  }
 }
 
 </style>

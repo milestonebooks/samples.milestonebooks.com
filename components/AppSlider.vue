@@ -179,6 +179,15 @@ export default {
         .toggleClass('min-sheet-music-width',    this.minSheetMusicWidth);
     },
 
+    's.isResizing'() {
+      // hack to compensate for race conditions
+      if (!this.s.isResizing) {
+        setTimeout(() => {
+          this.autosize({resize:true});
+        }, settings.TRANSITION_TIME_MS * 2);
+      }
+    },
+
   }, // watch {}
 
   //====================================================================================================================
@@ -216,18 +225,19 @@ export default {
 
     onResize() {
       const el = window.$(this.$el).find('.slider-view')[0];
-      this.width       = el.getBoundingClientRect().width;
-      this.height      = el.getBoundingClientRect().height;
-      this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
-      this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
+      this.width  = el.getBoundingClientRect().width;
+      this.height = el.getBoundingClientRect().height;
 
       this.minSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
+
+      this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
+      this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
 
       // delay autosize() until above settings are propagated in layout
 
       clearTimeout(this.tResize);
 
-      this.tResize = setTimeout(async () => {
+      this.tResize = setTimeout(() => {
         this.autosize({resize:true});
       }, settings.TRANSITION_TIME_MS);
 
@@ -302,9 +312,14 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     slideStyleSize(slide, dpi) {
+      if (!dpi) return;
+
       const xdpi = slide.image && dpi ? dpi : 1;
-      // TODO: taking the width from the clientHeight can cause weird alignment issues on resizing
-      let w = slide.image ? Math.ceil(slide.image.w * xdpi) : Math.floor(Math.min(this.availWidth, this.availHeight));
+
+      const $el = window.$(this.$el).find(`.frame.dpi${dpi} .slide[data-index="${slide.index}"]`);
+      const nonImgWidth = Math.floor(Math.min(this.availWidth, (this.s.isResizing && $el.length ? parseFloat($el.css('width').replace(/\D/g,'')) : this.availHeight)));
+
+      let w = slide.image ? Math.ceil(slide.image.w * xdpi) : nonImgWidth;
       let h = slide.image ? Math.ceil(slide.image.h * xdpi) : null;
 
       if (slide.audio && slide.image) h += settings.CONTROLS_HEIGHT; // add some vertical padding so sheet music won't be obscured by controls
@@ -337,9 +352,10 @@ export default {
       const width     = `${w}px`;
       const height    = slide.image ? `${h}px` : '';
       const maxWidth  = !slide.image ? `${settings.SHEET_MUSIC_WIDTH}px` : '';
-      const maxHeight = !slide.image ? `${this.availHeight - settings.CONTROLS_HEIGHT}px` : '';
 
-      return {width, height, maxWidth, maxHeight};
+      //console.log(`slideStyleSize(#${slide.id}, @${dpi}) w:${width}, h:${height} | availHeight:${this.availHeight} | maxW:${maxWidth} ${this.s.isResizing ? '--resizing--' : ''}`, slide.id);
+
+      return {width, height, maxWidth};
     }, // slideStyleSize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -355,7 +371,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false} = {}) {
-      //console.log('autosize');
       const frameType = 'default'; // TODO 'default'|'zoom'
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
@@ -369,8 +384,8 @@ export default {
       const $slides = $frame.find('.slides');
       const $slide  = $slides.find(`.slide[data-index="${this.currentIndex}"]`);
 
-      const height = Math.ceil($slide.height());
       const width  = Math.ceil($slide.width());
+      const height = Math.ceil($slide.height());
 
       const $slidePrev = $slide.prev();
       const $slideNext = $slide.next();
@@ -379,18 +394,18 @@ export default {
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
       this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
-      this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0) - (this.slides[this.currentIndex].audio && !this.minSheetMusicWidth ? 40 : 0);
+      this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
-      const frameHeight = Math.floor(Math.max(height, this.availHeight));
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
-      if (resize || height !== this.slideHeight || width !== this.slideWidth || groupHeight !== this.groupHeight) {
+      if (resize || width !== this.slideWidth || height !== this.slideHeight || groupHeight !== this.groupHeight) {
 
-        this.slideHeight = height;
         this.slideWidth  = width;
+        this.slideHeight = height;
         this.groupHeight = groupHeight;
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
