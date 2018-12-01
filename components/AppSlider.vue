@@ -129,7 +129,7 @@ export default {
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
         'has-zoom': this.hasZoom,
-        'no-transition':   this.noTransition,
+        'no-transition': this.noTransition,
       }
     },
 
@@ -194,13 +194,15 @@ export default {
 
   mounted() {
     window.addEventListener('resize', this.onResize);
+    this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.addEventListener('mousedown',  this.onTouchstart);
     this.onResize();
   },
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
-    //this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
-    //this.$el.removeEventListener('mousedown',  this.onTouchstart);
+    this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
+    this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
 
   //====================================================================================================================
@@ -367,6 +369,142 @@ export default {
         height: `${Math.ceil(slide.image.h * x)}px`,
       };
     }, // imageStyleSize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onTouchstart(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 0;
+      //if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=.5, maximum-scale=2');
+      if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width');
+      //*/
+
+      const $slides = window.$(touches.target).closest('.slides');
+
+      if (!$slides.length) return;
+
+      const el = $slides.closest('.frame')[0];
+
+      el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.addEventListener('mousemove', this.onTouchmove);
+      el.addEventListener('touchend',  this.onTouchend);
+      el.addEventListener('mouseup',   this.onTouchend);
+
+      const {pageX, pageY} = touches;
+
+      const {xOffset, yOffset} = this.getSlideOffset($slides.find(`[data-index="${this.currentIndex}"]`));
+
+      this.touchPoint = {
+        time: Date.now(),
+        el: el,
+        slidesX: xOffset,
+        slidesY: yOffset,
+        x: pageX,
+        y: pageY,
+        deltaX: 0,
+        deltaY: 0,
+      };
+
+      this.isScrolling = null;
+
+    }, // onTouchstart()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onTouchmove(e) {
+      const touches = e.touches ? e.touches[0] : e;
+
+      const {pageX, pageY} = touches;
+
+      this.touchPoint.deltaX = pageX - this.touchPoint.x;
+      this.touchPoint.deltaY = pageY - this.touchPoint.y;
+
+      if (this.isScrolling === null) {
+        this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
+      }
+
+      if (!this.isScrolling) {
+        this.isGrabbing = true;
+        this.noTransition = true;
+
+        const $slides = window.$(this.touchPoint.el).find('.slides');
+        const XY = `${-this.touchPoint.slidesX + this.touchPoint.deltaX}px, ${-this.touchPoint.slidesY}px`;
+        $slides.css({
+          'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
+        });
+      }
+    }, // onTouchmove()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onTouchend(e) {
+      /*
+      const isMultiTouch = e.touches && e.touches.length > 1;
+      if (!isMultiTouch) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1');
+      //*/
+
+      // cleanup
+      const el = this.touchPoint.el;
+      el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
+      el.removeEventListener('mousemove', this.onTouchmove);
+      el.removeEventListener('touchend',  this.onTouchend);
+      el.removeEventListener('mouseup',   this.onTouchend);
+
+      this.touchPoint.el = null;
+
+      this.isScrolling = null;
+
+      this.isGrabbing = false;
+
+      this.noTransition = false;
+
+      // decide what the interaction means
+      let action = 'click';
+      const duration = Date.now() - this.touchPoint.time;
+      const diffX = Math.abs(this.touchPoint.deltaX);
+      const diffY = Math.abs(this.touchPoint.deltaY);
+      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+
+      const slideWidth = window.$(this.$el).find(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+
+      // greater than a third the slide width or a fast flick
+      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
+        action = 'swipe';
+      }
+
+      let index = this.currentIndex;
+      let elIndex = null;
+
+      // main button, quickly, without moving, on a slide
+      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
+
+      if (action === 'swipe') {
+        index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
+      } else if (isSlideClick) {
+        index = Number(elIndex);
+        if (index === this.currentIndex && this.s.hasZoom) {
+          action = 'zoom';
+        }
+      }
+
+      if (action === 'zoom') {
+        this.toggleDpi({
+          elX: e.offsetX / e.target.getBoundingClientRect().width,
+          elY: e.offsetY / e.target.getBoundingClientRect().height,
+        });
+
+      } else if (index !== this.currentIndex && this.s.samples[index]) {
+        this.$router.replace(`#${this.s.samples[index].id}`);
+
+      } else {
+        // [2018-09-12] ensures 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
+        this.$nextTick(() => {
+          this.autosize();
+        });
+      }
+    }, // onTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -569,8 +707,7 @@ $radius-lg: $radius * 2;
   white-space: nowrap;
   @include short-transition;
 
-  @at-root
-  .no-transition#{&} {
+  @at-root .no-transition & {
     transition: none;
   }
 
@@ -596,7 +733,7 @@ $radius-lg: $radius * 2;
   }
   @include short-transition;
 
-  @at-root .no-transition#{&} {
+  @at-root .no-transition & {
     transition: none;
   }
 
@@ -651,12 +788,6 @@ $radius-lg: $radius * 2;
     cursor: zoom-out;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
   }
-
-  /* TODO style slide height
-  @at-root #the-samples.below-sheet-music-width & {
-    height: calc(100% - 10em) !important;
-  }
-  //*/
 
   // prev/next cursors
   @at-root
