@@ -499,7 +499,7 @@ export default {
         this.$router.replace(`#${this.s.samples[index].id}`);
 
       } else {
-        // [2018-09-12] ensures 'no-transition' class is removed in Firefox; this.forceRepaint() doesn't seem to do the trick
+        // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
         this.$nextTick(() => {
           this.autosize();
         });
@@ -509,7 +509,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false} = {}) {
-      const frameType = 'default'; // TODO 'default'|'zoom'
+      const frameType = (this.s.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
@@ -535,7 +535,7 @@ export default {
       this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight - (!this.minSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
@@ -610,6 +610,216 @@ export default {
 
       return {xOffset, yOffset};
     }, // getSlideOffset()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async toggleDpi({elX = 0.5, elY = 0.5} = {}) {
+
+      if (this.s.isZooming) return;
+
+      this.set({isZooming:true});
+
+      const dpi = (this.s.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
+      this.set({dpi});
+
+      // `user-scaleable=no` prevents zooming jank in mobile Chrome (caused by browser resizing window.innerWidth)
+      window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1, user-scalable=no'}`);
+
+      const zoomIn = (dpi === settings.DPI_ZOOM);
+
+      const index = this.currentIndex;
+
+      const $el        = window.$(this.$el);
+      const el         = $el.find('.slider-view')[0];
+      const $slider    = $el.find('.slider');
+      const $frame     = $slider.find('.frame.dpi80');
+      const $frameZoom = $slider.find('.frame.dpi120');
+      const $slide     = $frame.find(`[data-index="${index}"]`);
+      const $slideZoom = $frameZoom.find(`[data-index="${index}"]`);
+      const $rulers    = $el.find('.rulers');
+
+      // ensure no transitions are in effect to delay prep layout
+      this.noTransition = true;
+      await this.$nextTick();
+
+      const w = this.s.samples[index].image.w;
+      const h = this.s.samples[index].image.h;
+
+      const xScroll = el.scrollLeft;
+      const yScroll = el.scrollTop;
+
+      // TODO: 'rtl' zoom-in is buggy
+      const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
+
+      if (zoomIn) {
+        /*
+        const xOffset = $slide.offsetRect()[metric];
+        const yOffset = Math.max($slide.offset().top, 0);
+        /*/
+        const xOffset = $slide.offsetRect()[metric] - $el.offsetRect()[metric];
+        const yOffset = Math.max($slide.offset().top - $el.offset().top, 0);
+        //*/
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
+
+        const xDiff = Math.round((w * elX * dpiDiff) - xOffset);
+        const yDiff = Math.round((h * elY * dpiDiff) - yOffset);
+
+        const xScrollTo = xScroll + xDiff;
+        const yScrollTo = yScroll + yDiff;
+
+        // position the zoom slider to trigger layout and image loading
+        $frameZoom.css({display: 'block', position: 'absolute'});
+        this.autosize({resize:true});
+
+        // position view to compensate for new layout
+        el.scrollLeft = xScrollTo;
+        el.scrollTop  = yScrollTo;
+
+        // when non-zoom frame is contained within view, desired scroll position may not be possible
+        const xScrollAdj = el.scrollLeft - xScrollTo;
+        const yScrollAdj = el.scrollTop - yScrollTo;
+
+        const xFrame = Math.max(xDiff, 0) + Math.min(xScrollAdj, 0);
+        const yFrame = Math.max(yDiff, 0) + Math.min(yScrollAdj, 0);
+
+        // adjust non-zoom frame to original screen position
+        $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
+
+        // find origin that will scale to final position
+        const xPct = ($slide.offsetRect()[metric] - $slideZoom.offsetRect()[metric]) / ($slideZoom.width() - $slide.width());
+        const yPct = ($slide.offset().top - $slideZoom.offset().top) / ($slideZoom.height() - $slide.height());
+
+        const xOrigin = (xOffset + ($slide.width()  * xPct)) / $frame.width();
+        const yOrigin = (yOffset + ($slide.height() * yPct)) / $frame.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
+
+        $frame.css({'z-index': 1});
+        $frameZoom.css({opacity: 0});
+        $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
+        $rulers.css({transform: `scale(${1 / scale})`});
+
+        // ensure dom is updated before running zoom transition
+        forceRepaint();
+        this.noTransition = false;
+        await this.$nextTick();
+
+        $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
+        $rulers.css({transform: ''});
+
+        // zoom
+        await sleep(settings.TRANSITION_TIME_MS);
+
+        // fade
+        $frame.css({'z-index': ''});
+        $frameZoom.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+
+        await sleep(settings.TRANSITION_TIME_MS);
+
+        // cleanup
+        this.noTransition = true;
+        await this.$nextTick();
+
+        $frame.css({opacity: 0, 'pointer-events': 'none'});
+        $frame.removeClass('is-zooming').css({transform: ''});
+
+        // zoom out
+      } else {
+        const elOffset = {
+          left: el.scrollLeft - $el.offset().left,
+          top:  el.scrollTop  - $el.offset().top,
+        };
+
+        // offset from slider
+        const xOffset = elOffset.left + $slide.offset().left;
+        const yOffset = elOffset.top  + $slide.offset().top;
+
+        // scaling difference
+        const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
+
+        // coordinate difference required on small slide to align with target on large slide
+        const xDiff = Math.round((w * elX * dpiDiff) - (xOffset - (elOffset.left + $slideZoom.offset().left)));
+        const yDiff = Math.round((h * elY * dpiDiff) - (yOffset - (elOffset.top  + $slideZoom.offset().top )));
+
+        const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
+
+        this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
+        this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
+
+        // space available within view around slide
+        const xMargin = this.availWidth  - $slide.width();
+        const yMargin = this.availHeight - $slide.height();
+
+        const xMarginLeft = xOffset + xDiff - xScroll;
+        const yMarginTop  = yOffset + yDiff - yScroll;
+
+        const xMarginRight  = xScroll + this.availWidth  - (xOffset + xDiff + $slide.width());
+        const yMarginBottom = yScroll + this.availHeight - (yOffset + yDiff + $slide.height());
+
+        const xScrollAdj = (xMargin > 0
+          ? xScroll - (xOffset + xDiff) + Math.max(xMargin / 2, 0)
+          : Math.min(-xMarginLeft, 0) + Math.max(xMarginRight, 0) );
+        const yScrollAdj = (yMargin > 0
+          ? yScroll - (yOffset + yDiff) + Math.max(yMargin / 2, 0)
+          : Math.min(-yMarginTop, 0) + Math.max(yMarginBottom, 0) );
+
+        // position non-zoom frame in the desired relative location
+        const xFrame = xDiff + xScrollAdj;
+        const yFrame = yDiff + yScrollAdj;
+
+        $frame.css({transform: `translate(${xFrame}px, ${yFrame}px)`});
+
+        // find origin that will scale to final position
+        const xPct = ((elOffset.left + $slide.offset().left) - (elOffset.left + $slideZoom.offset().left)) / ($slideZoom.width()  - $slide.width());
+        const yPct = ((elOffset.top  + $slide.offset().top ) - (elOffset.top  + $slideZoom.offset().top )) / ($slideZoom.height() - $slide.height());
+
+        const xOrigin = ((elOffset.left + $slideZoom.offset().left) + ($slideZoom.width()  * xPct)) / $frameZoom.width();
+        const yOrigin = ((elOffset.top  + $slideZoom.offset().top ) + ($slideZoom.height() * yPct)) / $frameZoom.height();
+        const scale   = settings.ZOOM_RATIO / this.s.currentWScale;
+
+        $frameZoom.css({'z-index': 1});
+        $frame.css({opacity: 0});
+        $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
+        $rulers.css({transform: `scale(${settings.ZOOM_RATIO})`});
+
+        // ensure dom is updated before running zoom transition
+        forceRepaint();
+        this.noTransition = false;
+        await this.$nextTick();
+
+        $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
+        $rulers.css({transform: `scale(${this.s.currentWScale})`});
+
+        await sleep(settings.TRANSITION_TIME_MS);
+
+        // fade
+        $frameZoom.css({'z-index': ''});
+        $frame.css({'z-index': 1, opacity: 1, 'pointer-events': 'all'});
+
+        await sleep(settings.TRANSITION_TIME_MS);
+
+        // cleanup
+        const xScrollTo = -($frame.offset().left - $el.offset().left);
+        const yScrollTo = -($frame.offset().top  - $el.offset().top);
+
+        this.noTransition = true;
+        await this.$nextTick();
+
+        $frameZoom.css({opacity: 0, 'pointer-events': 'none'});
+        $frameZoom.removeClass('is-zooming').css({transform: ''});
+        $frame.css({transform: ''});
+        $frameZoom.css({position: 'fixed'});
+        this.autosize({resize:true});
+
+        el.scrollLeft = xScrollTo;
+        el.scrollTop  = yScrollTo;
+      } // zoom out
+
+      forceRepaint();
+      this.noTransition = false;
+
+      this.set({isZooming:false});
+
+    }, // toggleDpi()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -754,7 +964,6 @@ $radius-lg: $radius * 2;
   vertical-align: text-top;
   text-align: center;
   background-color: white;
-  overflow: hidden;
   margin: 0 ($unit * 1/8);
 
   @at-root

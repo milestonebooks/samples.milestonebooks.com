@@ -279,8 +279,8 @@ export default {
 <style lang="scss">
 @import "../assets/settings.scss";
 
-[data-type="audio"] .below-sheet-music-width .has-scrollbar-y .slider-view {
-  height: calc(100% - 4em);
+[data-type="audio"] .below-sheet-music-width .slider {
+  margin-bottom: $controls-height;
 }
 </style>
 
