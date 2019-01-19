@@ -745,10 +745,11 @@ export default {
         this.availWidth  = this.width  - (needsScrollbar.y ? this.s.scrollbarWidth : 0);
         this.availHeight = this.height - (needsScrollbar.x ? this.s.scrollbarWidth : 0);
 
-        // space available within view around slide
+        // extra space available within view
         const xMargin = this.availWidth  - $slide.width();
         const yMargin = this.availHeight - $slide.height();
 
+        // extra space available within slider
         const xMarginLeft = xOffset + xDiff - xScroll;
         const yMarginTop  = yOffset + yDiff - yScroll;
 
@@ -875,7 +876,7 @@ $radius-lg: $radius * 2;
   position: absolute;
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden; // changed from 'auto' to avoid secondary scrolling issues on zoom
   display: flex;
   justify-content: center;
   @include short-transition;
