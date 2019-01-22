@@ -787,7 +787,7 @@ export default {
 
 //TODO: go
 $frame-ruler-inch: 80px;
-$frame-ruler-width-half: ($frame-ruler-width-nominal - 1) / 2;
+$frame-ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
 $layer-frame-mask: 2; // above both <.frame>s to mask grab zones
 //$layer-frame-rulers: $layer-frame-mask + 1;
