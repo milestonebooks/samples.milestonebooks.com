@@ -278,7 +278,8 @@ $layer-rulers: 1;
   }
 
   transition: transform $transition-time-ms ease-in-out; // used for zooming
-  @at-root .no-transition + .the-samples-rulers #{&} { // applied while dragging
+  @at-root .no-transition + .the-samples-rulers #{&}, // applied while dragging
+  &.no-transition { // applied while zooming
     transition: none;
   }
 
