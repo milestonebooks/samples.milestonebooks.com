@@ -54,6 +54,7 @@ export default {
   data () {
     return {
       isListShown: false,
+      listAcceptPointerEvents: false,
       keyActive: false,
     }
   }, // data()
@@ -79,7 +80,8 @@ export default {
     },
     listClass() {
       return {
-        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles))
+        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles)),
+        'accept-events': this.listAcceptPointerEvents,
       };
     },
     idStyle() {
@@ -154,6 +156,11 @@ export default {
     showList() {
       this.isListShown = true;
       this.updateListFocus();
+
+      // pointer events delayed until list is fully expanded (otherwise Firefox fires mouseover events while expanding)
+      setTimeout(() => {
+        this.listAcceptPointerEvents = true;
+      }, settings.TRANSITION_TIME_MS);
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -162,6 +169,7 @@ export default {
       if (!this.isListShown) return;
 
       this.isListShown = false;
+      this.listAcceptPointerEvents = false;
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -467,9 +475,11 @@ export default {
   transform: translateX(-50%) scale(0);
 
   &:not([aria-hidden]) {
-    pointer-events: all;
     opacity: 1;
     transform: translateX(-50%) scale(1);
+  }
+  &.accept-events {
+    pointer-events: all;
   }
 
   &::before {

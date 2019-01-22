@@ -324,11 +324,10 @@ export default {
       let w = slide.image ? Math.ceil(slide.image.w * xdpi) : nonImgWidth;
       let h = slide.image ? Math.ceil(slide.image.h * xdpi) : null;
 
-      if (slide.audio && slide.image) h += settings.CONTROLS_HEIGHT; // add some vertical padding so sheet music won't be obscured by controls
+      let wScale = 1;
 
       // at default zoom, contain slide within view
       if (dpi === settings.DPI_DEFAULT) {
-        let wScale = 1;
 
         if (w > this.availWidth) {
           // if zoomed in, default slides should not count h scrollbar
@@ -350,6 +349,9 @@ export default {
 
         if (slide.index === this.currentIndex) this.set({currentWScale: wScale});
       } // end default dpi
+
+      // add some vertical padding so sheet music title/credits won't be obscured by controls
+      if (slide.audio && slide.image) h += Math.floor(settings.CONTROLS_HEIGHT / wScale);
 
       const width     = `${w}px`;
       const height    = slide.image ? `${h}px` : '';
