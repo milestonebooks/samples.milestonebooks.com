@@ -608,7 +608,7 @@ export default {
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
-      if (navigator.userAgent.match(/Trident/) && yOffset > 0) yOffset *= -1;
+      if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
 
       return {xOffset, yOffset};
     }, // getSlideOffset()
@@ -698,7 +698,7 @@ export default {
         $frame.css({'z-index': 1});
         $frameZoom.css({opacity: 0});
         $frame.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
-        $rulers.css({transform: `scale(${1 / scale})`});
+        $rulers.addClass('no-transition').css({transform: `scale(${1 / scale})`});
 
         // ensure dom is updated before running zoom transition
         forceRepaint();
@@ -706,7 +706,7 @@ export default {
         await this.$nextTick();
 
         $frame.addClass('is-zooming').css({transform: `translate(${xFrame}px, ${yFrame}px) scale(${scale})`});
-        $rulers.css({transform: ''});
+        $rulers.removeClass('no-transition').css({transform: ''});
 
         // zoom
         await sleep(settings.TRANSITION_TIME_MS);
@@ -782,7 +782,7 @@ export default {
         $frameZoom.css({'z-index': 1});
         $frame.css({opacity: 0});
         $frameZoom.css({'transform-origin': `${xOrigin * 100}% ${yOrigin * 100}%`});
-        $rulers.css({transform: `scale(${settings.ZOOM_RATIO})`});
+        $rulers.addClass('no-transition').css({transform: `scale(${settings.ZOOM_RATIO})`});
 
         // ensure dom is updated before running zoom transition
         forceRepaint();
@@ -790,7 +790,7 @@ export default {
         await this.$nextTick();
 
         $frameZoom.addClass('is-zooming').css({transform: `scale(${1 / scale})`});
-        $rulers.css({transform: `scale(${this.s.currentWScale})`});
+        $rulers.removeClass('no-transition').css({transform: `scale(${this.s.currentWScale})`});
 
         await sleep(settings.TRANSITION_TIME_MS);
 
