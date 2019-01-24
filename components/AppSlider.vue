@@ -25,12 +25,12 @@
     </article>
 
     <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample" tag="button">
+      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="getLink(-1)" replace :aria-label="getLinkLabel('previous')" tag="button">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
     <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample" tag="button">
+      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="getLink(+1)" replace :aria-label="getLinkLabel('next')" tag="button">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
@@ -64,12 +64,9 @@ export default {
   },
 
   props: {
-    slides: Array, // array of objects that must contain {item:String, title:String, ?image:{file:String, h:Number, w:Number, hRatio:Number, loaded:{}}}
+    type: String, // 'samples' | 'context'
+    slides: Array, // array of objects that must contain {index:Number, item:String, title:String, ?image:{file:String, h:Number, w:Number, hRatio:Number, loaded:{}}}
     currentIndex: Number,
-
-    images: {
-
-    },
 
     imageSrc: Function,
     onImageLoaded: Function,
@@ -105,6 +102,7 @@ export default {
       supports3d:    supports3d(),
       eTouchParams:  supportsPassive() ? { passive: true } : false,
       tResize:       null,
+      tTouchmove:    null,
     }
   },
 
@@ -153,6 +151,11 @@ export default {
 
     btnPrevPath() {
       return 'M1,24 l 18,-18 2,2 -16,16 16,16 -2,2z'; // right-pointing: 'M23,24 l -18,-18 -2,2 16,16 -16,16 2,2z'
+    },
+
+    labelPrevLink() {
+      if (this.type === 'context') return 'previous in series';
+      if (this.type === 'samples') return 'previous sample';
     },
 
   }, // computed {}
@@ -281,6 +284,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     preloadImage(img) {
+      //console.log('preloadImg()', img);
       const src = img.getAttribute('data-src');
       if (img.src || !src) return;
       img.src = src;
@@ -291,6 +295,19 @@ export default {
     imageError(i, dpi) {
       return (i.image.loaded[dpi] !== undefined && i.image.loaded[dpi] === false ? 'failed' : null);
     }, // imageError()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getLinkLabel(dir) {
+      return `${dir} ${this.type === 'context' ? 'in series' : 'sample'}`;
+    }, // getLinkLabel()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getLink(dir = 0) {
+      if (this.type === 'context') return '/' + this.getSlide(dir, 'item') + '/';
+      if (this.type === 'samples') return '#' + this.getSlide(dir, 'id');
+    }, // getLink()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -377,7 +394,7 @@ export default {
     onTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
 
-      /*
+      /* // disabled because it introduces behavior problems
       const isMultiTouch = e.touches && e.touches.length > 0;
       //if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=.5, maximum-scale=2');
       if (isMultiTouch && this.s.dpi === settings.DPI_DEFAULT) window.$('[name="viewport"]').attr('content','width=device-width');
@@ -407,9 +424,31 @@ export default {
         y: pageY,
         deltaX: 0,
         deltaY: 0,
+        vTime: Date.now(),
+        vX: pageX,
+        vY: pageY,
+        vSec: 0,
       };
 
       this.isScrolling = null;
+
+      clearInterval(this.tTouchmove);
+
+      // calculate velocity
+      this.tTouchmove = setInterval(() => {
+        const x = this.touchPoint.x + this.touchPoint.deltaX; // current position
+        const y = this.touchPoint.y + this.touchPoint.deltaY; // current position
+        const delta = x - this.touchPoint.vX; // movement since last interval
+        const now = Date.now();
+        const elapsed = now - this.touchPoint.vTime; // time since last interval
+        const vSec = Math.abs(delta / ((1 + elapsed) / 1000)); // px/sec
+        console.log('interval delta:', delta, 'vSec:', vSec);
+
+        this.touchPoint.vSec = (0.8 * vSec) + (0.2 * this.touchPoint.vSec); // 20% smoothing
+        this.touchPoint.vTime = now;
+        this.touchPoint.vX = x;
+        this.touchPoint.vY = y;
+      }, 100);
 
     }, // onTouchstart()
 
@@ -442,10 +481,12 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onTouchend(e) {
-      /*
+      /* // disabled because it introduces behavior problems
       const isMultiTouch = e.touches && e.touches.length > 1;
       if (!isMultiTouch) window.$('[name="viewport"]').attr('content','width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1');
       //*/
+
+      clearInterval(this.tTouchmove);
 
       // cleanup
       const el = this.touchPoint.el;
@@ -465,11 +506,12 @@ export default {
       // decide what the interaction means
       let action = 'click';
       const duration = Date.now() - this.touchPoint.time;
-      const diffX = Math.abs(this.touchPoint.deltaX);
-      const diffY = Math.abs(this.touchPoint.deltaY);
-      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+      const diffX    = Math.abs(this.touchPoint.deltaX);
+      const diffY    = Math.abs(this.touchPoint.deltaY);
+      const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+      const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'samples' ? this.s.dpi : this.defaultDpi}`);
 
-      const slideWidth = window.$(this.$el).find(`.frame.dpi${this.s.dpi} [data-index="${this.currentIndex}"]`).width();
+      const slideWidth = $frame.find(`[data-index="${this.currentIndex}"]`).width();
 
       // greater than a third the slide width or a fast flick
       if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
@@ -483,7 +525,16 @@ export default {
       const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
 
       if (action === 'swipe') {
-        index += ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
+        console.log('on swipe...', diffX, 'vSec:', this.touchPoint.vSec);
+        const dirIndex = ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
+        let offsetX = diffX;
+        //TODO: too jerky
+        //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
+        do {
+          index += dirIndex;
+          offsetX -= $frame.find(`[data-index="${index}"]`).width();
+        } while (offsetX > 0 && this.slides[index + dirIndex]);
+
       } else if (isSlideClick) {
         index = Number(elIndex);
         if (index === this.currentIndex && this.s.hasZoom) {
@@ -497,8 +548,9 @@ export default {
           elY: e.offsetY / e.target.getBoundingClientRect().height,
         });
 
-      } else if (index !== this.currentIndex && this.s.samples[index]) {
-        this.$router.replace(`#${this.s.samples[index].id}`);
+      } else if (index !== this.currentIndex && this.slides[index]) {
+        if (this.type === 'context') this.$router.push(`/${this.slides[index].item}/`);
+        if (this.type === 'samples') this.$router.replace(`#${this.slides[index].id}`);
 
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
@@ -654,13 +706,9 @@ export default {
       const metric = (this.s.direction === 'rtl' ? 'right' : 'left');
 
       if (zoomIn) {
-        /*
-        const xOffset = $slide.offsetRect()[metric];
-        const yOffset = Math.max($slide.offset().top, 0);
-        /*/
         const xOffset = $slide.offsetRect()[metric] - $el.offsetRect()[metric];
         const yOffset = Math.max($slide.offset().top - $el.offset().top, 0);
-        //*/
+
         const dpiDiff = settings.DPI_ZOOM - (settings.DPI_DEFAULT * this.s.currentWScale);
 
         const xDiff = Math.round((w * elX * dpiDiff) - xOffset);

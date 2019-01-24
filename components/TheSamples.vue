@@ -1,6 +1,6 @@
 <template>
   <AppFrame id="the-samples">
-    <AppSlider slot="view"
+    <AppSlider type="samples" slot="view"
                :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" :zoomDpi="120"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 

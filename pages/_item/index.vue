@@ -4,7 +4,7 @@
 
     <TheAlerts />
 
-    <article v-if="true" class="the-item shell" :class="itemShellClass">
+    <article v-if="!true" class="the-item shell" :class="itemShellClass">
       <TheSlider v-if="true" :samples="s.samples" :currentIndex="s.currentIndex" />
 
       <div class="the-item-view">
@@ -22,9 +22,7 @@
 
     <TheSamples v-if="true" />
 
-    <TheContext v-if="!true" />
-
-    <!--TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" /-->
+    <TheContext v-if="true" />
 
   </main>
 </template>
@@ -90,9 +88,17 @@ export default {
   }, // data()
 
   async asyncData({params, store, error}) {
+    console.log('asyncData()', params, 'state:', store.state.context.series.length);
+    if (store.state.context.seriesId) {
+      console.log('update series index!', store.state.context.series.length);
+      store.commit('set', {context:{currentIndex: store.state.context.series.findIndex(s => s.item === params.item)}});
+      //return;
+    }
+
     const data = {
       data: null
     };
+    // TODO: make sure Samples.php API is updated when updating production frontend
     const url = `${store.state.urlBase}${params.item}/?action=Data${document.cookie.match(/dev=true/) ? '&dev=true' : ''}`;
 
     try {
@@ -198,12 +204,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initSamplesData() {
+      console.log('initSamplesData()');
       const d = this.data;
       const samples = d.samples;
       const series  = d.series;
 
       const {maxHRatio} = this.initImagesData(samples);
-      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series);
+      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series.items);
 
       this.set({
         isInit:    true,
@@ -219,8 +226,9 @@ export default {
         lastId:    samples[samples.length - 1].id,
         maxHRatio: maxHRatio,
         context: {
-          currentIndex: series.findIndex(s => s.item === this.$route.params.item),
-          series:       series,
+          seriesId:     series.id,
+          currentIndex: series.items.findIndex(s => s.item === this.$route.params.item),
+          series:       series.items,
           maxHRatio:    maxHRatioSeries,
         }
       });
@@ -278,6 +286,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
+      console.log('update() route', this.$route);
       // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
       const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
 

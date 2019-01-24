@@ -1,6 +1,6 @@
 <template>
   <AppFrame id="the-context">
-    <AppSlider slot="view"
+    <AppSlider type="context" slot="view"
                :slides="s.context.series" :currentIndex="s.context.currentIndex"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
@@ -71,7 +71,7 @@ $slider-height: 75%;
 #the-context {
   left: 50px;
   top: 50px;
-  width: 40%;
+  width: 60%;
   height: 50vh;
   outline: 1px solid orange;
   z-index: 999;

@@ -18,6 +18,7 @@ export const state = () => ({
   item:          '',
   type:          'items', // 'items' | 'audio'
   context:       {
+    seriesId: null,
     currentIndex: null,
     series: [],
   },
