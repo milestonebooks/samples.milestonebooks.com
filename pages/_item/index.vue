@@ -47,6 +47,8 @@ import { mapMutations } from 'vuex';
 import axios from 'axios';
 
 export default {
+  key: '_item', // ensure page doesn't get recreated on route change
+
   components: {
     TheSamples,
     TheContext,
@@ -107,7 +109,7 @@ export default {
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
-      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: (err.message ? err.message : 'Oops! This page has a problem. :-('), url })
+      return error({ statusCode: (err.response && err.response.status || 500), message: (err.message || 'Oops! This page has a problem. :-('), url })
     }
 
     return data;
@@ -204,7 +206,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async initSamplesData() {
-      console.log('initSamplesData()');
+      if (this.data === undefined) return;
+
       const d = this.data;
       const samples = d.samples;
       const series  = d.series;

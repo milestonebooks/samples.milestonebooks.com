@@ -1,7 +1,7 @@
 <template>
   <div>
     <noscript v-html="gtm"></noscript>
-    <nuxt-child />
+    <nuxt />
   </div>
 </template>
 

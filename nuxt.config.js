@@ -1,5 +1,6 @@
 // v1.0.1 gzipped size: 82.93 KB
 // v1.1.0 gzipped size: 80.43 KB
+// TODO: load group as series
 // TODO: prev/next item in series
 // TODO: provide info/exit button in upper right to help with contextual awareness
 // TODO: implement behavior analytics (low priority)

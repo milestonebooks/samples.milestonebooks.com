@@ -434,15 +434,14 @@ export default {
 
       clearInterval(this.tTouchmove);
 
-      // calculate velocity
+      // calculate velocity at 10 fps
       this.tTouchmove = setInterval(() => {
         const x = this.touchPoint.x + this.touchPoint.deltaX; // current position
         const y = this.touchPoint.y + this.touchPoint.deltaY; // current position
         const delta = x - this.touchPoint.vX; // movement since last interval
         const now = Date.now();
-        const elapsed = now - this.touchPoint.vTime; // time since last interval
-        const vSec = Math.abs(delta / ((1 + elapsed) / 1000)); // px/sec
-        console.log('interval delta:', delta, 'vSec:', vSec);
+        const elapsed = (now - this.touchPoint.vTime) || 1; // time since last interval
+        const vSec = Math.abs(delta / (elapsed / 1000)); // px/sec
 
         this.touchPoint.vSec = (0.8 * vSec) + (0.2 * this.touchPoint.vSec); // 20% smoothing
         this.touchPoint.vTime = now;
@@ -525,10 +524,9 @@ export default {
       const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
 
       if (action === 'swipe') {
-        console.log('on swipe...', diffX, 'vSec:', this.touchPoint.vSec);
         const dirIndex = ((dir === 'left' && this.s.direction === 'ltr') || (dir === 'right' && this.s.direction === 'rtl') ? 1 : -1);
         let offsetX = diffX;
-        //TODO: too jerky
+        //TODO: attempt at kinetic scrolling is too jerky using css transitioning
         //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
         do {
           index += dirIndex;
@@ -563,6 +561,8 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     autosize({resize = false} = {}) {
+      if (this.currentIndex === null) return;
+
       const frameType = (this.s.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
@@ -895,6 +895,10 @@ $radius-lg: $radius * 2;
   width: 100%;
   height: 100%;
   overflow: auto;
+}
+
+.slider-view {
+  background-color: $background-color;
 }
 
 .slider-pane {
