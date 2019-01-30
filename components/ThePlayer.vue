@@ -59,9 +59,11 @@ export default {
       'playTitle',
       'handleTip',
     ]),
+    /*
     s() {
       return this.$store.state;
     },
+    //*/
     p() {
       return this.$store.state.player;
     },
@@ -74,7 +76,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.p.isAutoNext && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
+      if (action.type === 'player/onEnd' && this.p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
     });
     this.init();
   }, // mounted ()

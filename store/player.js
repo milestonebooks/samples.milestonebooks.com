@@ -1,4 +1,5 @@
 import storage from '~/plugins/storage';
+import common from './common/common';
 
 export const state = () => ({
   isInit:      false,
@@ -11,7 +12,6 @@ export const state = () => ({
   isValidInputId: true,
 
   isAutoPlay: null, // default to true if mouse is detected
-  isAutoNext: true,
 
   current: {
     index: null, // = rootState.currentIndex
@@ -23,7 +23,6 @@ export const state = () => ({
 
   persist: [
     {key:'isAutoPlay', get: v => v === 'true'},
-    {key:'isAutoNext', get: v => v === 'true'},
   ],
 }); // state{}
 
@@ -104,16 +103,7 @@ export const getters = {
 
 export const mutations = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  set(state, o) {
-    Object.keys(o).map(key => {
-      state[key] = Array.isArray(o[key]) ? [...state[key], ...o[key]]
-        : (typeof o[key] === 'object'    ? {...state[key], ...o[key]} : o[key]);
-
-      if (state.persist && state.persist.find(p => p.key === key)) storage.setItem(key, o[key]);
-    });
-  }, // set()
+  ...common.mutations,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -284,7 +274,7 @@ export const actions = {
 
   async onEnd({dispatch, state, rootState}) {
 
-    if (!state.isAutoNext || state.current.index === rootState.samples.length - 1) await dispatch('reset');
+    if (!state.isAutoPlay || state.current.index === rootState.samples.length - 1) await dispatch('reset');
 
   }, // onEnd()
 

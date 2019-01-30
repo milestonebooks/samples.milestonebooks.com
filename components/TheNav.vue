@@ -31,7 +31,6 @@
       <ul class="settings">
         <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
         <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
       </ul>
     </nav>
     <div class="list-shadow-mask"></div>
@@ -93,14 +92,6 @@ export default {
       },
       set(isAutoPlay) {
         this.setPlayer({isAutoPlay});
-      },
-    },
-    autoNext: {
-      get() {
-        return this.p.isAutoNext;
-      },
-      set(isAutoNext) {
-        this.setPlayer({isAutoNext});
       },
     },
     compactList: {
