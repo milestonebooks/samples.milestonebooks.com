@@ -105,7 +105,7 @@ export default {
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples found.'};
+      if (typeof res.data === 'string' || !res.data.response.success) throw {message:'No samples found.'};
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
@@ -209,28 +209,29 @@ export default {
       if (this.data === undefined) return;
 
       const d = this.data;
-      const samples = d.samples;
       const series  = d.series;
+      const item    = d.series.items[d.seriesIndex];
+      const samples = item.samples;
 
-      const {maxHRatio} = this.initImagesData(samples);
       const {maxHRatio:maxHRatioSeries} = this.initImagesData(series.items);
+      const {maxHRatio} = this.initImagesData(samples);
 
       this.set({
         isInit:    true,
-        title:     d.title,
-        item:      this.$route.params.item,
-        type:      d.type,
-        direction: d.direction || 'ltr',
-        hasRulers: d.type !== 'audio',
-        hasZoom:   d.hasZoom  || false,
-        hasPrint:  d.hasPrint || false,
+        title:     item.title,
+        code:      item.code,
+        type:      item.type,
+        direction: item.direction || 'ltr',
+        hasRulers: item.type !== 'audio',
+        hasZoom:   item.hasZoom  || false,
+        hasPrint:  item.hasPrint || false,
         samples:   samples,
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
         maxHRatio: maxHRatio,
         context: {
           seriesId:     series.id,
-          currentIndex: series.items.findIndex(s => s.item === this.$route.params.item),
+          currentIndex: d.seriesIndex,
           series:       series.items,
           maxHRatio:    maxHRatioSeries,
         }
@@ -243,7 +244,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    initImagesData(arr) {
+    initImagesData(arr = []) {
       let maxHRatio = null;
 
       for (const i of arr) {

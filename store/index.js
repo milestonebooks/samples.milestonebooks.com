@@ -15,7 +15,7 @@ export const state = () => ({
   urlBaseImg: 'https://www.milestonebooks.com/img/',
   isResizing:  false,
 
-  item:          '',
+  code:          '',
   type:          'items', // 'items' | 'audio'
   context:       {
     seriesId: null,
@@ -81,7 +81,7 @@ export const getters = {
   //------------------------------------------------------------------------------------------------------------------
 
   imageSrc: (state) => (sample, dpi) => {
-    return `${state.urlBase}${state.type === 'audio' ? 'audio' : 'items'}/${state.item}/${state.item}.${sample.id}(${dpi}).${sample.image.ext}`;
+    return `${state.urlBase}${state.type === 'audio' ? 'audio' : 'items'}/${state.code}/${state.code}.${sample.id}(${dpi}).${sample.image.ext}`;
   }, // imageSrc()
 
   //--------------------------------------------------------------------------------------------------------------------
