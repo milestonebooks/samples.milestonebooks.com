@@ -18,8 +18,8 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    s() {
-      return this.$store.state;
+    $_i() {
+      return this.$store.state.item;
     },
 
     btnPrintPath() {
@@ -46,9 +46,9 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     print() {
-      if (!this.s.isPrinting) {
-        this.$store.commit('set', {isPrinting: true});
-        window.$(this.$el).find('.thumbnail').attr('src', this.$store.getters.imageSrc(this.s.samples[this.s.currentIndex], 200));
+      if (!this.$_i.isPrinting) {
+        this.$store.commit('item/set', {isPrinting: true});
+        window.$(this.$el).find('.thumbnail').attr('src', this.$store.getters.item.imageSrc(this.$_i.samples[this.$_i.currentIndex], 200));
       } else {
         this.onAfterPrint();
       }
@@ -57,7 +57,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onLoad(event) {
-      if (this.s.isPrinting) window.$('#printout').addClass('is-printing').find('img').attr('src', event.target.src);
+      if (this.$_i.isPrinting) window.$('#printout').addClass('is-printing').find('img').attr('src', event.target.src);
     }, // onLoad()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ export default {
 
     onAfterPrint() {
       window.$('#printout').removeClass('is-printing').find('img').removeAttr('src');
-      this.$store.commit('set', {isPrinting: false});
+      this.$store.commit('item/set', {isPrinting: false});
     }, // onAfterPrint()
 
     //------------------------------------------------------------------------------------------------------------------

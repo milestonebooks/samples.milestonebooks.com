@@ -46,7 +46,7 @@ export default {
   }, // data()
 
   computed: {
-    ...mapGetters([
+    ...mapGetters('item', [
       'getSample',
       'listItemClass',
     ]),

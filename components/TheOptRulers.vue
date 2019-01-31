@@ -1,13 +1,13 @@
 <template>
   <div class="the-samples-rulers">
     <aside class="the-opt-rulers controls sidebar floating">
-      <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${s.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
+      <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
         <SvgIcon view="28" :d="btnRulerPath" />
       </button>
     </aside>
 
     <transition name="rulers">
-      <div :class="`rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
+      <div :class="`rulers ${isUseTouch ? 'touch' : ''}`" v-show="$_i.showRulers">
         <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
       </div>
     </transition>
@@ -34,8 +34,8 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    s() {
-      return this.$store.state;
+    $_i() {
+      return this.$store.state.item;
     },
 
     btnRulerPath() {
@@ -50,9 +50,9 @@ export default {
 
   watch: {
 
-    's.showRulers'() { this.onToggleRulers() },
+    '$_i.showRulers'() { this.onToggleRulers() },
 
-    's.currentWScale'() { this.scaleRulers() },
+    '$_i.currentWScale'() { this.scaleRulers() },
 
   }, // watch {}
 
@@ -64,7 +64,7 @@ export default {
     window.addEventListener('resize', this.positionRulers);
     window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
 
-    if (this.s.showRulers) {
+    if (this.$_i.showRulers) {
       this.scaleRulers();
       this.onToggleRulers();
     }
@@ -82,13 +82,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleRulers() {
-      this.$store.commit('set', {showRulers: !this.s.showRulers});
+      this.$store.commit('item/set', {showRulers: !this.$_i.showRulers});
     }, // toggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onToggleRulers() {
-      if (this.s.showRulers) {
+      if (this.$_i.showRulers) {
         this.$rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
 
@@ -126,8 +126,8 @@ export default {
       }
 
       // keep within view
-      const scale  = settings.DPI_DEFAULT / this.s.currentWScale;
-      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
+      const scale  = settings.DPI_DEFAULT / this.$_i.currentWScale;
+      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.$_i.dpi / scale)) - 1) / 2;
       const $el    = window.$('#the-samples');
 
       x = Math.min(Math.max(x, offset), $el.width()  - offset);
@@ -197,12 +197,12 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
-      if (this.s.dpi === settings.DPI_DEFAULT) {
+      if (this.$_i.dpi === settings.DPI_DEFAULT) {
         this.$rulers.css({
-          transform: `scale(${this.s.currentWScale})`,
-          width: `${200 / this.s.currentWScale}%`, // see style rule: .rulers { width }
+          transform: `scale(${this.$_i.currentWScale})`,
+          width: `${200 / this.$_i.currentWScale}%`, // see style rule: .rulers { width }
         }).find('.target').css({
-          transform: `scaleY(${1 / this.s.currentWScale})`
+          transform: `scaleY(${1 / this.$_i.currentWScale})`
         });
       }
     }, // scaleRulers()

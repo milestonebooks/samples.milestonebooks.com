@@ -1,6 +1,6 @@
 <template>
-  <aside class="alerts" :data-length="s.alerts.length">
-    <div v-for="alert in s.alerts" class="alert">{{alert}}</div>
+  <aside class="alerts" :data-length="$_.alerts.length">
+    <div v-for="alert in $_.alerts" class="alert">{{alert}}</div>
   </aside>
 </template>
 
@@ -13,7 +13,7 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    s() {
+    $_() {
       return this.$store.state;
     },
   }, // computed {}

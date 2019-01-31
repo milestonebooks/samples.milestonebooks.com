@@ -1,5 +1,5 @@
 import storage from '../plugins/storage';
-import common from './common/common';
+import common from '~/assets/store.common';
 
 //======================================================================================================================
 
@@ -9,26 +9,17 @@ export const state = () => ({
   _debugCheck:   null,
 
   isInit:     false,
-  title:      'Samples',
   gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
   psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
   urlBase:    'https://samples.milestonebooks.com/',
   urlBaseImg: 'https://www.milestonebooks.com/img/',
   isResizing:  false,
 
-  code:          '',
-  type:          'items', // 'items' | 'audio'
   context:       {
     seriesId: null,
     currentIndex: null,
     series: [],
   },
-  samples:       [],
-  firstId:       '',
-  lastId:        '',
-  currentIndex:  null,
-  currentWScale: 1,
-  direction:    'ltr', // 'ltr' | 'rtl'
 
   isCompactList:       true,
   isCompactListTitles: false,
@@ -36,31 +27,18 @@ export const state = () => ({
   showContext:  false,
   isContexting: false,
 
-  hasRulers:    false,
-  showRulers:   false,
-
-  hasPrint:     false,
-  isPrinting:   false,
-
   hasTouch:     false,
   hasMouse:     false,
-
-  dpi:          80, // 80 | 120
-  hasZoom:      false,
-  isZooming:    false,
 
   scrollbarWidth: 0, // 17px in major Windows desktop browsers (2018) <https://codepen.io/sambible/post/browser-scrollbar-widths>
   hasScrollbarX:  false,
   hasScrollbarY:  false,
-
-  maxHRatio:  null, // tallest (height / width) slide image
 
   alerts: [],
 
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
     {key:'isCompactListTitles', get: v => v === 'true'},
-    {key:'showRulers',          get: v => v === 'true'},
     {key:'hasTouch',            get: v => v === 'true'},
     {key:'hasMouse',            get: v => v === 'true'},
     {key:'scrollbarWidth',      get: v => Number(v)},
@@ -71,30 +49,7 @@ export const state = () => ({
 
 export const getters = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  getSample: (state) => (dir = 0, key, currentIndex = null) => {
-    const i = (currentIndex === null ? state.currentIndex : currentIndex) + dir;
-    const sample = (state.samples[i] ? state.samples[i] : null);
-    return sample && key ? sample[key] : sample;
-  }, // getSample()
-
   //------------------------------------------------------------------------------------------------------------------
-
-  imageSrc: (state) => (sample, dpi) => {
-    return `${state.urlBase}${state.type === 'audio' ? 'audio' : 'items'}/${state.code}/${state.code}.${sample.id}(${dpi}).${sample.image.ext}`;
-  }, // imageSrc()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  listItemClass: (state) => (sample) => {
-    const i = sample.index;
-
-    return 'item'
-      + ` ${i < state.currentIndex ? 'before-' : i > state.currentIndex ? 'after-' : ''}current`
-      + (sample.nonsequential ? ' non-' : ' ') + 'sequential-before'
-      + (i < state.samples.length - 1 && state.samples[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after';
-  }, // listItemClass()
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -104,13 +59,7 @@ export const getters = {
 
 export const mutations = {
 
-  ...common.mutations,
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  setImageLoaded(state, {i, dpi, loaded = true}) {
-    state.samples[i].image.loaded[dpi] = loaded;
-  }, //setImageLoaded()
+  set: common.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -120,29 +69,13 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  setSampleImageWScale(state, {i, wScale}) {
-    if (state.samples[i].image) state.samples[i].image.wScale = wScale;
-  }, // setSampleImageWScale()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
 }; // mutations {}
 
 //======================================================================================================================
 
 export const actions = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  async initSettings({commit, state}) {
-
-    let v;
-
-    for (const p of state.persist) {
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
-    }
-
-  }, // initSettings()
+  initSettings: common.actions.initSettings,
 
   //--------------------------------------------------------------------------------------------------------------------
 

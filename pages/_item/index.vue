@@ -1,24 +1,8 @@
 <template>
-  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
-    <TheDebugger v-if="s._showDebugger" />
+  <main :class="mainClass" :data-title="$_.title" :data-dir="$_i.direction">
+    <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
-
-    <article v-if="!true" class="the-item shell" :class="itemShellClass">
-      <TheSlider v-if="true" :samples="s.samples" :currentIndex="s.currentIndex" />
-
-      <div class="the-item-view">
-        <TheOptRulers v-if="s.hasRulers && !true" />
-
-        <TheOptPrint v-if="s.hasPrint && !true" />
-
-        <TheNav v-if="s.samples.length > 1" />
-
-        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
-
-        <TheOptRevert v-if="s.type === 'items'" />
-      </div>
-    </article>
 
     <TheSamples v-if="true" />
 
@@ -28,17 +12,10 @@
 </template>
 
 <script>
-import TheDebugger  from '~/components/TheDebugger';
-import TheAlerts    from '~/components/TheAlerts';
-import TheSlider    from '~/components/TheSliderOLD';
-import TheOptRulers from '~/components/TheOptRulersOLD';
-import TheOptPrint  from '~/components/TheOptPrint';
-import TheOptRevert from '~/components/TheOptRevert';
-import TheNav       from '~/components/TheNavOLD';
-import ThePlayer    from '~/components/ThePlayerOLD';
-
-import TheSamples   from '~/components/TheSamples';
-import TheContext   from '~/components/TheContext';
+import TheDebugger from '~/components/TheDebugger';
+import TheAlerts   from '~/components/TheAlerts';
+import TheSamples  from '~/components/TheSamples';
+import TheContext  from '~/components/TheContext';
 
 import settings from '~/assets/settings';
 
@@ -50,31 +27,25 @@ export default {
   key: '_item', // ensure page doesn't get recreated on route change
 
   components: {
-    TheSamples,
-    TheContext,
     TheDebugger,
     TheAlerts,
-    TheSlider,
-    TheOptRulers,
-    TheOptPrint,
-    TheOptRevert, // TODO: temporary
-    TheNav,
-    ThePlayer,
+    TheSamples,
+    TheContext,
   },
 
   head () {
-    const i = this.s.samples[this.s.currentIndex];
+    const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
+      title: (s ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
-        class: (this.s.showContext ? 'show-context' : '') + (this.s.isResizing ? 'is-resizing' : '')
+        class: (this.$_.showContext ? 'show-context' : '') + (this.$_.isResizing ? 'is-resizing' : ''),
       },
 
       link: [
         // audio speaker favicon
-        this.s.type !== 'audio' ? {} :
+        this.$_i.type !== 'audio' ? {} :
           {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
       ],
     }
@@ -116,33 +87,34 @@ export default {
   }, // asyncData()
 
   computed: {
-    s() {
+
+    $_() {
       return this.$store.state;
     },
 
-    p() {
+    $_i() {
+      return this.$store.state.item;
+    },
+
+    $_p() {
       return this.$store.state.player;
     },
 
     mainClass() {
       return {
-        'debug':        this.s._showDebugger,
-        'is-init':      this.s.isInit,
-        'has-touch':    this.s.hasTouch,
-        'has-mouse':    this.s.hasMouse,
-        'has-zoom':     this.s.hasZoom,
-        'has-print':    this.s.hasPrint,
-        'show-rulers':  this.s.hasRulers && this.s.showRulers,
-        'is-printing':  this.s.isPrinting,
-        'show-context': this.s.showContext,
+        'debug':        this.$_._showDebugger,
+        'is-init':      this.$_.isInit,
+        'show-context': this.$_.showContext,
+        'has-touch':    this.$_.hasTouch,
+        'has-mouse':    this.$_.hasMouse,
         'show-title':   true,
       }
     },
 
     itemShellClass() {
       return {
-        'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
-        'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
+        'has-scrollbar-x': this.$_.hasScrollbarX && this.$_.scrollbarWidth,
+        'has-scrollbar-y': this.$_.hasScrollbarY && this.$_.scrollbarWidth,
       }
     },
 
@@ -160,7 +132,7 @@ export default {
 
     this.set({scrollbarWidth: this.getScrollbarWidth() });
 
-    if (!this.s.hasMouse) {
+    if (!this.$_.hasMouse) {
       const _firstmouseover = () => {
         this.set({hasMouse: true});
         window.removeEventListener('mouseover', _firstmouseover, false);
@@ -168,7 +140,7 @@ export default {
       window.addEventListener('mouseover', _firstmouseover, false);
     }
 
-    if (!this.s.hasTouch) {
+    if (!this.$_.hasTouch) {
       const _firsttouchstart = () => {
         this.set({hasTouch: true});
         window.removeEventListener('touchstart', _firsttouchstart, false);
@@ -176,7 +148,7 @@ export default {
       window.addEventListener('touchstart', _firsttouchstart, false);
     }
 
-    this.initSamplesData();
+    this.initData();
   }, // mounted()
 
   beforeDestroy () {
@@ -190,6 +162,9 @@ export default {
     ...mapMutations([
       'set',
     ]),
+    ...mapMutations('item', {
+      'setItem': 'set',
+    }),
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -205,7 +180,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async initSamplesData() {
+    async initData() {
       if (this.data === undefined) return;
 
       const d = this.data;
@@ -213,10 +188,10 @@ export default {
       const item    = d.series.items[d.seriesIndex];
       const samples = item.samples;
 
-      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series.items);
-      const {maxHRatio} = this.initImagesData(samples);
+      const {maxHRatio:series_maxHRatio} = this.initImagesData(series.items);
+      const {maxHRatio:item_maxHRatio} = this.initImagesData(samples);
 
-      this.set({
+      this.setItem({
         isInit:    true,
         title:     item.title,
         code:      item.code,
@@ -228,19 +203,23 @@ export default {
         samples:   samples,
         firstId:   samples[0].id,
         lastId:    samples[samples.length - 1].id,
-        maxHRatio: maxHRatio,
+        maxHRatio: item_maxHRatio,
+      });
+
+      this.set({
+        isInit: true,
         context: {
           seriesId:     series.id,
           currentIndex: d.seriesIndex,
           series:       series.items,
-          maxHRatio:    maxHRatioSeries,
+          maxHRatio:    series_maxHRatio,
         }
       });
 
       console.timeEnd('index');
 
       this.update();
-    }, // initSamplesData()
+    }, // initData()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -297,9 +276,9 @@ export default {
       if (seq && this.getRouteFromSequence(seq)) return;
 
       // if id is not given in the hash, select the first in the samples list
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
+      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
 
-      const index = this.s.samples.findIndex(i => i.id === id);
+      const index = this.$_i.samples.findIndex(i => i.id === id);
 
       // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
@@ -307,14 +286,14 @@ export default {
         return this.$router.replace('./');
       }
 
-      this.set({currentIndex: index});
+      this.setItem({currentIndex: index});
 
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
     getRouteFromSequence(seq) {
-      const i = this.s.samples.find(i => i.index === seq - 1);
+      const i = this.$_i.samples.find(i => i.index === seq - 1);
       if (i) this.$router.replace(`./#${i.id}`);
       return i !== undefined;
     }, // getIdFromSequence()

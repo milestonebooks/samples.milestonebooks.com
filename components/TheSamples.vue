@@ -1,26 +1,26 @@
 <template>
-  <AppFrame id="the-samples">
+  <AppFrame id="the-samples" :data-type="$_i.type">
     <AppSlider type="samples" slot="view"
-               :slides="s.samples" :currentIndex="s.currentIndex" :defaultDpi="80" :zoomDpi="120"
+               :slides="$_i.samples" :currentIndex="$_i.currentIndex" :defaultDpi="80" :zoomDpi="120"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 
       <template slot="frame">
-        <TheNav v-if="s.samples.length > 1" />
+        <TheNav v-if="$_i.samples.length > 1" />
       </template>
 
       <template slot="pane">
-        <TheOptRulers v-if="s.hasRulers" />
+        <TheOptRulers v-if="$_i.hasRulers" />
 
-        <TheOptPrint v-if="s.hasPrint" />
+        <TheOptPrint v-if="$_i.hasPrint" />
 
-        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
+        <ThePlayer v-if="$_i.type === 'audio'" :currentIndex="$_i.currentIndex" />
 
-        <TheOptRevert v-if="s.type === 'items'" />
+        <TheOptRevert v-if="$_i.type === 'items'" />
       </template>
     </AppSlider>
 
     <template slot="frame">
-      <span style="position:relative; color:red;">TheSamples [{{ this.s.currentIndex }}] of {{ this.s.samples.length }}</span>
+      <span style="position:relative; color:red;">TheSamples [{{ this.$_i.currentIndex }}] of {{ this.$_i.samples.length }}</span>
     </template>
   </AppFrame>
 </template>
@@ -53,12 +53,16 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    ...mapGetters([
+    ...mapGetters('item', [
       'imageSrc',
     ]),
 
-    s() {
+    $_() {
       return this.$store.state;
+    },
+
+    $_i() {
+      return this.$store.state.item;
     },
   }, // computed {}
 
@@ -72,15 +76,15 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onImageLoaded(i, dpi, event) {
-      this.$store.commit('setImageLoaded', {i, dpi});
+      this.$store.commit('item/setImageLoaded', {i, dpi});
 
       // use 80-dpi image as scaled background until 120-dpi image loads
-      if (dpi === settings.DPI_DEFAULT && !this.s.samples[i].image.loaded[settings.DPI_ZOOM]) {
+      if (dpi === settings.DPI_DEFAULT && !this.$_i.samples[i].image.loaded[settings.DPI_ZOOM]) {
         // jQuery avoids throwing errors if no match found
         window.$(this.$el).find(`.frame.dpi120 [data-index="${i}"] img`).css({'background-image': `url("${event.target.src}")`});
       }
       // use 120-dpi image to avoid unnecessary downloads
-      if (dpi === settings.DPI_ZOOM && !this.s.samples[i].image.loaded[settings.DPI_DEFAULT]) {
+      if (dpi === settings.DPI_ZOOM && !this.$_i.samples[i].image.loaded[settings.DPI_DEFAULT]) {
         this.$el.querySelector(`.frame.dpi80 [data-index="${i}"] img`).src = event.target.src;
       }
     }, // onImageLoaded()
@@ -88,7 +92,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onImageLoadError(i, dpi) {
-      this.$store.commit('setImageLoaded', {i, dpi, loaded:false});
+      this.$store.commit('item/setImageLoaded', {i, dpi, loaded:false});
       this.$el.querySelector(`.frame.dpi${dpi} [data-index="${i}"] img`).removeAttribute('src');
     }, // onImageLoadError()
 

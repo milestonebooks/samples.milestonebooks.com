@@ -8,7 +8,7 @@
         </nuxt-link>
         <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
           <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
-            <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
+            <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
         </button>
         <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
@@ -20,7 +20,7 @@
 
     <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="slides">
-        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
+        <button v-for="sample in $_i.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
             <span class="item-flex">
               <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
@@ -30,7 +30,7 @@
       </div>
       <ul class="settings">
         <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
       </ul>
     </nav>
     <div class="list-shadow-mask"></div>
@@ -61,14 +61,17 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    ...mapGetters([
+    ...mapGetters('item', [
       'getSample',
       'listItemClass',
     ]),
-    s() {
+    $_() {
       return this.$store.state;
     },
-    p() {
+    $_i() {
+      return this.$store.state.item;
+    },
+    $_p() {
       return this.$store.state.player;
     },
     btnNavPath() {
@@ -79,16 +82,16 @@ export default {
     },
     listClass() {
       return {
-        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles)),
+        'compact': ((this.$_i.type === 'items' && this.$_.isCompactList) || (this.$_i.type === 'audio' && this.$_.isCompactListTitles)),
         'accept-events': this.listAcceptPointerEvents,
       };
     },
     idStyle() {
-      return `transform: translateX(${2.8 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}rem)`;
+      return `transform: translateX(${2.8 * this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1)}rem)`;
     },
     autoPlay: {
       get() {
-        return this.p.isAutoPlay;
+        return this.$_p.isAutoPlay;
       },
       set(isAutoPlay) {
         this.setPlayer({isAutoPlay});
@@ -96,10 +99,10 @@ export default {
     },
     compactList: {
       get() {
-        return (this.s.type === 'audio' ?  this.s.isCompactListTitles : this.s.isCompactList);
+        return (this.$_i.type === 'audio' ? this.$_.isCompactListTitles : this.$_.isCompactList);
       },
       set(isCompactList) {
-        this.set({[this.s.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
+        this.set({[this.$_i.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
       },
     },
   }, // computed {}
@@ -215,7 +218,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getIndexById(id) {
-      const sample = this.s.samples.find((i) => i.id === id);
+      const sample = this.$_i.samples.find((i) => i.id === id);
       return (sample !== undefined ? sample.index : null);
     }, // getIndexById()
 

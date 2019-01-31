@@ -1,5 +1,5 @@
 import storage from '~/plugins/storage';
-import common from './common/common';
+import common from '~/assets/store.common';
 
 export const state = () => ({
   isInit:      false,
@@ -33,7 +33,7 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   isPlayable (state, getters, rootState) {
-    return rootState.currentIndex !== null && !state.isLoading;
+    return rootState.item.currentIndex !== null && !state.isLoading;
   }, // isPlayable()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ export const getters = {
       'is-playable':   getters.isPlayable,
       'is-playing':    state.isPlaying,
       'is-loading':    state.isLoading,
-      'is-multi':      rootState.samples.length > 1,
+      'is-multi':      rootState.item.samples.length > 1,
     }
   }, // uiClass()
 
@@ -103,7 +103,7 @@ export const getters = {
 
 export const mutations = {
 
-  ...common.mutations,
+  set: common.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -169,11 +169,15 @@ export const actions = {
     // isAutoPlay should default to true for devices using a mouse
     if (rootState.hasMouse && storage.getItem('isAutoPlay') === null) commit('set', {isAutoPlay: true});
 
+    common.actions.initSettings({commit, state});
+
+    /*
     let v;
 
     for (const p of state.persist) {
       if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
     }
+    //*/
 
   }, // initSettings()
 
@@ -188,11 +192,11 @@ export const actions = {
 
     window.howls = window.howls || {};
 
-    if (!window.howls[index] && rootState.samples[index].audio) {
+    if (!window.howls[index] && rootState.item.samples[index].audio) {
 
       await new Promise((resolve, reject) => {
         window.howls[index] = new window.Howl({
-          src: [rootState.urlBase + rootState.samples[index].audio],
+          src: [rootState.urlBase + rootState.item.samples[index].audio],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
           onloaderror: async (id, error) => { reject(error); },
@@ -274,7 +278,7 @@ export const actions = {
 
   async onEnd({dispatch, state, rootState}) {
 
-    if (!state.isAutoPlay || state.current.index === rootState.samples.length - 1) await dispatch('reset');
+    if (!state.isAutoPlay || state.current.index === rootState.item.samples.length - 1) await dispatch('reset');
 
   }, // onEnd()
 

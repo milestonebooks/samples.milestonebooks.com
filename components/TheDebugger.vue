@@ -1,5 +1,5 @@
 <template>
-  <aside id="debugger" :data-debug="s._debugText">
+  <aside id="debugger" :data-debug="$_._debugText">
     <input class="check" type="checkbox" v-model="_debugCheck" />
   </aside>
 </template>
@@ -11,13 +11,13 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    s() {
+    $_() {
       return this.$store.state;
     },
 
     _debugCheck: {
       get() {
-        return this.s._debugCheck;
+        return this.$_._debugCheck;
       },
       set(_debugCheck) {
         this.$store.commit('set',{_debugCheck});
