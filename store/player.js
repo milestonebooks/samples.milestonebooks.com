@@ -1,5 +1,5 @@
 import storage from '~/plugins/storage';
-import common from '~/assets/store.common';
+import mixins from '~/plugins/mixins.store';
 
 export const state = () => ({
   isInit:      false,
@@ -103,7 +103,7 @@ export const getters = {
 
 export const mutations = {
 
-  set: common.mutations.set,
+  set: mixins.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -169,15 +169,7 @@ export const actions = {
     // isAutoPlay should default to true for devices using a mouse
     if (rootState.hasMouse && storage.getItem('isAutoPlay') === null) commit('set', {isAutoPlay: true});
 
-    common.actions.initSettings({commit, state});
-
-    /*
-    let v;
-
-    for (const p of state.persist) {
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
-    }
-    //*/
+    mixins.actions.initSettings({commit, state});
 
   }, // initSettings()
 

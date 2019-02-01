@@ -18,8 +18,8 @@ import TheSamples  from '~/components/TheSamples';
 import TheContext  from '~/components/TheContext';
 
 import settings from '~/assets/settings';
-
-import { mapMutations } from 'vuex';
+import mixins   from '~/plugins/mixins.vue';
+import sleep    from '~/plugins/sleep';
 
 import axios from 'axios';
 
@@ -61,11 +61,9 @@ export default {
   }, // data()
 
   async asyncData({params, store, error}) {
-    console.log('asyncData()', params, 'state:', store.state.context.series.length);
-    if (store.state.context.seriesId) {
-      console.log('update series index!', store.state.context.series.length);
-      store.commit('set', {context:{currentIndex: store.state.context.series.findIndex(s => s.item === params.item)}});
-      //return;
+
+    if (store.state.series.id) {
+      return store.commit('series/set', {currentIndex: store.state.series.items.findIndex(s => s.code === params.item)});
     }
 
     const data = {
@@ -90,6 +88,10 @@ export default {
 
     $_() {
       return this.$store.state;
+    },
+
+    $_s() {
+      return this.$store.state.series;
     },
 
     $_i() {
@@ -159,12 +161,7 @@ export default {
 
   methods: {
 
-    ...mapMutations([
-      'set',
-    ]),
-    ...mapMutations('item', {
-      'setItem': 'set',
-    }),
+    set: mixins.set,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -183,43 +180,53 @@ export default {
     async initData() {
       if (this.data === undefined) return;
 
-      const d = this.data;
-      const series  = d.series;
-      const item    = d.series.items[d.seriesIndex];
-      const samples = item.samples;
+      const d      = this.data;
+      const series = d.series;
+      const items  = series.items;
+      const item   = items[d.seriesIndex];
 
-      const {maxHRatio:series_maxHRatio} = this.initImagesData(series.items);
-      const {maxHRatio:item_maxHRatio} = this.initImagesData(samples);
+      const {maxHRatio} = this.initImagesData(items);
 
-      this.setItem({
-        isInit:    true,
-        title:     item.title,
-        code:      item.code,
-        type:      item.type,
-        direction: item.direction || 'ltr',
-        hasRulers: item.type !== 'audio',
-        hasZoom:   item.hasZoom  || false,
-        hasPrint:  item.hasPrint || false,
-        samples:   samples,
-        firstId:   samples[0].id,
-        lastId:    samples[samples.length - 1].id,
-        maxHRatio: item_maxHRatio,
+      this.set('series', {...series,
+        currentIndex: d.seriesIndex,
+        firstCode:    items[0].code,
+        lastCode:     items[items.length - 1].code,
+        maxHRatio:    maxHRatio,
       });
+
+      await this.initItemData(item);
 
       this.set({
         isInit: true,
-        context: {
-          seriesId:     series.id,
-          currentIndex: d.seriesIndex,
-          series:       series.items,
-          maxHRatio:    series_maxHRatio,
-        }
       });
 
       console.timeEnd('index');
 
       this.update();
     }, // initData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async initItemData(item) {
+
+      if (this.$_i.code) {
+        await this.$store.dispatch('item/unset');
+      }
+
+      const samples = item.samples;
+      const {maxHRatio} = this.initImagesData(samples);
+
+      this.set('item', {...item,
+        direction: item.direction || 'ltr',
+        hasRulers: item.type !== 'audio',
+        hasZoom:   item.hasZoom  || false,
+        hasPrint:  item.hasPrint || false,
+        firstId:   samples[0].id,
+        lastId:    samples[samples.length - 1].id,
+        maxHRatio: maxHRatio,
+      });
+
+    }, // initItemData()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -268,8 +275,13 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    update() {
+    async update() {
       console.log('update() route', this.$route);
+
+      if (this.$_i.code !== this.$route.params.item) {
+        await this.initItemData(this.$_s.items[this.$_s.currentIndex]);
+      }
+
       // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
       const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
 
@@ -286,7 +298,7 @@ export default {
         return this.$router.replace('./');
       }
 
-      this.setItem({currentIndex: index});
+      this.set('item', {currentIndex: index});
 
     }, // update()
 

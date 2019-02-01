@@ -1,11 +1,11 @@
 <template>
   <AppFrame id="the-context">
-    <AppSlider type="context" slot="view"
-               :slides="$_.context.series" :currentIndex="$_.context.currentIndex"
+    <AppSlider type="series" slot="view"
+               :slides="$_s.items" :currentIndex="$_s.currentIndex" :isLoading="$_s.isLoading"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      <span style="position:relative; color:orange">TheContext [{{ this.$_.context.currentIndex }}] of {{ this.$_.context.series.length }}</span>
+      <span style="position:relative; color:orange">TheContext [{{ this.$_s.currentIndex }}] of {{ this.$_s.items.length }}</span>
       <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
     </template>
   </AppFrame>
@@ -26,6 +26,9 @@ export default {
   computed: {
     $_() {
       return this.$store.state;
+    },
+    $_s() {
+      return this.$store.state.series;
     },
   }, // computed {}
 

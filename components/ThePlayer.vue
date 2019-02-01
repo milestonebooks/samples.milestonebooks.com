@@ -6,7 +6,7 @@
     </button>
 
     <div class="bar-progress">
-      <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
+      <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
           <a ref="handle" class="bar-handle" tabindex="0" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
@@ -21,9 +21,10 @@
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapGetters, mapMutations } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import settings from '~/assets/settings';
+import mixins   from '~/plugins/mixins.vue';
 
 export default {
   components: {
@@ -59,16 +60,11 @@ export default {
       'playTitle',
       'handleTip',
     ]),
-    /*
-    s() {
-      return this.$store.state;
-    },
-    //*/
-    p() {
+    $_p() {
       return this.$store.state.player;
     },
     btnPlayPath() {
-      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
+      return (this.$_p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
   }, // computed {}
 
@@ -76,7 +72,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
+      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
     });
     this.init();
   }, // mounted ()
@@ -90,8 +86,8 @@ export default {
       this.update();
     },
 
-    'p.isAutoPlay'() {
-      this.$store.dispatch('player/togglePlay', {play: this.p.isAutoPlay});
+    '$_p.isAutoPlay'() {
+      this.$store.dispatch('player/togglePlay', {play: this.$_p.isAutoPlay});
     },
   },
 
@@ -99,17 +95,14 @@ export default {
 
   methods: {
 
-    ...mapMutations('player',[
-      'set',
-      'setCurrent',
-    ]),
+    set: mixins.set,
 
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
       this.$store.dispatch('player/initSettings');
       this.$slider = window.$(this.$el).find(this.selSlider);
-      this.set({isInit:true});
+      this.set('player', {isInit:true});
       this.refresh();
       this.update();
     }, // init()
@@ -184,10 +177,10 @@ export default {
 
       // adjust to the interval nearest 20th (5%) rounded to an interval:
       // 10s; 20s (len > 5m); 30s (>~8m); 1m (>15m); 5m (>1h); 10m (>2.5h)
-      const len = this.p.current.duration;
+      const len = this.$_p.current.duration;
       const intv = 20;
       const secIntv = getClosest(len / intv, [10, 20, 30, 60, 300, 600]);
-      const pct = this.p.current.pct;
+      const pct = this.$_p.current.pct;
 
       let newPct = pct;
 
@@ -223,7 +216,7 @@ export default {
       e.preventDefault();
       this.minX = this.$slider.offset().left;
       this.moveCaptured = true;
-      this.set({isCaptured: this.moveCaptured});
+      this.set('player', {isCaptured: this.moveCaptured});
       this.moving(e, pct);
     }, // moveStart()
 
@@ -256,9 +249,9 @@ export default {
       if (!this.moveCaptured) return false;
 
       this.moveCaptured = false;
-      this.set({isCaptured: this.moveCaptured});
+      this.set('player', {isCaptured: this.moveCaptured});
 
-      if (!this.p.isPlaying || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
+      if (!this.$_p.isPlaying || this.$_p.interrupted) this.$store.commit('player/sync', {from:'handle'});
 
       this.$refs.handle.focus();
     }, // moveEnd()
@@ -266,7 +259,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     refresh() {
-      this.setCurrent({pctPixel: 100 / this.$slider.width()});
+      this.$store.commit('player/setCurrent', {pctPixel: 100 / this.$slider.width()});
     }, // refresh()
 
     //------------------------------------------------------------------------------------------------------------------

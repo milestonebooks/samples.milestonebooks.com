@@ -1,9 +1,11 @@
-import common from '~/assets/store.common';
+import settings from '~/assets/settings';
+import mixins   from '~/plugins/mixins.store';
+import sleep    from '~/plugins/sleep';
 
 //======================================================================================================================
 
 export const state = () => ({
-  isInit:        false,
+  isLoading:     true,
 
   title:         '',
   code:          '',
@@ -72,11 +74,12 @@ export const getters = {
 
 export const mutations = {
 
-  set: common.mutations.set,
+  set: mixins.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
   setImageLoaded(state, {i, dpi, loaded = true}) {
+    //console.log('setImageLoaded', i, dpi, loaded);
     state.samples[i].image.loaded[dpi] = loaded;
   }, //setImageLoaded()
 
@@ -88,13 +91,30 @@ export const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  unset(state) {
+
+    state.samples = [];
+
+  }, // unset()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
 }; // mutations {}
 
 //======================================================================================================================
 
 export const actions = {
 
-  initSettings: common.actions.initSettings,
+  initSettings: mixins.actions.initSettings,
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  async unset({commit}) {
+
+    commit('set', {isLoading: true, currentIndex: -1});
+    commit('unset');
+
+  }, // unset()
 
   //--------------------------------------------------------------------------------------------------------------------
 

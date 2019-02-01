@@ -51,12 +51,11 @@ import settings from '~/assets/settings';
 
 import '~/plugins/jQuery.offsetRect';
 
+import mixins from '~/plugins/mixins.vue';
 import sleep from '~/plugins/sleep';
 import forceRepaint from '~/plugins/forceRepaint';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
-
-import { mapGetters, mapMutations } from 'vuex';
 
 export default {
   components: {
@@ -64,7 +63,11 @@ export default {
   },
 
   props: {
-    type: String, // 'samples' | 'context'
+    isLoading: {
+      type: Boolean,
+      default: true,
+    },
+    type: String, // 'item' | 'series'
     slides: Array, // array of objects that must contain {index:Number, item:String, title:String, ?image:{file:String, h:Number, w:Number, hRatio:Number, loaded:{}}}
     currentIndex: Number,
 
@@ -84,7 +87,6 @@ export default {
 
   data () {
     return {
-      isInit:        false,
       isGrabbing:    false,
       isScrolling:   null,
       noTransition:  true,
@@ -92,7 +94,7 @@ export default {
       height:        null,
       availWidth:    null,
       availHeight:   null,
-      minSheetMusicWidth: null,
+      isMinSheetMusicWidth: null,
       hasScrollbarX: false,
       hasScrollbarY: false,
       slideHeight:   null,
@@ -119,19 +121,22 @@ export default {
     },
 
     frameClass() {
-      return {
+      let css = {
+        'is-loading':      this.isLoading,
         'has-scrollbar-x': this.hasScrollbarX && this.$_.scrollbarWidth,
         'has-scrollbar-y': this.hasScrollbarY && this.$_.scrollbarWidth,
+      };
+      if (this.type === 'item') css = {...css,
         'has-zoom':    this.$_i.hasZoom,
         'has-print':   this.$_i.hasPrint,
         'show-rulers': this.$_i.hasRulers && this.$_i.showRulers,
         'is-printing': this.$_i.isPrinting,
-      }
+      };
+      return css;
     },
 
     sliderClass() {
       return {
-        'is-init':  this.isInit,
         'has-prev': !this.isFirst,
         'has-next': !this.isLast,
         'no-transition': this.noTransition,
@@ -157,8 +162,8 @@ export default {
     },
 
     labelPrevLink() {
-      if (this.type === 'context') return 'previous in series';
-      if (this.type === 'samples') return 'previous sample';
+      if (this.type === 'series') return 'previous in series';
+      if (this.type === 'item')   return 'previous sample';
     },
 
   }, // computed {}
@@ -168,24 +173,25 @@ export default {
   watch: {
 
     async currentIndex() {
+      if (this.currentIndex === -1) return;
       // defer to ensure dom is updated
       await this.$nextTick();
       this.update();
     },
 
-    async isInit() {
+    async isLoading() {
       // ensure that transitions are only enabled after init is complete
       await this.$nextTick();
-      if (this.isInit) this.noTransition = false;
+      this.noTransition = this.isLoading;
     },
 
-    minSheetMusicWidth() {
+    isMinSheetMusicWidth() {
       window.$(this.$el).closest('.app-frame')
-        .toggleClass('below-sheet-music-width', !this.minSheetMusicWidth)
-        .toggleClass('min-sheet-music-width',    this.minSheetMusicWidth);
+        .toggleClass('below-sheet-music-width', !this.isMinSheetMusicWidth)
+        .toggleClass('min-sheet-music-width',    this.isMinSheetMusicWidth);
     },
 
-    's.isResizing'() {
+    '$_.isResizing'() {
       // hack to compensate for race conditions
       if (!this.$_.isResizing) {
         setTimeout(() => {
@@ -215,16 +221,14 @@ export default {
 
   methods: {
 
-    ...mapMutations('item', [
-      'set',
-    ]),
+    set: mixins.set,
 
     //------------------------------------------------------------------------------------------------------------------
 
     async update() {
       //console.log(`AppSlider update() ${this.currentIndex} @ ${this.$_i.dpi}`);
       this.autosize();
-      if (!this.isInit) this.init();
+      if (this.isLoading) this.init();
       await this.$nextTick();
       forceRepaint();
     }, // update()
@@ -236,7 +240,7 @@ export default {
       this.width  = el.getBoundingClientRect().width;
       this.height = el.getBoundingClientRect().height;
 
-      this.minSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
+      this.isMinSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
 
       this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
       this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
@@ -254,14 +258,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
+      this.set(this.type, {isLoading: false});
       this.initImages();
-      this.isInit = true;
     }, // init()
 
     //------------------------------------------------------------------------------------------------------------------
 
     initImages() {
-
       for (const frameType of ['default','zoom']) {
         const observer = new IntersectionObserver((entries, self) => {
           entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
@@ -288,7 +291,7 @@ export default {
 
     preloadImage(img) {
       const src = img.getAttribute('data-src');
-      if (img.src || !src) return;
+      if (this.isLoading || img.src || !src) return;
       img.src = src;
     }, // preloadImage()
 
@@ -301,14 +304,14 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getLinkLabel(dir) {
-      return `${dir} ${this.type === 'context' ? 'in series' : 'sample'}`;
+      return `${dir} ${this.type === 'series' ? 'in series' : 'sample'}`;
     }, // getLinkLabel()
 
     //------------------------------------------------------------------------------------------------------------------
 
     getLink(dir = 0) {
-      if (this.type === 'context') return '/' + this.getSlide(dir, 'item') + '/';
-      if (this.type === 'samples') return '#' + this.getSlide(dir, 'id');
+      if (this.type === 'series') return '/' + this.getSlide(dir, 'code') + '/';
+      if (this.type === 'item')   return '#' + this.getSlide(dir, 'id');
     }, // getLink()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -366,7 +369,7 @@ export default {
 
         if (slide.image) this.$store.commit('item/setSampleImageWScale', {i:slide.index, wScale});
 
-        if (slide.index === this.currentIndex) this.set({currentWScale: wScale});
+        if (slide.index === this.currentIndex) this.set('item', {currentWScale: wScale});
       } // end default dpi
 
       // add some vertical padding so sheet music title/credits won't be obscured by controls
@@ -510,7 +513,7 @@ export default {
       const diffX    = Math.abs(this.touchPoint.deltaX);
       const diffY    = Math.abs(this.touchPoint.deltaY);
       const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
-      const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'samples' ? this.$_i.dpi : this.defaultDpi}`);
+      const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
       const slideWidth = $frame.find(`[data-index="${this.currentIndex}"]`).width();
 
@@ -549,8 +552,8 @@ export default {
         });
 
       } else if (index !== this.currentIndex && this.slides[index]) {
-        if (this.type === 'context') this.$router.push(`/${this.slides[index].item}/`);
-        if (this.type === 'samples') this.$router.replace(`#${this.slides[index].id}`);
+        if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
+        if (this.type === 'item')   this.$router.replace(`#${this.slides[index].id}`);
 
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
@@ -591,7 +594,7 @@ export default {
       this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight - (!this.minSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight - (!this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
@@ -673,10 +676,10 @@ export default {
 
       if (this.$_i.isZooming) return;
 
-      this.set({isZooming:true});
+      this.set('item', {isZooming:true});
 
       const dpi = (this.$_i.dpi === settings.DPI_DEFAULT ? settings.DPI_ZOOM : settings.DPI_DEFAULT);
-      this.set({dpi});
+      this.set('item', {dpi});
 
       // `user-scaleable=no` prevents zooming jank in mobile Chrome (caused by browser resizing window.innerWidth)
       window.$('[name="viewport"]').attr('content',`width=device-width, initial-scale=1, ${dpi === settings.DPI_DEFAULT ? 'minimum-scale=1' : 'maximum-scale=1, user-scalable=no'}`);
@@ -870,7 +873,7 @@ export default {
       forceRepaint();
       this.noTransition = false;
 
-      this.set({isZooming:false});
+      this.set('item', {isZooming:false});
 
     }, // toggleDpi()
 

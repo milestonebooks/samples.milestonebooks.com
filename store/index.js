@@ -1,5 +1,4 @@
-import storage from '../plugins/storage';
-import common from '~/assets/store.common';
+import mixins from '~/plugins/mixins.store';
 
 //======================================================================================================================
 
@@ -59,7 +58,7 @@ export const getters = {
 
 export const mutations = {
 
-  set: common.mutations.set,
+  set: mixins.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -75,7 +74,7 @@ export const mutations = {
 
 export const actions = {
 
-  initSettings: common.actions.initSettings,
+  initSettings: mixins.actions.initSettings,
 
   //--------------------------------------------------------------------------------------------------------------------
 

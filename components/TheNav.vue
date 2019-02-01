@@ -41,9 +41,10 @@
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapGetters, mapMutations } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import settings from '~/assets/settings';
+import mixins   from '~/plugins/mixins.vue';
 
 export default {
   components: {
@@ -94,7 +95,7 @@ export default {
         return this.$_p.isAutoPlay;
       },
       set(isAutoPlay) {
-        this.setPlayer({isAutoPlay});
+        this.set('player', {isAutoPlay});
       },
     },
     compactList: {
@@ -123,12 +124,7 @@ export default {
 
   methods: {
 
-    ...mapMutations([
-      'set',
-    ]),
-    ...mapMutations('player', {
-      'setPlayer': 'set',
-    }),
+    set: mixins.set,
 
     //------------------------------------------------------------------------------------------------------------------
 

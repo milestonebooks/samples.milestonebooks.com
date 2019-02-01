@@ -1,7 +1,7 @@
 <template>
   <AppFrame id="the-samples" :data-type="$_i.type">
-    <AppSlider type="samples" slot="view"
-               :slides="$_i.samples" :currentIndex="$_i.currentIndex" :defaultDpi="80" :zoomDpi="120"
+    <AppSlider type="item" slot="view"
+               :slides="$_i.samples" :currentIndex="$_i.currentIndex" :isLoading="$_i.isLoading" :defaultDpi="80" :zoomDpi="120"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 
       <template slot="frame">
