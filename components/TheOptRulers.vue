@@ -144,7 +144,6 @@ export default {
     onRulersTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
 
-      this.noTransition = true;
       this.isUseTouch = true;
 
       this.$rulers[0].addEventListener('touchmove', this.onRulersTouchmove);
@@ -189,9 +188,6 @@ export default {
       // cleanup
       this.$rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
       this.$rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
-
-      this.noTransition = false;
-
     }, // onRulersTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -221,8 +217,6 @@ export default {
 
 $ruler-inch: 80px;
 $ruler-width-half: ($ruler-width-nominal - 1) / 2;
-
-$layer-rulers: 1;
 
 .the-samples-rulers {
   position: absolute;
@@ -258,16 +252,11 @@ $layer-rulers: 1;
 }
 
 .rulers {
-  z-index: $layer-rulers;
+  z-index: 1;
   pointer-events: none;
   opacity: .75;
   position: absolute;
   left: calc(100% - (1em + (#{$unit} / 2)));
-  /*
-  @at-root .shell.has-scrollbar-y & {
-    left: calc(100% - 17px - (1em + (#{$unit} / 2)));
-  }
-  //*/
   top:  1em + ($unit / 2);
   width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
   transform-origin: 0 0;

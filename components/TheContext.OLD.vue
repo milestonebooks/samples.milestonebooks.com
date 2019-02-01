@@ -207,7 +207,7 @@
 
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
-@import "../assets/slider.scss";
+@import "../assets/slider.OLD";
 
 $slider-height: 75%;
 

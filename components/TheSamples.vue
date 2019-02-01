@@ -108,13 +108,12 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-#the-samples {
+.debug #the-samples {
   right: 50px;
   bottom: 50px;
   width: 50%;
   height: 50vh;
   outline: 1px solid red;
-  z-index: 999;
 }
 
 </style>

@@ -783,7 +783,7 @@ export default {
 
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
-@import "../assets/slider.scss";
+@import "../assets/slider.OLD";
 
 //TODO: go
 $frame-ruler-inch: 80px;

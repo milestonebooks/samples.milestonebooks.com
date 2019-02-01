@@ -71,19 +71,17 @@ export default {
 
 $slider-height: 75%;
 
-#the-context {
+
+.debug #the-context {
   left: 50px;
   top: 50px;
   width: 60%;
   height: 50vh;
   outline: 1px solid orange;
-  z-index: 999;
+}
 
-  /deep/ .app-view {
-    height: $slider-height;
-    background-color: hsla(60,100%,50%,.1); // TODO: remove
-  }
-
+#the-context /deep/ .app-view {
+  height: $slider-height;
 }
 
 .info {

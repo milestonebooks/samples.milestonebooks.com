@@ -14,12 +14,6 @@ export const state = () => ({
   urlBaseImg: 'https://www.milestonebooks.com/img/',
   isResizing:  false,
 
-  context:       {
-    seriesId: null,
-    currentIndex: null,
-    series: [],
-  },
-
   isCompactList:       true,
   isCompactListTitles: false,
 

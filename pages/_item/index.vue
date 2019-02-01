@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-title="$_.title" :data-dir="$_i.direction">
+  <main :class="mainClass" :data-title="$_i.title" :data-dir="$_i.direction">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
@@ -375,34 +375,6 @@ main {
 main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;
-}
-
-.shell {
-  position: absolute;
-  width: 100%; // % instead of vw to avoid potential h scrollbar
-  height: 100vh;
-  overflow: auto;
-  @include short-transition;
-}
-
-.the-item-view {
-  position: fixed;
-  z-index: $layer-item-view; // above <.frame-mask> layer
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  @include short-transition;
-
-  > * {
-    pointer-events: all;
-  }
-
-  @at-root .has-scrollbar-y & {
-    width: calc(100% - 17px);
-  }
-  @at-root .has-scrollbar-x & {
-    height: calc(100% - 17px);
-  }
 }
 
 </style>
