@@ -6,7 +6,7 @@
 
     <TheSamples v-if="true" />
 
-    <TheContext v-if="true" />
+    <TheContext v-if="!true" />
 
   </main>
 </template>
@@ -19,7 +19,6 @@ import TheContext  from '~/components/TheContext';
 
 import settings from '~/assets/settings';
 import mixins   from '~/plugins/mixins.vue';
-import sleep    from '~/plugins/sleep';
 
 import axios from 'axios';
 
@@ -104,7 +103,7 @@ export default {
 
     mainClass() {
       return {
-        'debug':        this.$_._showDebugger,
+//        'debug':        this.$_._showDebugger,
         'is-init':      this.$_.isInit,
         'show-context': this.$_.showContext,
         'has-touch':    this.$_.hasTouch,
@@ -276,7 +275,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async update() {
-      console.log('update() route', this.$route);
+      console.log('update() route', this.$route.path, this.$route.hash);
 
       if (this.$_i.code !== this.$route.params.item) {
         await this.initItemData(this.$_s.items[this.$_s.currentIndex]);

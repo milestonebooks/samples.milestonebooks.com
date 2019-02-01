@@ -20,7 +20,7 @@
     </AppSlider>
 
     <template slot="frame">
-      <span style="position:relative; color:red;">TheSamples [{{ this.$_i.currentIndex }}] of {{ this.$_i.samples.length }}</span>
+      <span v-if="$_._showDebugger" style="position:relative; color:red;">TheSamples [{{ this.$_i.currentIndex }}] of {{ this.$_i.samples.length }}</span>
     </template>
   </AppFrame>
 </template>
