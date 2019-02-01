@@ -282,8 +282,8 @@ export default {
         await this.initItemData(this.$_s.items[this.$_s.currentIndex]);
       }
 
-      // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
-      const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
+      // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
+      const seq = +(this.$route.hash.match(/##(\d+)/) || [0,0])[1];
 
       if (seq && this.getRouteFromSequence(seq)) return;
 
