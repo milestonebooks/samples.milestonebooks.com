@@ -103,7 +103,7 @@ export default {
 
     mainClass() {
       return {
-//        'debug':        this.$_._showDebugger,
+//TODO        'debug':        this.$_._showDebugger,
         'is-init':      this.$_.isInit,
         'show-context': this.$_.showContext,
         'has-touch':    this.$_.hasTouch,
@@ -213,6 +213,13 @@ export default {
       }
 
       const samples = item.samples;
+
+      if (!samples.length) {
+        return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+      }
+
+      console.log('initItemData()', samples.length);
+
       const {maxHRatio} = this.initImagesData(samples);
 
       this.set('item', {...item,

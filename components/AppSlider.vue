@@ -535,7 +535,8 @@ export default {
         //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
         do {
           index += dirIndex;
-          offsetX -= $frame.find(`[data-index="${index}"]`).width();
+          const w = $frame.find(`[data-index="${index}"]`).width();
+          offsetX -= w * (this.touchPoint.vSec < 500 ? 1.5 : 1); // assume minimal flipping at slower speeds
         } while (offsetX > 0 && this.slides[index + dirIndex]);
 
       } else if (isSlideClick) {
