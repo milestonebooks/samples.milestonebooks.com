@@ -218,8 +218,6 @@ export default {
         return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
       }
 
-      console.log('initItemData()', samples.length);
-
       const {maxHRatio} = this.initImagesData(samples);
 
       this.set('item', {...item,

@@ -1,4 +1,4 @@
-import storage from '~/plugins/storage';
+import storage from '~/plugins/storage.client';
 
 //======================================================================================================================
 
