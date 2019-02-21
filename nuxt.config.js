@@ -6,7 +6,7 @@
 // TODO: provide info/exit button in upper right to help with contextual awareness
 // TODO: implement behavior analytics (low priority)
 
-module.exports = {
+export default {
   env: {
     tracking: (process.env.NODE_ENV === 'production'),
   },

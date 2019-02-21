@@ -30,7 +30,8 @@ export const state = () => ({
   hasScrollbarX: false,
   hasScrollbarY: false,
 
-  maxHRatio:     null, // tallest (height / width) slide image
+  maxH:          null, // tallest slide image
+  maxHRatio:     null, // height / width
 
   persist: [
     {key:'showRulers', get: v => v === 'true'},
@@ -76,18 +77,14 @@ export const mutations = {
 
   set: mixins.mutations.set,
 
+  setImageWScale: mixins.mutations.setImageWScale,
+
   //--------------------------------------------------------------------------------------------------------------------
 
   setImageLoaded(state, {i, dpi, loaded = true}) {
     //console.log('setImageLoaded', i, dpi, loaded);
     state.samples[i].image.loaded[dpi] = loaded;
   }, //setImageLoaded()
-
-  //--------------------------------------------------------------------------------------------------------------------
-
-  setSampleImageWScale(state, {i, wScale}) {
-    if (state.samples[i].image) state.samples[i].image.wScale = wScale;
-  }, // setSampleImageWScale()
 
   //--------------------------------------------------------------------------------------------------------------------
 

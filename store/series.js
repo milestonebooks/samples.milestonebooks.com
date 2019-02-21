@@ -14,7 +14,9 @@ export const state = () => ({
   hasScrollbarX: false,
   hasScrollbarY: false,
 
-  maxHRatio:     null, // tallest (height / width) slide image
+  currentWScale: 1,
+  maxH:          null, // tallest slide image
+  maxHRatio:     null, // height / width
 });
 
 //======================================================================================================================
@@ -32,6 +34,8 @@ export const getters = {
 export const mutations = {
 
   set: mixins.mutations.set,
+
+  setImageWScale: mixins.mutations.setImageWScale,
 
   //--------------------------------------------------------------------------------------------------------------------
 

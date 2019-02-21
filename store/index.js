@@ -6,6 +6,7 @@ export const state = () => ({
   _showDebugger: (process.env.NODE_ENV === 'development' || process.env.NUXT_ENV_DEBUG === 'on'),
   _debugText:    null,
   _debugCheck:   null,
+  _focusItem:    true, // TODO
 
   isInit:     false,
   gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>

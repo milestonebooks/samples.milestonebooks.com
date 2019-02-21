@@ -116,6 +116,10 @@ export default {
       return this.$store.state;
     },
 
+    $_s() {
+      return this.$store.state.series;
+    },
+
     $_i() {
       return this.$store.state.item;
     },
@@ -192,6 +196,9 @@ export default {
     },
 
     '$_.isResizing'() {
+      if (this.$_.isResizing) {
+        this.onResize();
+      }
       // hack to compensate for race conditions
       if (!this.$_.isResizing) {
         setTimeout(() => {
@@ -205,14 +212,12 @@ export default {
   //====================================================================================================================
 
   mounted() {
-    window.addEventListener('resize', this.onResize);
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
     this.onResize();
   },
 
   beforeDestroy () {
-    window.removeEventListener('resize', this.onResize);
     this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
   },
@@ -336,7 +341,29 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     slideStyleSize(slide, dpi) {
-      if (!dpi) return;
+
+      if (this.type === 'series') {
+
+        let wScale = 1;
+        if (this.$_s.maxH > this.availHeight) {
+          wScale = this.availHeight / this.$_s.maxH; // TODO
+        }
+
+        if (slide.image) this.$store.commit('series/setImageWScale', {slides:'items', i:slide.index, wScale});
+
+        const w = Math.floor(slide.image.w * wScale);
+        const h = Math.floor(slide.image.h * wScale);
+
+        console.log('slideStyleSize()', slide.index, h);
+
+        this.slides[slide.index].width  = `${w}px`;
+        this.slides[slide.index].height = `${h}px`;
+
+        return {
+          width:  this.slides[slide.index].width,
+          height: this.slides[slide.index].height,
+        };
+      }
 
       const xdpi = slide.image && dpi ? dpi : 1;
 
@@ -367,7 +394,7 @@ export default {
           h = Math.floor(h * wScale);
         }
 
-        if (slide.image) this.$store.commit('item/setSampleImageWScale', {i:slide.index, wScale});
+        if (slide.image) this.$store.commit('item/setImageWScale', {slides:'samples', i:slide.index, wScale});
 
         if (slide.index === this.currentIndex) this.set('item', {currentWScale: wScale});
       } // end default dpi
@@ -387,7 +414,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     imageStyleSize(slide, dpi) {
-      const x = (dpi || 1) * (dpi === settings.DPI_DEFAULT ? (slide.image.wScale || 1) : 1);
+      if (this.slides[slide.index].width) {
+        return {
+          width:  this.slides[slide.index].width,
+          height: this.slides[slide.index].height,
+        }
+      }
+      const x = (dpi || 1) * (dpi === settings.DPI_ZOOM ? 1 : (slide.image.wScale || 1));
       return {
         width:  `${Math.ceil(slide.image.w * x)}px`,
         height: `${Math.ceil(slide.image.h * x)}px`,
@@ -591,14 +624,19 @@ export default {
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
+      //*
       this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
       this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+      /*/
+      this.availWidth  = this.availWidth  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+      this.availHeight = this.availHeight - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+      //*/
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
       const frameHeight = Math.floor(Math.max(height, this.availHeight - (!this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
 
       // this determines how much gutter space is masked from being grabbable for sliding
-      const groupHeight = Math.max(height, $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+      const groupHeight = Math.max((this.type === 'series' ? this.availHeight : height), $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
 
       if (resize || width !== this.slideWidth || height !== this.slideHeight || groupHeight !== this.groupHeight) {
 
@@ -608,6 +646,8 @@ export default {
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
+
+        if (this.type === 'series') console.log('autosize() groupHeight', groupHeight, 'frameHeight:', frameHeight, 'yMargin:', yMargin);
 
         $slider.css({
           width:  `${frameWidth}px`,
@@ -660,10 +700,12 @@ export default {
 
       const $slides = $slide.closest('.slides');
       const height = Math.ceil($slide.height());
-      const frameHeight = Math.ceil(Math.max(height, this.availHeight));
+      const frameHeight = Math.ceil(Math.max(height, Math.floor(this.availHeight)));
 
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
+
+      if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
 
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
@@ -922,7 +964,6 @@ $radius-lg: $radius * 2;
   }
 }
 
-// TODO:
 .has-scrollbar-y .slider-pane {
   width: calc(100% - #{$scrollbar-width});
 }

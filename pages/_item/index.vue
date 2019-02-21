@@ -6,7 +6,7 @@
 
     <TheSamples v-if="true" />
 
-    <TheContext v-if="!true" />
+    <TheContext v-if="true && !$_._focusItem" />
 
   </main>
 </template>
@@ -103,7 +103,8 @@ export default {
 
     mainClass() {
       return {
-//TODO        'debug':        this.$_._showDebugger,
+        'debug':        this.$_._showDebugger,
+        '-focus-item':  this.$_._focusItem,
         'is-init':      this.$_.isInit,
         'show-context': this.$_.showContext,
         'has-touch':    this.$_.hasTouch,
@@ -184,13 +185,14 @@ export default {
       const items  = series.items;
       const item   = items[d.seriesIndex];
 
-      const {maxHRatio} = this.initImagesData(items);
+      const {maxH, maxHRatio} = this.initImagesData(items);
 
       this.set('series', {...series,
         currentIndex: d.seriesIndex,
         firstCode:    items[0].code,
         lastCode:     items[items.length - 1].code,
-        maxHRatio:    maxHRatio,
+        maxH,
+        maxHRatio,
       });
 
       await this.initItemData(item);
@@ -215,7 +217,9 @@ export default {
       const samples = item.samples;
 
       if (!samples.length) {
-        return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+        return;
+        //TODO: depends on what is currently in focus
+        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
       }
 
       const {maxHRatio} = this.initImagesData(samples);
@@ -235,18 +239,20 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     initImagesData(arr = []) {
-      let maxHRatio = null;
+      const _ = {
+        maxH: null,
+        maxHRatio: null,
+      };
 
       for (const i of arr) {
         if (!i.image) continue;
         i.image.loaded = {}; // create object to monitor loaded state
         i.image.hRatio = i.image.h / i.image.w;
-        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
+        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
+        if (_.maxH === null || i.image.h > _.maxH) _.maxH = i.image.h;
       }
 
-      return {
-        maxHRatio,
-      };
+      return _;
     }, // initImagesData()
 
     //------------------------------------------------------------------------------------------------------------------

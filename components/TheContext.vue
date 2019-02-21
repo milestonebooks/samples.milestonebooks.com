@@ -71,7 +71,6 @@ export default {
 
 $slider-height: 75%;
 
-
 .debug #the-context {
   left: 50px;
   top: 50px;
@@ -81,7 +80,8 @@ $slider-height: 75%;
 }
 
 #the-context /deep/ .app-view {
-  height: $slider-height;
+  height: calc(#{$slider-height} - 20px);
+  margin-top: 10px;
 }
 
 .info {

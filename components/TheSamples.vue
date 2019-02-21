@@ -108,7 +108,7 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-.debug #the-samples {
+.debug:not(.-focus-item) #the-samples {
   right: 50px;
   bottom: 50px;
   width: 50%;
