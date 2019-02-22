@@ -44,6 +44,7 @@
   </article>
 </template>
 
+<!--suppress JSSuspiciousNameCombination -->
 <script>
 import SvgIcon from './SvgIcon.vue';
 
@@ -196,15 +197,7 @@ export default {
     },
 
     '$_.isResizing'() {
-      if (this.$_.isResizing) {
-        this.onResize();
-      }
-      // hack to compensate for race conditions
-      if (!this.$_.isResizing) {
-        setTimeout(() => {
-          this.autosize({resize:true});
-        }, settings.TRANSITION_TIME_MS * 2);
-      }
+      this.onResize();
     },
 
   }, // watch {}
@@ -281,7 +274,7 @@ export default {
           });
         }, {
           // root: use viewport instead of <div.frame>; Chrome uses element net margin (negative margins on .frame are subtracted) for boundary instead of width/height like Firefox
-          rootMargin: '100px',
+          // rootMargin: positive values don't work since overflow is hidden <https://github.com/w3c/IntersectionObserver/issues/260>
         });
 
         let images = this.$refs.slider.querySelectorAll(`.frame.${frameType} [data-src]`);
@@ -299,6 +292,12 @@ export default {
       if (this.isLoading || img.src || !src) return;
       img.src = src;
     }, // preloadImage()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    preloadSlideImage(frameType, index) {
+      this.preloadImage(this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${index}"] img`));
+    }, // preloadSlideImage()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -500,6 +499,7 @@ export default {
       this.touchPoint.deltaY = pageY - this.touchPoint.y;
 
       if (this.isScrolling === null) {
+        // noinspection JSSuspiciousNameCombination
         this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
@@ -606,9 +606,10 @@ export default {
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
-      if (this.slides[this.currentIndex].image) {
-        this.preloadImage(this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${this.currentIndex}"] img`));
-      }
+      if (this.getSlide( 0, 'image')) this.preloadSlideImage(frameType, this.currentIndex);
+      // since positive rootMargin doesn't work (overflow is hidden), preload adjacent slide images
+      if (this.getSlide(+1, 'image')) this.preloadSlideImage(frameType, this.currentIndex + 1);
+      if (this.getSlide(-1, 'image')) this.preloadSlideImage(frameType, this.currentIndex - 1);
 
       const $slider = window.$(this.$refs.slider);
       const $frame  = $slider.find(`.frame.${frameType}`);
@@ -624,16 +625,11 @@ export default {
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
-      //*
       this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
       this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
-      /*/
-      this.availWidth  = this.availWidth  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-      this.availHeight = this.availHeight - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
-      //*/
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight - (!this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight - (this.$_i.type === 'audio' && !this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max((this.type === 'series' ? this.availHeight : height), $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
@@ -647,7 +643,7 @@ export default {
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
-        if (this.type === 'series') console.log('autosize() groupHeight', groupHeight, 'frameHeight:', frameHeight, 'yMargin:', yMargin);
+        //console.log('autosize() this.isMinSheetMusicWidth?', this.isMinSheetMusicWidth, this.$_i.type, 'availHeight:', this.availHeight, 'groupHeight:', groupHeight, 'frameHeight:', frameHeight, 'yMargin:', yMargin);
 
         $slider.css({
           width:  `${frameWidth}px`,
@@ -705,7 +701,7 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
-      if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
+      //console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
 
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
