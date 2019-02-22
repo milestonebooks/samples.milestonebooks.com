@@ -548,10 +548,15 @@ export default {
       const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
       const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const slideWidth = $frame.find(`[data-index="${this.currentIndex}"]`).width();
+      const sliderRect = window.$(this.$el)[0].getBoundingClientRect();
+      const slideRect  = e.target.getBoundingClientRect();
+
+      // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
+      const isOverEdge = slideRect.left > sliderRect.left || slideRect.right < sliderRect.right;
+      const isFlick    = duration < 300 && diffX > 25 && diffX > diffY;
 
       // greater than a third the slide width or a fast flick
-      if (diffX > slideWidth / 3 || (duration < 300 && diffX > 25 && diffX > diffY)) {
+      if (isOverEdge && (diffX > slideRect.width / 3 || isFlick)) {
         action = 'swipe';
       }
 
@@ -563,6 +568,7 @@ export default {
 
       if (action === 'swipe') {
         const dirIndex = ((dir === 'left' && this.$_i.direction === 'ltr') || (dir === 'right' && this.$_i.direction === 'rtl') ? 1 : -1);
+
         let offsetX = diffX;
         //TODO: attempt at kinetic scrolling is too jerky using css transitioning
         //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
