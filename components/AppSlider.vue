@@ -179,10 +179,18 @@ export default {
 
     async currentIndex() {
       if (this.currentIndex === -1) return;
+
       // defer to ensure dom is updated
       await this.$nextTick();
-      this.update();
+
+      this.autosize({routeChange:true});
+      if (this.isLoading) this.init();
+
+      await this.$nextTick();
+      forceRepaint();
     },
+
+    //------------------------------------------------------------------------------------------------------------------
 
     async isLoading() {
       // ensure that transitions are only enabled after init is complete
@@ -220,16 +228,6 @@ export default {
   methods: {
 
     set: mixins.set,
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    async update() {
-      //console.log(`AppSlider update() ${this.currentIndex} @ ${this.$_i.dpi}`);
-      this.autosize();
-      if (this.isLoading) this.init();
-      await this.$nextTick();
-      forceRepaint();
-    }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -379,7 +377,7 @@ export default {
 
         if (w > this.availWidth) {
           // if zoomed in, default slides should not count h scrollbar
-          const sliderHRatio = (this.$_i.dpi !== settings.DPI_DEFAULT || this.$_i.isZooming ? this.height : this.availHeight) / this.width;
+          const sliderHRatio = (this.$_i.dpi === settings.DPI_ZOOM || this.$_i.isZooming ? this.height : this.availHeight) / this.width;
           const slideHRatio = h / w;
 
           wScale = (this.width - (slideHRatio > sliderHRatio ? this.$_.scrollbarWidth : 0)) / w;
@@ -442,6 +440,8 @@ export default {
       if (!$slides.length) return;
 
       const el = $slides.closest('.frame')[0];
+
+      if (!el) return;
 
       el.addEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.addEventListener('mousemove', this.onTouchmove);
@@ -552,12 +552,18 @@ export default {
       const slideRect  = e.target.getBoundingClientRect();
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
-      const isOverEdge = slideRect.left > sliderRect.left || slideRect.right < sliderRect.right;
-      const isFlick    = duration < 300 && diffX > 25 && diffX > diffY;
+      const isOverEdge   = slideRect.left > sliderRect.left || slideRect.right < sliderRect.right;
+      const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
+      const midway       = sliderRect.width / 2;
+      const isDiffEnough = diffX > slideRect.width / 3 || slideRect.left > midway || slideRect.right < midway;
 
       // greater than a third the slide width or a fast flick
-      if (isOverEdge && (diffX > slideRect.width / 3 || isFlick)) {
+      if (isOverEdge && (isDiffEnough || isFlick)) {
         action = 'swipe';
+      }
+
+      if (slideRect.width > sliderRect.width && !isOverEdge) {
+        action = 'pan';
       }
 
       let index = this.currentIndex;
@@ -600,15 +606,29 @@ export default {
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
         this.$nextTick(() => {
-          this.autosize();
+          this.autosize({action});
         });
       }
     }, // onTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({resize = false} = {}) {
+    autosize({routeChange = false, resize = false, action = ''} = {}) {
       if (this.currentIndex === null) return;
+
+      /* [2019-02-22] too much jank
+      const h = this.$_.history;
+      const i = this.$_i;
+
+      if (routeChange && h.length && h[0].code === i.code) {
+        const el = window.$(this.$el).find('.slider-view')[0];
+
+        if (i.currentIndex === h[0].index + 1) {
+          el.scrollLeft = 0;
+        }
+        console.log(`autosize() routeChange from`, h[0].index, 'to', this.$_i.currentIndex);
+      }
+      //*/
 
       const frameType = (this.$_i.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
 

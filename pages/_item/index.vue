@@ -51,7 +51,10 @@ export default {
   },
 
   watch: {
-    $route: 'update',
+    $route(to, from) {
+      this.$store.commit('addToHistory', {code:from.params.item, index:this.$_i.currentIndex});
+      this.update();
+    }
   },
 
   data () {

@@ -30,6 +30,8 @@ export const state = () => ({
 
   alerts: [],
 
+  history: [],
+
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
     {key:'isCompactListTitles', get: v => v === 'true'},
@@ -60,6 +62,12 @@ export const mutations = {
   setAlert(state, {msg}) {
     state.alerts.push(msg);
   }, // setAlert()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  addToHistory(state, route) {
+    state.history.unshift(route);
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
 
