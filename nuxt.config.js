@@ -42,6 +42,10 @@ export default {
     '~plugins/storage.client.js',
   ],
 
+  modules: [
+    'cookie-universal-nuxt',
+  ],
+
   mode: 'spa',
 
   modern: 'client',

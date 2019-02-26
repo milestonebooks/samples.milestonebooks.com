@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
+    "cookie-universal-nuxt": "^2.0.14",
     "nuxt": "^2.4.2"
   },
   "devDependencies": {

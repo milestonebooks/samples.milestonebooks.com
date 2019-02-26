@@ -68,11 +68,13 @@ export default {
       return store.commit('series/set', {currentIndex: store.state.series.items.findIndex(s => s.code === params.item)});
     }
 
+    if (!store.state.isInit) store.commit('set', {isDev: window.$nuxt.$cookies.get('dev')});
+
     const data = {
       data: null
     };
-    // TODO: make sure Samples.php API is updated when updating production frontend
-    const url = `${store.state.urlBase}${params.item}/?action=Data${document.cookie.match(/dev=true/) ? '&dev=true' : ''}`;
+
+    const url = `${store.state.urlBase}${params.item}/?action=Data${store.state.isDev ? '&dev=true' : ''}`;
 
     try {
       const res = await axios.get(url);
@@ -106,6 +108,7 @@ export default {
 
     mainClass() {
       return {
+        'is-dev':       this.$_.isDev,
         'debug':        this.$_._showDebugger,
         '-focus-item':  this.$_._focusItem,
         'is-init':      this.$_.isInit,
@@ -135,7 +138,7 @@ export default {
 
     await this.$store.dispatch('initSettings');
 
-    this.set({scrollbarWidth: this.getScrollbarWidth() });
+    this.set({scrollbarWidth: this.getScrollbarWidth()});
 
     if (!this.$_.hasMouse) {
       const _firstmouseover = () => {
@@ -367,6 +370,18 @@ main {
     box-shadow: 0 0 1em transparentize($theme-color, 0.5);
     pointer-events: none;
     animation: a-titlefade 3s 1 forwards ease-in-out;
+  }
+
+  &.is-dev::after {
+    pointer-events: none;
+    z-index: $layer-the-alerts;
+    content: '*';
+    color: red;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    font-size: 40px;
+    line-height: 0;
   }
 }
 

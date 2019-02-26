@@ -8,6 +8,7 @@ export const state = () => ({
   _debugCheck:   null,
   _focusItem:    true, // TODO
 
+  isDev:      false,
   isInit:     false,
   gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
   psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
