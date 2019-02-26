@@ -1,137 +1,128 @@
 <template>
-  <main :class="mainClass" :data-type="s.type" :data-title="s.title" :data-dpi="s.dpi" :data-dir="s.direction">
-    <TheDebugger v-if="s._showDebugger" />
+  <main :class="mainClass" :data-title="$_i.title" :data-dir="$_i.direction">
+    <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
 
-    <article class="the-item shell" :class="itemShellClass">
-      <TheSlider :samples="s.samples" :currentIndex="s.currentIndex" />
+    <TheSamples v-if="true" />
 
-      <div class="the-item-view">
-        <TheOptRulers v-if="s.hasRulers" />
-
-        <TheOptPrint v-if="s.hasPrint" />
-
-        <TheNav v-if="s.samples.length > 1" />
-
-        <ThePlayer v-if="s.type === 'audio'" :currentIndex="s.currentIndex" />
-
-        <TheOptRevert v-if="s.type === 'items'" />
-      </div>
-    </article>
-
-    <TheContext :series="s.context.series" :currentIndex="s.context.currentIndex" />
+    <TheContext v-if="true && !$_._focusItem" />
 
   </main>
 </template>
 
 <script>
-import TheDebugger  from '~/components/TheDebugger';
-import TheAlerts    from '~/components/TheAlerts';
-import TheSlider    from '~/components/TheSlider';
-import TheOptRulers from '~/components/TheOptRulers';
-import TheOptPrint  from '~/components/TheOptPrint';
-import TheOptRevert from '~/components/TheOptRevert';
-import TheContext   from '~/components/TheContext';
-import TheNav       from '~/components/TheNav';
-import ThePlayer    from '~/components/ThePlayer';
+import TheDebugger from '~/components/TheDebugger';
+import TheAlerts   from '~/components/TheAlerts';
+import TheSamples  from '~/components/TheSamples';
+import TheContext  from '~/components/TheContext';
 
-import { mapMutations } from 'vuex';
+import settings from '~/assets/settings';
+import mixins   from '~/plugins/mixins.vue';
 
 import axios from 'axios';
 
-// v1.0.1 gzipped size: 82.93 KB
-// v1.1.0 gzipped size: 80.43 KB
-// TODO: prev/next item in series
-// TODO: provide info/exit button in upper right to help with contextual awareness
-// TODO: implement behavior analytics (low priority)
-
 export default {
+  key: '_item', // ensure page doesn't get recreated on route change
+
   components: {
     TheDebugger,
     TheAlerts,
-    TheSlider,
-    TheOptRulers,
-    TheOptPrint,
-    TheOptRevert, // TODO: temporary
+    TheSamples,
     TheContext,
-    TheNav,
-    ThePlayer,
   },
 
   head () {
-    const i = this.s.samples[this.s.currentIndex];
+    const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (!i ? this.s.title : `(${i.id})${i.title ? ' ' + i.title : ''} • ${this.s.title}`),
+      title: (s ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
-        class: (this.s.showContext ? 'show-context' : '')
+        class: (this.$_.showContext ? 'show-context' : '') + (this.$_.isResizing ? 'is-resizing' : ''),
       },
 
       link: [
         // audio speaker favicon
-        this.s.type !== 'audio' ? {} :
+        this.$_i.type !== 'audio' ? {} :
           {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
       ],
     }
   },
 
   watch: {
-    $route: 'update',
+    $route(to, from) {
+      this.$store.commit('addToHistory', {code:from.params.item, index:this.$_i.currentIndex});
+      this.update();
+    }
   },
 
   data () {
     return {
-    };
+    }
   }, // data()
 
   async asyncData({params, store, error}) {
+
+    if (store.state.series.id) {
+      return store.commit('series/set', {currentIndex: store.state.series.items.findIndex(s => s.code === params.item)});
+    }
+
+    if (!store.state.isInit) store.commit('set', {isDev: window.$nuxt.$cookies.get('dev')});
+
     const data = {
       data: null
     };
-    const url = `${store.state.urlBase}${params.item}/?action=Data${document.cookie.match(/dev=true/) ? '&dev=true' : ''}`;
+
+    const url = `${store.state.urlBase}${params.item}/?action=Data${store.state.isDev ? '&dev=true' : ''}`;
 
     try {
       const res = await axios.get(url);
-      if (typeof res.data === 'string' || !res.data.response.success || !res.data.samples.length) throw {message:'No samples found.'};
+      if (typeof res.data === 'string' || !res.data.response.success) throw {message:'No samples found.'};
       data.data = res.data;
     } catch (err) {
       console.log('error:',err);
-      return error({ statusCode: (err.response && err.response.status ? err.response.status : 500), message: (err.message ? err.message : 'Oops! This page has a problem. :-('), url })
+      return error({ statusCode: (err.response && err.response.status || 500), message: (err.message || 'Oops! This page has a problem. :-('), url })
     }
 
     return data;
   }, // asyncData()
 
   computed: {
-    s() {
+
+    $_() {
       return this.$store.state;
     },
 
-    p() {
+    $_s() {
+      return this.$store.state.series;
+    },
+
+    $_i() {
+      return this.$store.state.item;
+    },
+
+    $_p() {
       return this.$store.state.player;
     },
 
     mainClass() {
       return {
-        'debug':       this.s._showDebugger,
-        'is-init':     this.s.isInit,
-        'has-touch':   this.s.hasTouch,
-        'has-mouse':   this.s.hasMouse,
-        'has-zoom':    this.s.hasZoom,
-        'has-print':   this.s.hasPrint,
-        'show-rulers': this.s.hasRulers && this.s.showRulers,
-        'is-printing': this.s.isPrinting,
-        'show-context': this.s.showContext,
-        'show-title':  true,
+        'is-dev':       this.$_.isDev,
+        'debug':        this.$_._showDebugger,
+        '-focus-item':  this.$_._focusItem,
+        'is-init':      this.$_.isInit,
+        'show-context': this.$_.showContext,
+        'has-touch':    this.$_.hasTouch,
+        'has-mouse':    this.$_.hasMouse,
+        'show-title':   true,
       }
     },
 
     itemShellClass() {
       return {
-        'has-scrollbar-x': this.s.hasScrollbarX && this.s.scrollbarWidth,
-        'has-scrollbar-y': this.s.hasScrollbarY && this.s.scrollbarWidth,
+        'has-scrollbar-x': this.$_.hasScrollbarX && this.$_.scrollbarWidth,
+        'has-scrollbar-y': this.$_.hasScrollbarY && this.$_.scrollbarWidth,
       }
     },
 
@@ -143,11 +134,13 @@ export default {
     console.time('index');
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof window.$ === 'undefined') return;
 
+    window.addEventListener('resize', this.onResize);
+
     await this.$store.dispatch('initSettings');
 
-    this.set({scrollbarWidth: this.getScrollbarWidth() });
+    this.set({scrollbarWidth: this.getScrollbarWidth()});
 
-    if (!this.s.hasMouse) {
+    if (!this.$_.hasMouse) {
       const _firstmouseover = () => {
         this.set({hasMouse: true});
         window.removeEventListener('mouseover', _firstmouseover, false);
@@ -155,7 +148,7 @@ export default {
       window.addEventListener('mouseover', _firstmouseover, false);
     }
 
-    if (!this.s.hasTouch) {
+    if (!this.$_.hasTouch) {
       const _firsttouchstart = () => {
         this.set({hasTouch: true});
         window.removeEventListener('touchstart', _firsttouchstart, false);
@@ -163,67 +156,109 @@ export default {
       window.addEventListener('touchstart', _firsttouchstart, false);
     }
 
-    this.initSamplesData();
+    this.initData();
   }, // mounted()
+
+  beforeDestroy () {
+    window.removeEventListener('resize', this.onResize);
+  },
 
   //====================================================================================================================
 
   methods: {
 
-    ...mapMutations([
-      'set',
-    ]),
+    set: mixins.set,
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async initSamplesData() {
-      const d = this.data;
-      const samples = d.samples;
-      const series  = d.series;
+    onResize: function() {
+      this.set({'isResizing': true});
 
-      const {maxHRatio} = this.initImagesData(samples);
-      const {maxHRatio:maxHRatioSeries} = this.initImagesData(series);
+      clearTimeout(this.tResize);
+
+      this.tResize = setTimeout(() => {
+        this.set({'isResizing': false});
+      }, settings.TRANSITION_TIME_MS);
+    }, // onResize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async initData() {
+      if (this.data === undefined) return;
+
+      const d      = this.data;
+      const series = d.series;
+      const items  = series.items;
+      const item   = items[d.seriesIndex];
+
+      const {maxH, maxHRatio} = this.initImagesData(items);
+
+      this.set('series', {...series,
+        currentIndex: d.seriesIndex,
+        firstCode:    items[0].code,
+        lastCode:     items[items.length - 1].code,
+        maxH,
+        maxHRatio,
+      });
+
+      await this.initItemData(item);
 
       this.set({
-        isInit:    true,
-        title:     d.title,
-        item:      this.$route.params.item,
-        type:      d.type,
-        direction: d.direction || 'ltr',
-        hasRulers: d.type !== 'audio',
-        hasZoom:   d.hasZoom  || false,
-        hasPrint:  d.hasPrint || false,
-        samples:   samples,
-        firstId:   samples[0].id,
-        lastId:    samples[samples.length - 1].id,
-        maxHRatio: maxHRatio,
-        context: {
-          currentIndex: series.findIndex(s => s.item === this.$route.params.item),
-          series:       series,
-          maxHRatio:    maxHRatioSeries,
-        }
+        isInit: true,
       });
 
       console.timeEnd('index');
 
       this.update();
-    }, // initSamplesData()
+    }, // initData()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    initImagesData(arr) {
-      let maxHRatio = null;
+    async initItemData(item) {
+
+      if (this.$_i.code) {
+        await this.$store.dispatch('item/unset');
+      }
+
+      const samples = item.samples;
+
+      if (!samples.length) {
+        return;
+        //TODO: depends on what is currently in focus
+        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+      }
+
+      const {maxHRatio} = this.initImagesData(samples);
+
+      this.set('item', {...item,
+        direction: item.direction || 'ltr',
+        hasRulers: item.type !== 'audio',
+        hasZoom:   item.hasZoom  || false,
+        hasPrint:  item.hasPrint || false,
+        firstId:   samples[0].id,
+        lastId:    samples[samples.length - 1].id,
+        maxHRatio: maxHRatio,
+      });
+
+    }, // initItemData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    initImagesData(arr = []) {
+      const _ = {
+        maxH: null,
+        maxHRatio: null,
+      };
 
       for (const i of arr) {
         if (!i.image) continue;
         i.image.loaded = {}; // create object to monitor loaded state
         i.image.hRatio = i.image.h / i.image.w;
-        if (maxHRatio === null || i.image.hRatio > maxHRatio) maxHRatio = i.image.hRatio;
+        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
+        if (_.maxH === null || i.image.h > _.maxH) _.maxH = i.image.h;
       }
 
-      return {
-        maxHRatio,
-      };
+      return _;
     }, // initImagesData()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -256,16 +291,22 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    update() {
-      // original link system [until 2018] use sequential numbers for sample id (i.e., index + 1)
-      const seq = +(this.$route.hash.match(/sample=(\d+)/) || [0,0])[1];
+    async update() {
+      console.log('update() route', this.$route.path, this.$route.hash);
+
+      if (this.$_i.code !== this.$route.params.item) {
+        await this.initItemData(this.$_s.items[this.$_s.currentIndex]);
+      }
+
+      // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
+      const seq = +(this.$route.hash.match(/##(\d+)/) || [0,0])[1];
 
       if (seq && this.getRouteFromSequence(seq)) return;
 
       // if id is not given in the hash, select the first in the samples list
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.s.firstId])[0];
+      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
 
-      const index = this.s.samples.findIndex(i => i.id === id);
+      const index = this.$_i.samples.findIndex(i => i.id === id);
 
       // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
@@ -273,14 +314,14 @@ export default {
         return this.$router.replace('./');
       }
 
-      this.set({currentIndex: index});
+      this.set('item', {currentIndex: index});
 
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
     getRouteFromSequence(seq) {
-      const i = this.s.samples.find(i => i.index === seq - 1);
+      const i = this.$_i.samples.find(i => i.index === seq - 1);
       if (i) this.$router.replace(`./#${i.id}`);
       return i !== undefined;
     }, // getIdFromSequence()
@@ -303,10 +344,12 @@ main {
     user-select: none; // expected to be more hindrance than useful in this app
   }
   position: relative;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   margin: auto;
-  @include short-transition;
+  //@include short-transition;
 
   &[data-dir="rtl"] {
     direction: rtl;
@@ -328,6 +371,18 @@ main {
     pointer-events: none;
     animation: a-titlefade 3s 1 forwards ease-in-out;
   }
+
+  &.is-dev::after {
+    pointer-events: none;
+    z-index: $layer-the-alerts;
+    content: '*';
+    color: red;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    font-size: 40px;
+    line-height: 0;
+  }
 }
 
 @keyframes a-titlefade {
@@ -348,34 +403,6 @@ main {
 main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;
-}
-
-.shell {
-  position: absolute;
-  width: 100%; // % instead of vw to avoid potential h scrollbar
-  height: 100vh;
-  overflow: auto;
-  @include short-transition;
-}
-
-.the-item-view {
-  position: fixed;
-  z-index: $layer-item-view; // above <.frame-mask> layer
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  @include short-transition;
-
-  > * {
-    pointer-events: all;
-  }
-
-  @at-root .has-scrollbar-y & {
-    width: calc(100% - 17px);
-  }
-  @at-root .has-scrollbar-x & {
-    height: calc(100% - 17px);
-  }
 }
 
 </style>

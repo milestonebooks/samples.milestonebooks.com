@@ -6,7 +6,7 @@
     </button>
 
     <div class="bar-progress">
-      <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
+      <div class="bar-seek" :class="{captured: p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
           <a ref="handle" class="bar-handle" tabindex="0" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
@@ -21,10 +21,9 @@
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.vue';
 
 export default {
   components: {
@@ -47,7 +46,7 @@ export default {
   }, // data()
 
   computed: {
-    ...mapGetters('item', [
+    ...mapGetters([
       'getSample',
       'listItemClass',
     ]),
@@ -60,11 +59,14 @@ export default {
       'playTitle',
       'handleTip',
     ]),
-    $_p() {
+    s() {
+      return this.$store.state;
+    },
+    p() {
       return this.$store.state.player;
     },
     btnPlayPath() {
-      return (this.$_p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
+      return (this.p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
   }, // computed {}
 
@@ -72,7 +74,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
+      if (action.type === 'player/onEnd' && this.p.isAutoNext && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
     });
     this.init();
   }, // mounted ()
@@ -86,8 +88,8 @@ export default {
       this.update();
     },
 
-    '$_p.isAutoPlay'() {
-      this.$store.dispatch('player/togglePlay', {play: this.$_p.isAutoPlay});
+    'p.isAutoPlay'() {
+      this.$store.dispatch('player/togglePlay', {play: this.p.isAutoPlay});
     },
   },
 
@@ -95,14 +97,17 @@ export default {
 
   methods: {
 
-    set: mixins.set,
+    ...mapMutations('player',[
+      'set',
+      'setCurrent',
+    ]),
 
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
       this.$store.dispatch('player/initSettings');
-      this.$slider = window.$(this.$el).find(this.selSlider);
-      this.set('player', {isInit:true});
+      this.$slider = window.$(this.selSlider);
+      this.set({isInit:true});
       this.refresh();
       this.update();
     }, // init()
@@ -141,7 +146,7 @@ export default {
       if (this.currentIndex === null) return;
 
       await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$root.error({statusCode:500, message:`Error loading audio #${index} [${err_code}]`});
+        this.$root.error({statusCode:500, message:`Error loading audio [${err_code}]`});
       });
       this.refresh();
     }, // load()
@@ -177,10 +182,10 @@ export default {
 
       // adjust to the interval nearest 20th (5%) rounded to an interval:
       // 10s; 20s (len > 5m); 30s (>~8m); 1m (>15m); 5m (>1h); 10m (>2.5h)
-      const len = this.$_p.current.duration;
+      const len = this.p.current.duration;
       const intv = 20;
       const secIntv = getClosest(len / intv, [10, 20, 30, 60, 300, 600]);
-      const pct = this.$_p.current.pct;
+      const pct = this.p.current.pct;
 
       let newPct = pct;
 
@@ -216,7 +221,7 @@ export default {
       e.preventDefault();
       this.minX = this.$slider.offset().left;
       this.moveCaptured = true;
-      this.set('player', {isCaptured: this.moveCaptured});
+      this.set({isCaptured: this.moveCaptured});
       this.moving(e, pct);
     }, // moveStart()
 
@@ -249,9 +254,9 @@ export default {
       if (!this.moveCaptured) return false;
 
       this.moveCaptured = false;
-      this.set('player', {isCaptured: this.moveCaptured});
+      this.set({isCaptured: this.moveCaptured});
 
-      if (!this.$_p.isPlaying || this.$_p.interrupted) this.$store.commit('player/sync', {from:'handle'});
+      if (!this.p.isPlaying || this.p.interrupted) this.$store.commit('player/sync', {from:'handle'});
 
       this.$refs.handle.focus();
     }, // moveEnd()
@@ -259,7 +264,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     refresh() {
-      this.$store.commit('player/setCurrent', {pctPixel: 100 / this.$slider.width()});
+      this.setCurrent({pctPixel: 100 / this.$slider.width()});
     }, // refresh()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -274,8 +279,15 @@ export default {
 <style lang="scss">
 @import "../assets/settings.scss";
 
-[data-type="audio"] .below-sheet-music-width .slider {
-  margin-bottom: $controls-height;
+[data-type="audio"] .shell.has-scrollbar-y {
+  @include below-sheet-music-min {
+    height: calc(100vh - 4em);
+
+    .audio-player {
+      width: calc(100% + 17px); // TODO
+      margin-left: (17px / 2);
+    }
+  }
 }
 </style>
 
@@ -287,7 +299,7 @@ export default {
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   width: 10 * $unit;
 
-  @at-root .below-sheet-music-width & {
+  @include below-sheet-music-min {
     width: 100%;
     border-radius: 0 !important;
   }

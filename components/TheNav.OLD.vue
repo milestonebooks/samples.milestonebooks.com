@@ -1,50 +1,46 @@
 <template>
-  <div :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
-    <aside class="sidebar top h">
+  <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
 
-      <div class="controls">
-        <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
-          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-        </nuxt-link>
-        <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
-          <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
-            <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
-          </span></span>
-        </button>
-        <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
-          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-        </nuxt-link>
-      </div>
-
-    </aside>
+    <div class="controls">
+      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+      </nuxt-link>
+      <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+        <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
+          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
+        </span></span>
+      </button>
+      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
+        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+      </nuxt-link>
+    </div>
 
     <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
-      <div class="slides">
-        <button v-for="sample in $_i.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
-                @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
-            <span class="item-flex">
-              <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
-              <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
-            </span>
+      <div class="pages">
+        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
+            @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
+          <span class="item-flex">
+            <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
+            <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+          </span>
         </button>
       </div>
       <ul class="settings">
         <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
       </ul>
     </nav>
-    <div class="list-shadow-mask"></div>
 
-  </div>
+  </aside>
 </template>
 
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapGetters } from 'vuex';
+import { mapGetters, mapMutations } from 'vuex';
 
 import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.vue';
 
 export default {
   components: {
@@ -54,7 +50,6 @@ export default {
   data () {
     return {
       isListShown: false,
-      listAcceptPointerEvents: false,
       keyActive: false,
     }
   }, // data()
@@ -62,17 +57,14 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    ...mapGetters('item', [
+    ...mapGetters([
       'getSample',
       'listItemClass',
     ]),
-    $_() {
+    s() {
       return this.$store.state;
     },
-    $_i() {
-      return this.$store.state.item;
-    },
-    $_p() {
+    p() {
       return this.$store.state.player;
     },
     btnNavPath() {
@@ -83,27 +75,34 @@ export default {
     },
     listClass() {
       return {
-        'compact': ((this.$_i.type === 'items' && this.$_.isCompactList) || (this.$_i.type === 'audio' && this.$_.isCompactListTitles)),
-        'accept-events': this.listAcceptPointerEvents,
+        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles))
       };
     },
     idStyle() {
-      return `transform: translateX(${2.8 * this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1)}rem)`;
+      return `transform: translateX(${2.8 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}rem)`;
     },
     autoPlay: {
       get() {
-        return this.$_p.isAutoPlay;
+        return this.p.isAutoPlay;
       },
       set(isAutoPlay) {
-        this.set('player', {isAutoPlay});
+        this.setPlayer({isAutoPlay});
+      },
+    },
+    autoNext: {
+      get() {
+        return this.p.isAutoNext;
+      },
+      set(isAutoNext) {
+        this.setPlayer({isAutoNext});
       },
     },
     compactList: {
       get() {
-        return (this.$_i.type === 'audio' ? this.$_.isCompactListTitles : this.$_.isCompactList);
+        return (this.s.type === 'audio' ?  this.s.isCompactListTitles : this.s.isCompactList);
       },
       set(isCompactList) {
-        this.set({[this.$_i.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
+        this.set({[this.s.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
       },
     },
   }, // computed {}
@@ -124,7 +123,12 @@ export default {
 
   methods: {
 
-    set: mixins.set,
+    ...mapMutations([
+      'set',
+    ]),
+    ...mapMutations('player', {
+      'setPlayer': 'set',
+    }),
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -146,11 +150,6 @@ export default {
     showList() {
       this.isListShown = true;
       this.updateListFocus();
-
-      // pointer events delayed until list is fully expanded (otherwise Firefox fires mouseover events while expanding)
-      setTimeout(() => {
-        this.listAcceptPointerEvents = true;
-      }, settings.TRANSITION_TIME_MS);
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -159,7 +158,6 @@ export default {
       if (!this.isListShown) return;
 
       this.isListShown = false;
-      this.listAcceptPointerEvents = false;
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -214,7 +212,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getIndexById(id) {
-      const sample = this.$_i.samples.find((i) => i.id === id);
+      const sample = this.s.samples.find((i) => i.id === id);
       return (sample !== undefined ? sample.index : null);
     }, // getIndexById()
 
@@ -247,7 +245,7 @@ export default {
 
     updateListFocus(id = null) {
       if (!id) id = this.getSample(0, 'id');
-      window.$(this.$el).find(`.list .item[data-id="${id}"]`)[0].focus();
+      window.$(`.list .item[data-id="${id}"]`)[0].focus();
     }, // updateListFocus()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -265,7 +263,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onMaskClick(e) {
-      if (e.target === window.$(this.$el).filter('.is-list-shown')[0]) this.hideList();
+      if (e.target === window.$('.is-list-shown')[0]) this.hideList();
     }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -281,25 +279,14 @@ export default {
 @import "../assets/settings.scss";
 
 .the-nav {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
+  z-index: $layer-the-nav;
+  width: 3 * $unit;
 
-  > * {
-    pointer-events: all;
-  }
-
-  // modal mask
   &::before {
-    z-index: $layer-the-nav;
     content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
+    @include absolute-center(x);
+    width: 100vw;
+    height: 100vh;
     background: white;
     opacity: 0;
     pointer-events: none;
@@ -311,33 +298,19 @@ export default {
     pointer-events: auto;
   }
 
-  .sidebar {
-    z-index: $layer-the-nav;
-    width: 3 * $unit;
-  }
-
   .controls {
     width: 100%;
     height: 100%;
   }
 }
 
-.has-scrollbar-y .the-nav {
-  .sidebar,
-  .list,
-  .list-shadow-mask {
-    // TODO: [2018-11] IE seems to subtract half the width of .sidebar (6em) in calculating left edge
-    left: calc(50% - #{round($scrollbar-width / 2)}); // decimal values can produce misalignments in Edge
-  }
-}
-
 .btn:not(:disabled) {
   &:focus,
   &:hover {
-    & .id-indicator-frame,
-    & .id-indicator {
+    & .id-indicator-frame {
       color: $focus-color;
       border-color: $focus-color;
+      @include short-transition;
     }
   }
 }
@@ -385,7 +358,7 @@ export default {
     background-color: white;
     white-space: nowrap;
     overflow: hidden;
-    @include short-transition;
+    //@include short-transition;
   }
 
   & .id-indicator-tray {
@@ -405,7 +378,7 @@ export default {
     width: 2.8rem;
     height: 1.8rem;
     overflow: hidden;
-    @include short-transition;
+    //transition: transform $transition-time ease-in-out; // match slide transition time
   }
 } // .btn-list
 
@@ -422,37 +395,16 @@ export default {
   }
 }
 
-// decoration to make list appear seamless with button
-.list-shadow-mask {
-  pointer-events: none;
-  position: absolute;
-  z-index: $layer-the-nav + 1;
-  @include absolute-center(x);
-  background: $background-color;
-  top: 3.25em;
-  width: 4em;
-  height: .75em;
-  @include short-transition;
-
-  opacity: 0;
-  transform: translateX(-50%) scale(0);
-
-  @at-root .is-list-shown & {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
-}
-
 .list {
-  z-index: $layer-the-nav;
+  //display: none;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);
   box-sizing: border-box;
-  top: 4em;
-  width: 100%;
+  top: 100%;
+  width: 100vw;
   max-width: 10 * $unit;
-  max-height: calc(100% - 6em);
+  max-height: calc(100vh - 6em);
   padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
@@ -465,34 +417,20 @@ export default {
   transform: translateX(-50%) scale(0);
 
   &:not([aria-hidden]) {
+    pointer-events: all;
     opacity: 1;
     transform: translateX(-50%) scale(1);
-  }
-  &.accept-events {
-    pointer-events: all;
-  }
-
-  &::before {
-    content: '';
-    width: 4em;
-    height: .75em;
-    @include absolute-center(x);
-    bottom: 100%;
   }
 
   * {
     position: relative;
   }
 
-  :focus {
-    outline: none;
-  }
-
-  .slides {
+  .pages {
     display: flex;
     flex-direction: column;
   }
-  &.compact .slides {
+  &.compact .pages {
     flex-direction: row;
     flex-wrap: wrap;
     padding: $list-padding;
@@ -527,7 +465,7 @@ export default {
     width: 1 * $unit;
     margin-bottom: ($list-padding * 2);
   }
-  &.compact .slides {
+  &.compact .pages {
     margin-bottom: -($list-padding * 2);
   }
 

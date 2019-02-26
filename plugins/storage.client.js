@@ -1,6 +1,6 @@
 // [2018-05-16] from <https://mathiasbynens.be/notes/localstorage-pattern>
 
-const storage = (function() {
+const storageClient = (function() {
   const uid = +(new Date()) + '';
   let storage;
   let result;
@@ -12,4 +12,4 @@ const storage = (function() {
   } catch (exception) {}
 }());
 
-export default storage;
+export default storageClient;

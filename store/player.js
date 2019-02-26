@@ -1,4 +1,5 @@
-import storage from '~/plugins/storage';
+import storage from '~/plugins/storage.client';
+import mixins from '~/plugins/mixins.store';
 
 export const state = () => ({
   isInit:      false,
@@ -11,7 +12,6 @@ export const state = () => ({
   isValidInputId: true,
 
   isAutoPlay: null, // default to true if mouse is detected
-  isAutoNext: true,
 
   current: {
     index: null, // = rootState.currentIndex
@@ -23,7 +23,6 @@ export const state = () => ({
 
   persist: [
     {key:'isAutoPlay', get: v => v === 'true'},
-    {key:'isAutoNext', get: v => v === 'true'},
   ],
 }); // state{}
 
@@ -34,7 +33,7 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   isPlayable (state, getters, rootState) {
-    return rootState.currentIndex !== null && !state.isLoading;
+    return rootState.item.currentIndex !== null && !state.isLoading;
   }, // isPlayable()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -45,7 +44,7 @@ export const getters = {
       'is-playable':   getters.isPlayable,
       'is-playing':    state.isPlaying,
       'is-loading':    state.isLoading,
-      'is-multi':      rootState.samples.length > 1,
+      'is-multi':      rootState.item.samples.length > 1,
     }
   }, // uiClass()
 
@@ -104,16 +103,7 @@ export const getters = {
 
 export const mutations = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  set(state, o) {
-    Object.keys(o).map(key => {
-      state[key] = Array.isArray(o[key]) ? [...state[key], ...o[key]]
-        : (typeof o[key] === 'object'    ? {...state[key], ...o[key]} : o[key]);
-
-      if (state.persist && state.persist.find(p => p.key === key)) storage.setItem(key, o[key]);
-    });
-  }, // set()
+  set: mixins.mutations.set,
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -179,11 +169,7 @@ export const actions = {
     // isAutoPlay should default to true for devices using a mouse
     if (rootState.hasMouse && storage.getItem('isAutoPlay') === null) commit('set', {isAutoPlay: true});
 
-    let v;
-
-    for (const p of state.persist) {
-      if ((v = storage.getItem(p.key)) !== null) commit('set', {[p.key]: p.get(v)});
-    }
+    mixins.actions.initSettings({commit, state});
 
   }, // initSettings()
 
@@ -198,11 +184,11 @@ export const actions = {
 
     window.howls = window.howls || {};
 
-    if (!window.howls[index] && rootState.samples[index].audio) {
+    if (!window.howls[index] && rootState.item.samples[index].audio) {
 
       await new Promise((resolve, reject) => {
         window.howls[index] = new window.Howl({
-          src: [rootState.urlBase + rootState.samples[index].audio],
+          src: [rootState.urlBase + rootState.item.samples[index].audio],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
           onloaderror: async (id, error) => { reject(error); },
@@ -284,7 +270,7 @@ export const actions = {
 
   async onEnd({dispatch, state, rootState}) {
 
-    if (!state.isAutoNext || state.current.index === rootState.samples.length - 1) await dispatch('reset');
+    if (!state.isAutoPlay || state.current.index === rootState.item.samples.length - 1) await dispatch('reset');
 
   }, // onEnd()
 

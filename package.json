@@ -1,12 +1,12 @@
 {
   "name": "samples",
-  "version": "1.1.8",
+  "version": "2.0.0-beta.4",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
   "scripts": {
     "dev": "nuxt",
-    "analyze": "nuxt build --analyze",
+    "analyze": "nuxt build --analyze --modern=client",
     "generatedebug": "cross-env NUXT_ENV_DEBUG=on nuxt generate",
     "generate": "cross-env NODE_ENV=production nuxt generate",
     "build": "nuxt build",
@@ -20,20 +20,24 @@
   },
   "dependencies": {
     "axios": "^0.18.0",
-    "nuxt": "^2.2.0"
+    "cookie-universal-nuxt": "^2.0.14",
+    "nuxt": "^2.4.2"
   },
   "devDependencies": {
+    "acorn": "^6.0.7",
+    "acorn-dynamic-import": "^4.0.0",
     "babel-eslint": "^8.2.6",
     "cross-env": "^5.2.0",
     "eslint": "^4.19.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-loader": "^1.9.0",
     "eslint-plugin-html": "^3.1.1",
-    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-node": "^5.1.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "node-sass": "^4.9.4",
-    "sass-loader": "^7.1.0"
+    "node-sass": "^4.11.0",
+    "sass-loader": "^7.1.0",
+    "webpack": "4.28.4"
   }
 }

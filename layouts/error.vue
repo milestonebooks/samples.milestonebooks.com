@@ -1,6 +1,6 @@
 <template>
   <main class="error">
-    <h1 v-if="error.statusCode === 404">Page not found</h1>
+    <h1 v-if="error.statusCode === 404 && !error.message">Page not found</h1>
     <h1 v-else>{{ error.message }}</h1>
     <p>Please <a :href="emailLink(error)">send us an email</a> to let us know.</p>
     <p>Return to <a href="https://www.milestonebooks.com">home page</a>.</p>

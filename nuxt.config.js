@@ -1,4 +1,12 @@
-module.exports = {
+// v1.0.1        gzipped size: 82.93 KB
+// v1.1.0        gzipped size: 80.43 KB
+// v2.0.0-beta.0 gzipped size: 82.65 KB
+// v2.0.0-beta.3 gzipped size: 75.81 KB
+// TODO: prev/next item in series
+// TODO: provide info/exit button in upper right to help with contextual awareness
+// TODO: implement behavior analytics (low priority)
+
+export default {
   env: {
     tracking: (process.env.NODE_ENV === 'production'),
   },
@@ -31,10 +39,16 @@ module.exports = {
 
   plugins: [
     '~plugins/tracking.js',
-    { src: '~plugins/storage.js', ssr: false },
+    '~plugins/storage.client.js',
+  ],
+
+  modules: [
+    'cookie-universal-nuxt',
   ],
 
   mode: 'spa',
+
+  modern: 'client',
 
   loadingIndicator: {
     color: 'hsl(0, 0%, 50%)',

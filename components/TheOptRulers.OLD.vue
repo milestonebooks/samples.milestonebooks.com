@@ -1,13 +1,13 @@
 <template>
-  <div class="the-samples-rulers">
+  <div class="the-item-rulers">
     <aside class="the-opt-rulers controls sidebar floating">
-      <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
+      <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${s.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
         <SvgIcon view="28" :d="btnRulerPath" />
       </button>
     </aside>
 
     <transition name="rulers">
-      <div :class="`rulers ${isUseTouch ? 'touch' : ''}`" v-show="$_i.showRulers">
+      <div :class="`rulers ${isUseTouch ? 'touch' : ''}`" v-show="s.showRulers">
         <div v-for="cls of ['x right','y top','x left r','y bottom r']" :class="`ruler ${cls}`"><b v-for="i of 20"></b><div class="target"></div></div> <!-- 20 * 80px = (monitors up to 1600px) -->
       </div>
     </transition>
@@ -34,8 +34,8 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    $_i() {
-      return this.$store.state.item;
+    s() {
+      return this.$store.state;
     },
 
     btnRulerPath() {
@@ -50,21 +50,21 @@ export default {
 
   watch: {
 
-    '$_i.showRulers'() { this.onToggleRulers() },
+    's.showRulers'() { this.onToggleRulers() },
 
-    '$_i.currentWScale'() { this.scaleRulers() },
+    's.currentWScale'() { this.scaleRulers() },
 
   }, // watch {}
 
   //====================================================================================================================
 
   mounted() {
-    this.$rulers = window.$(this.$el).find('.rulers');
+    this.$rulers = window.$('.the-item-view .rulers');
 
     window.addEventListener('resize', this.positionRulers);
     window.addEventListener('orientationchange', this.scaleRulers); // needs because Safari scales image without scaling rulers
 
-    if (this.$_i.showRulers) {
+    if (this.s.showRulers) {
       this.scaleRulers();
       this.onToggleRulers();
     }
@@ -82,13 +82,13 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleRulers() {
-      this.$store.commit('item/set', {showRulers: !this.$_i.showRulers});
+      this.$store.commit('set', {showRulers: !this.s.showRulers});
     }, // toggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
 
     onToggleRulers() {
-      if (this.$_i.showRulers) {
+      if (this.s.showRulers) {
         this.$rulers[0].addEventListener('touchstart', this.onRulersTouchstart);
         window.addEventListener('mousemove', this.positionRulers);
 
@@ -114,21 +114,13 @@ export default {
 
       if (!touch) this.isUseTouch = false;
 
-      if (x === undefined) {
-        x = this.$rulers.offset().left;
-      } else {
-        x -= window.$(this.$el).offsetRect().left;
-      }
-      if (y === undefined) {
-        y = this.$rulers.offset().top;
-      } else {
-        y -= window.$(this.$el).offsetRect().top;
-      }
+      if (x === undefined) x = this.$rulers.offset().left;
+      if (y === undefined) y = this.$rulers.offset().top;
 
       // keep within view
-      const scale  = settings.DPI_DEFAULT / this.$_i.currentWScale;
-      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.$_i.dpi / scale)) - 1) / 2;
-      const $el    = window.$('#the-samples');
+      const scale  = settings.DPI_DEFAULT / this.s.currentWScale;
+      const offset = ((settings.RULER_WIDTH_NOMINAL * (this.s.dpi / scale)) - 1) / 2;
+      const $el    = window.$('.the-item');
 
       x = Math.min(Math.max(x, offset), $el.width()  - offset);
       y = Math.min(Math.max(y, offset), $el.height() - offset);
@@ -144,6 +136,7 @@ export default {
     onRulersTouchstart(e) {
       const touches = e.touches ? e.touches[0] : e;
 
+      this.noTransition = true;
       this.isUseTouch = true;
 
       this.$rulers[0].addEventListener('touchmove', this.onRulersTouchmove);
@@ -188,17 +181,20 @@ export default {
       // cleanup
       this.$rulers[0].removeEventListener('touchmove', this.onRulersTouchmove);
       this.$rulers[0].removeEventListener('touchend',  this.onRulersTouchend);
+
+      this.noTransition = false;
+
     }, // onRulersTouchend()
 
     //------------------------------------------------------------------------------------------------------------------
 
     scaleRulers() {
-      if (this.$_i.dpi === settings.DPI_DEFAULT) {
+      if (this.s.dpi === settings.DPI_DEFAULT) {
         this.$rulers.css({
-          transform: `scale(${this.$_i.currentWScale})`,
-          width: `${200 / this.$_i.currentWScale}%`, // see style rule: .rulers { width }
+          transform: `scale(${this.s.currentWScale})`,
+          width: `${200 / this.s.currentWScale}%`, // see style rule: .rulers { width }
         }).find('.target').css({
-          transform: `scaleY(${1 / this.$_i.currentWScale})`
+          transform: `scaleY(${1 / this.s.currentWScale})`
         });
       }
     }, // scaleRulers()
@@ -218,7 +214,9 @@ export default {
 $ruler-inch: 80px;
 $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
-.the-samples-rulers {
+$layer-rulers: 1;
+
+.the-item-rulers {
   position: absolute;
   top: 0;
   width: 100%;
@@ -252,11 +250,16 @@ $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 }
 
 .rulers {
-  z-index: 1;
+  z-index: $layer-rulers;
   pointer-events: none;
   opacity: .75;
   position: absolute;
   left: calc(100% - (1em + (#{$unit} / 2)));
+  /*
+  @at-root .shell.has-scrollbar-y & {
+    left: calc(100% - 17px - (1em + (#{$unit} / 2)));
+  }
+  //*/
   top:  1em + ($unit / 2);
   width: 200%; // rulers are rotated by transform so no height is necessary, but width should be at least double to accommodate aspect ratios up to 2:1 (only edge cases beyond 16:9)
   transform-origin: 0 0;
@@ -267,8 +270,7 @@ $ruler-width-half: ($ruler-width-nominal - 1) / 2;
   }
 
   transition: transform $transition-time-ms ease-in-out; // used for zooming
-  @at-root .no-transition + .the-samples-rulers #{&}, // applied while dragging
-  &.no-transition { // applied while zooming
+  @at-root .no-transition + .the-item-view #{&} { // applied while dragging
     transition: none;
   }
 
