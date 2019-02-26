@@ -351,7 +351,7 @@ export default {
         const w = Math.floor(slide.image.w * wScale);
         const h = Math.floor(slide.image.h * wScale);
 
-        console.log('slideStyleSize()', slide.index, h);
+        //console.log('slideStyleSize()', slide.index, h);
 
         this.slides[slide.index].width  = `${w}px`;
         this.slides[slide.index].height = `${h}px`;
@@ -503,6 +503,16 @@ export default {
         this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
+      // when zoomed-in, don't grab if view is entirely within the slide boundaries
+      if (!this.isGrabbing && !this.isScrolling && this.hasScrollbarX) {
+        const {view} = this.getSlidePositionData(e.target);
+        const EDGE_OFFSET = 10;
+        //console.log(`view._scrollLeftMax:${view._scrollLeftMax} scrollLeft:${view.scrollLeft} deltaX:${this.touchPoint.deltaX} this.isGrabbing?${this.isGrabbing}`);
+        if ((view.scrollLeft > EDGE_OFFSET && this.touchPoint.deltaX > 0) || (view.scrollLeft < view._scrollLeftMax - EDGE_OFFSET && this.touchPoint.deltaX < 0)) {
+          this.isScrolling = true;
+        }
+      }
+
       if (!this.isScrolling) {
         this.isGrabbing = true;
         this.noTransition = true;
@@ -536,6 +546,8 @@ export default {
 
       this.isScrolling = null;
 
+      const wasGrabbing = this.isGrabbing;
+
       this.isGrabbing = false;
 
       this.noTransition = false;
@@ -548,21 +560,17 @@ export default {
       const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
       const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const sliderRect = window.$(this.$el)[0].getBoundingClientRect();
-      const slideRect  = e.target.getBoundingClientRect();
+      const {slideWidth, isOverEdge, isOverCenter} = this.getSlidePositionData(e.target);
+
+      const isDiffEnough = diffX > slideWidth / 3 || (this.hasScrollbarX && isOverCenter);
+      const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
-      const isOverEdge   = slideRect.left > sliderRect.left || slideRect.right < sliderRect.right;
-      const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
-      const midway       = sliderRect.width / 2;
-      const isDiffEnough = diffX > slideRect.width / 3 || slideRect.left > midway || slideRect.right < midway;
-
-      // greater than a third the slide width or a fast flick
       if (isOverEdge && (isDiffEnough || isFlick)) {
         action = 'swipe';
       }
 
-      if (slideRect.width > sliderRect.width && !isOverEdge) {
+      if (this.hasScrollbarX && !isOverEdge) {
         action = 'pan';
       }
 
@@ -593,6 +601,8 @@ export default {
         }
       }
 
+      //console.log('touchend:', action, 'x:', this.touchPoint.deltaX, 'wasGrabbing?', wasGrabbing);
+
       if (action === 'zoom') {
         this.toggleDpi({
           elX: e.offsetX / e.target.getBoundingClientRect().width,
@@ -601,7 +611,21 @@ export default {
 
       } else if (index !== this.currentIndex && this.slides[index]) {
         if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
-        if (this.type === 'item')   this.$router.replace(`#${this.slides[index].id}`);
+        if (this.type === 'item') this.$router.replace(`#${this.slides[index].id}`);
+
+      } else if (action === 'pan') {
+        setTimeout(() => {
+          const {view, sliderWidth, slideWidth, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(e.target);
+
+          if (isOverEdge || wasGrabbing) {
+            this.autosize({action});
+
+            if (wasGrabbing) this.scrollEase({el:view, left:view.scrollLeft - this.touchPoint.deltaX});
+
+            if (isOverEdgeLeft)  view.scrollLeft = 0;
+            if (isOverEdgeRight) view.scrollLeft = slideWidth - sliderWidth;
+          }
+        }, settings.TRANSITION_TIME_MS);
 
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
@@ -615,20 +639,6 @@ export default {
 
     autosize({routeChange = false, resize = false, action = ''} = {}) {
       if (this.currentIndex === null) return;
-
-      /* [2019-02-22] too much jank
-      const h = this.$_.history;
-      const i = this.$_i;
-
-      if (routeChange && h.length && h[0].code === i.code) {
-        const el = window.$(this.$el).find('.slider-view')[0];
-
-        if (i.currentIndex === h[0].index + 1) {
-          el.scrollLeft = 0;
-        }
-        console.log(`autosize() routeChange from`, h[0].index, 'to', this.$_i.currentIndex);
-      }
-      //*/
 
       const frameType = (this.$_i.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
 
@@ -736,6 +746,64 @@ export default {
 
       return {xOffset, yOffset};
     }, // getSlideOffset()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getSlidePositionData(slide) {
+
+      const slideRect  = slide.getBoundingClientRect();
+      const sliderRect = window.$(this.$el)[0].getBoundingClientRect();
+      const view       = window.$(this.$el).find('.slider-view')[0];
+
+      //console.log(`getSlidePositionData() s.left:${slideRect.left} S.left:${sliderRect.left} s.right:${slideRect.right} S.right:${sliderRect.right}`);
+
+      const isOverEdgeLeft  = slideRect.left > sliderRect.left;
+      const isOverEdgeRight = slideRect.right < sliderRect.right;
+      const isOverEdge      = isOverEdgeLeft || isOverEdgeRight;
+      const center          = sliderRect.width / 2;
+      const isOverCenter    = slideRect.left > center || slideRect.right < center;
+
+      view._scrollLeftMax = slideRect.width - sliderRect.width;
+
+      return {
+        view,
+        sliderWidth: sliderRect.width,
+        slideWidth:  slideRect.width,
+        isOverEdge,
+        isOverEdgeLeft,
+        isOverEdgeRight,
+        isOverCenter,
+      };
+
+    }, // getSlidePositionData()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    scrollEase({el, left = null, top = null}) {
+
+      let start = null;
+
+      const startLeft  = el.scrollLeft;
+      const offsetLeft = (left !== null ? left - el.scrollLeft : 0);
+
+      const easeInOutCubic = (t) => (t < .5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1);
+
+      const step = function (t) {
+        if (!start) start = t;
+        const ms = t - start;
+
+        const pct = easeInOutCubic(ms / settings.TRANSITION_TIME_MS);
+        const l = Math.round(startLeft + (offsetLeft * pct));
+
+        //console.log('stepping...', l, '@', pct);
+
+        if (left !== null) el.scrollLeft = l;
+
+        if (ms < settings.TRANSITION_TIME_MS) window.requestAnimationFrame(step);
+      };
+
+      window.requestAnimationFrame(step);
+    }, // scrollEase()
 
     //------------------------------------------------------------------------------------------------------------------
 
