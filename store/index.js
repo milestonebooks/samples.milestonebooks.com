@@ -6,7 +6,6 @@ export const state = () => ({
   _showDebugger: (process.env.NODE_ENV === 'development' || process.env.NUXT_ENV_DEBUG === 'on'),
   _debugText:    null,
   _debugCheck:   null,
-  _focusItem:    true, // TODO
 
   isDev:      false,
   isInit:     false,
@@ -16,11 +15,11 @@ export const state = () => ({
   urlBaseImg: 'https://www.milestonebooks.com/img/',
   isResizing:  false,
 
+  uiStateClasses: ['ui-state'],
+  uiStateShow:    'context',
+
   isCompactList:       true,
   isCompactListTitles: false,
-
-  showContext:  false,
-  isContexting: false,
 
   hasTouch:     false,
   hasMouse:     false,
@@ -46,7 +45,11 @@ export const state = () => ({
 
 export const getters = {
 
-  //------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
+
+  uiStateClassString(state) {
+    return state.uiStateClasses.join(' ') + ` show-${state.uiStateShow}`;
+  },
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +60,8 @@ export const getters = {
 export const mutations = {
 
   set: mixins.mutations.set,
+
+  uiStateClass: mixins.mutations.uiStateClass,
 
   //--------------------------------------------------------------------------------------------------------------------
 

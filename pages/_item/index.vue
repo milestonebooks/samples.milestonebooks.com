@@ -4,9 +4,9 @@
 
     <TheAlerts />
 
-    <TheSamples v-if="true" />
+    <TheSamples />
 
-    <TheContext v-if="true && !$_._focusItem" />
+    <TheContext />
 
   </main>
 </template>
@@ -39,12 +39,12 @@ export default {
       title: (s ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
-        class: (this.$_.showContext ? 'show-context' : '') + (this.$_.isResizing ? 'is-resizing' : ''),
+        class: this.$store.getters.uiStateClassString,
       },
 
       link: [
-        // audio speaker favicon
         this.$_i.type !== 'audio' ? {} :
+          // audio speaker favicon
           {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
       ],
     }
@@ -108,11 +108,9 @@ export default {
 
     mainClass() {
       return {
+        '-debug':       this.$_._showDebugger,
         'is-dev':       this.$_.isDev,
-        'debug':        this.$_._showDebugger,
-        '-focus-item':  this.$_._focusItem,
         'is-init':      this.$_.isInit,
-        'show-context': this.$_.showContext,
         'has-touch':    this.$_.hasTouch,
         'has-mouse':    this.$_.hasMouse,
         'show-title':   true,
@@ -222,23 +220,28 @@ export default {
 
       const samples = item.samples;
 
-      if (!samples.length) {
-        return;
-        //TODO: depends on what is currently in focus
-        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+      if (samples.length) {
+        const {maxHRatio} = this.initImagesData(samples);
+
+        item = {...item,
+          direction: item.direction || 'ltr',
+          hasRulers: item.type !== 'audio',
+          hasZoom:   item.hasZoom  || false,
+          hasPrint:  item.hasPrint || false,
+          firstId:   samples[0].id,
+          lastId:    samples[samples.length - 1].id,
+          maxHRatio: maxHRatio,
+        };
       }
 
-      const {maxHRatio} = this.initImagesData(samples);
+      /*TODO: depends on what is currently in focus
+      if (!samples.length) {
+        return;
+        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+      }
+      //*/
 
-      this.set('item', {...item,
-        direction: item.direction || 'ltr',
-        hasRulers: item.type !== 'audio',
-        hasZoom:   item.hasZoom  || false,
-        hasPrint:  item.hasPrint || false,
-        firstId:   samples[0].id,
-        lastId:    samples[samples.length - 1].id,
-        maxHRatio: maxHRatio,
-      });
+      this.set('item', item);
 
     }, // initItemData()
 

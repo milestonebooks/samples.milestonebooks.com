@@ -24,6 +24,24 @@ const mutations = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  uiStateClass(state, {add = '', remove = '', show = ''}) {
+    if (add) {
+      for (const v of add.split(' ')) {
+        if (!state.uiStateClasses.includes(v)) state.uiStateClasses.push(v);
+      }
+    }
+    if (remove) {
+      for (const v of remove.split(' ')) {
+        state.uiStateClasses.splice(state.uiStateClasses.findIndex(a => a === v), 1);
+      }
+    }
+    if (show) {
+      state.uiStateShow = show;
+    }
+  }, // uiStateClass()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
 }; // mutations {}
 
 //======================================================================================================================

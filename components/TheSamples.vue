@@ -9,6 +9,8 @@
       </template>
 
       <template slot="pane">
+        <TheOptContext :img="$_i.image" />
+
         <TheOptRulers v-if="$_i.hasRulers" />
 
         <TheOptPrint v-if="$_i.hasPrint" />
@@ -18,10 +20,6 @@
         <TheOptRevert v-if="$_i.type === 'items'" />
       </template>
     </AppSlider>
-
-    <template slot="frame">
-      <span v-if="$_._showDebugger" style="position:relative; color:red;">TheSamples [{{ this.$_i.currentIndex }}] of {{ this.$_i.samples.length }}</span>
-    </template>
   </AppFrame>
 </template>
 
@@ -29,11 +27,12 @@
 import AppFrame  from '~/components/AppFrame';
 import AppSlider from '~/components/AppSlider';
 
-import TheOptRulers from '~/components/TheOptRulers';
-import TheOptPrint  from '~/components/TheOptPrint';
-import TheOptRevert from '~/components/TheOptRevert';
-import TheNav       from '~/components/TheNav';
-import ThePlayer    from '~/components/ThePlayer';
+import TheOptContext from '~/components/TheOptContext';
+import TheOptRulers  from '~/components/TheOptRulers';
+import TheOptPrint   from '~/components/TheOptPrint';
+import TheOptRevert  from '~/components/TheOptRevert';
+import TheNav        from '~/components/TheNav';
+import ThePlayer     from '~/components/ThePlayer';
 
 import settings from '~/assets/settings';
 
@@ -43,6 +42,7 @@ export default {
   components: {
     AppFrame,
     AppSlider,
+    TheOptContext,
     TheOptRulers,
     TheOptPrint,
     TheOptRevert, // TODO: temporary
@@ -107,13 +107,5 @@ export default {
 
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
-
-.debug:not(.-focus-item) #the-samples {
-  right: 50px;
-  bottom: 50px;
-  width: 50%;
-  height: 50vh;
-  outline: 1px solid red;
-}
 
 </style>

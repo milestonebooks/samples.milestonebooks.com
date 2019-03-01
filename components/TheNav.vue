@@ -88,7 +88,7 @@ export default {
       };
     },
     idStyle() {
-      return `transform: translateX(${2.8 * this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1)}rem)`;
+      return `transform: translateX(${this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1) * 2.8}rem)`;
     },
     autoPlay: {
       get() {

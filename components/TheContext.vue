@@ -5,8 +5,7 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      <span style="position:relative; color:orange">TheContext [{{ this.$_s.currentIndex }}] of {{ this.$_s.items.length }}</span>
-      <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
+      <div class="info" style="color:orange; font-size: 5em;"><div v-for="i of 20">Info-info-info-info</div></div>
     </template>
   </AppFrame>
 </template>
@@ -66,23 +65,50 @@ export default {
 };
 </script>
 
+<style lang="scss">
+@import "../assets/settings.scss";
+
+.show-context:not(.context-to-samples) #the-samples .slider-frame > *,
+.show-context.context-to-samples       #the-samples .slider-frame > *:not(.slider-view) {
+  z-index: 0;
+  opacity: 0;
+}
+.context-to-samples-setup #the-samples .slide:not(.current) {
+  transition: none;
+  opacity: 0;
+}
+.context-to-samples-active #the-samples .slide:not(.current) {
+  transition: opacity $transition-time-ms ease-in;
+}
+
+.context-to-samples-setup #the-samples .slider {
+  transition: none;
+}
+.context-to-samples #the-context {
+  transition: opacity $transition-time-ms ease-out;
+}
+.context-to-samples-active #the-context,
+.show-samples #the-context {
+  pointer-events: none;
+  opacity: 0;
+}
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
 $slider-height: 75%;
 
-.debug #the-context {
-  left: 50px;
-  top: 50px;
-  width: 60%;
-  height: 50vh;
-  outline: 1px solid orange;
-}
-
 #the-context /deep/ .app-view {
   height: calc(#{$slider-height} - 20px);
   margin-top: 10px;
 }
+
+#the-context /deep/ .slider-view {
+  overflow: hidden;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 .info {
   position: absolute;

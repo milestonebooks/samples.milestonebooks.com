@@ -60,7 +60,7 @@ export default {
   }
 }
 
-.debug [data-debug]::before {
+.-debug [data-debug]::before {
   content: attr(data-debug);
   z-index: 9;
   position: fixed;

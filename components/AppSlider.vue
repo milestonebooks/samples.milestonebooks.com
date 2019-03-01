@@ -54,9 +54,12 @@ import '~/plugins/jQuery.offsetRect';
 
 import mixins from '~/plugins/mixins.vue';
 import sleep from '~/plugins/sleep';
+import nextFrame from '~/plugins/nextFrame';
 import forceRepaint from '~/plugins/forceRepaint';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
+
+import { mapMutations } from 'vuex';
 
 export default {
   components: {
@@ -167,7 +170,7 @@ export default {
     },
 
     labelPrevLink() {
-      if (this.type === 'series') return 'previous in series';
+      if (this.type === 'series') return 'previous in series';set
       if (this.type === 'item')   return 'previous sample';
     },
 
@@ -226,6 +229,9 @@ export default {
   //====================================================================================================================
 
   methods: {
+    ...mapMutations([
+      'uiStateClass',
+    ]),
 
     set: mixins.set,
 
@@ -332,7 +338,8 @@ export default {
       return 'item'
         + ` ${i < this.currentIndex ? 'before-' : i > this.currentIndex ? 'after-' : ''}current`
         + (slide.nonsequential ? ' non-' : ' ') + 'sequential-before'
-        + (i < this.slides.length - 1 && this.slides[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after';
+        + (i < this.slides.length - 1 && this.slides[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after'
+        + (this.type === 'series' && this.$_s.items[i].samples.length ? ' has-samples' : '');
     }, // slideClass()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -539,8 +546,8 @@ export default {
       const el = this.touchPoint.el;
       el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.removeEventListener('mousemove', this.onTouchmove);
-      el.removeEventListener('touchend',  this.onTouchend);
-      el.removeEventListener('mouseup',   this.onTouchend);
+      el.removeEventListener('touchend', this.onTouchend);
+      el.removeEventListener('mouseup', this.onTouchend);
 
       this.touchPoint.el = null;
 
@@ -555,15 +562,18 @@ export default {
       // decide what the interaction means
       let action = 'click';
       const duration = Date.now() - this.touchPoint.time;
-      const diffX    = Math.abs(this.touchPoint.deltaX);
-      const diffY    = Math.abs(this.touchPoint.deltaY);
-      const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
-      const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
+      const diffX = Math.abs(this.touchPoint.deltaX);
+      const diffY = Math.abs(this.touchPoint.deltaY);
+      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+      const $frame = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const {slideWidth, isOverEdge, isOverCenter} = this.getSlidePositionData(e.target);
+      const {slide, isOverEdge, isOverCenter} = this.getSlidePositionData(e.target);
 
-      const isDiffEnough = diffX > slideWidth / 3 || (this.hasScrollbarX && isOverCenter);
-      const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
+      const isDiffEnough = diffX > slide.width / 3 || (this.hasScrollbarX && isOverCenter);
+      const isFlick = duration < 300 && diffX > 25 && diffX > diffY;
+      // main button, quickly, without moving, on a slide
+      const elIndex = e.target.getAttribute('data-index');
+      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
       if (isOverEdge && (isDiffEnough || isFlick)) {
@@ -575,10 +585,6 @@ export default {
       }
 
       let index = this.currentIndex;
-      let elIndex = null;
-
-      // main button, quickly, without moving, on a slide
-      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
 
       if (action === 'swipe') {
         const dirIndex = ((dir === 'left' && this.$_i.direction === 'ltr') || (dir === 'right' && this.$_i.direction === 'rtl') ? 1 : -1);
@@ -596,17 +602,19 @@ export default {
 
       } else if (isSlideClick) {
         index = Number(elIndex);
-        if (index === this.currentIndex && this.$_i.hasZoom) {
-          action = 'zoom';
+        if (index === this.currentIndex) {
+          if (this.type === 'item' && this.$_i.hasZoom) action = 'zoom';
+          if (this.type === 'series') action = 'select';
         }
       }
 
-      //console.log('touchend:', action, 'x:', this.touchPoint.deltaX, 'wasGrabbing?', wasGrabbing);
+      if (action === 'select') {
+        this.showSamples();
 
-      if (action === 'zoom') {
+      } else if (action === 'zoom') {
         this.toggleDpi({
-          elX: e.offsetX / e.target.getBoundingClientRect().width,
-          elY: e.offsetY / e.target.getBoundingClientRect().height,
+          elX: e.offsetX / slide.width,
+          elY: e.offsetY / slide.height,
         });
 
       } else if (index !== this.currentIndex && this.slides[index]) {
@@ -615,7 +623,7 @@ export default {
 
       } else if (action === 'pan') {
         setTimeout(() => {
-          const {view, sliderWidth, slideWidth, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(e.target);
+          const {view, slider, slide, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(e.target);
 
           if (isOverEdge || wasGrabbing) {
             this.autosize({action});
@@ -623,7 +631,7 @@ export default {
             if (wasGrabbing) this.scrollEase({el:view, left:view.scrollLeft - this.touchPoint.deltaX});
 
             if (isOverEdgeLeft)  view.scrollLeft = 0;
-            if (isOverEdgeRight) view.scrollLeft = slideWidth - sliderWidth;
+            if (isOverEdgeRight) view.scrollLeft = slide.width - slider.width;
           }
         }, settings.TRANSITION_TIME_MS);
 
@@ -767,8 +775,8 @@ export default {
 
       return {
         view,
-        sliderWidth: sliderRect.width,
-        slideWidth:  slideRect.width,
+        slider: sliderRect,
+        slide:  slideRect,
         isOverEdge,
         isOverEdgeLeft,
         isOverEdgeRight,
@@ -804,6 +812,54 @@ export default {
 
       window.requestAnimationFrame(step);
     }, // scrollEase()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async showSamples() {
+
+      const hasSamples = this.$_s.items[this.currentIndex].samples.length;
+
+      if (!hasSamples) return;
+
+      const $slider = window.$('#the-samples .slider');
+      const $slide  = window.$(`#the-context .slide[data-index="${this.currentIndex}"]`);
+      const slideS  = $slide[0].getBoundingClientRect();
+      const slideI  = window.$(`#the-samples .slide[data-index="0"]`)[0].getBoundingClientRect();
+
+      const xRatio = (slideI.width / slideS.width);
+      const yRatio = (slideI.height / slideS.height);
+      const ratio = Math.max(xRatio, yRatio);
+
+      const xOffset = (slideS.left + (slideS.width / 2)) - (slideI.left + (slideI.width / 2));
+      const yOffset = (slideS.top + (slideS.height / 2)) - (slideI.top + (slideI.height / 2));
+      const XY = `${-xOffset}px, ${-yOffset}px`;
+
+      const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
+
+      console.log('showSamples() ratio:', ratio, xOffset);
+
+      this.uiStateClass({add:'context-to-samples context-to-samples-setup'});
+
+      await nextFrame();
+
+      $slider.css({'transform-origin':`50% ${ySlider}px`, 'transform':`translateX(${xOffset}px) scale(${1 / ratio})`});
+
+      await nextFrame();
+
+      this.uiStateClass({remove:'context-to-samples-setup', add:'context-to-samples-active', show:'samples'});
+
+      await nextFrame();
+
+      $slider.css({'transform': null});
+
+      $slide.css({'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`) + ` scale(${ratio})`});
+
+      setTimeout(() => {
+        this.uiStateClass({remove:'context-hiding-active context-hiding-to'});
+        $slide.css({'transform': null});
+      }, settings.TRANSITION_TIME_CONTEXT_MS);
+
+    }, // showSamples()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -1037,9 +1093,12 @@ $radius-lg: $radius * 2;
   overflow: auto;
 }
 
+/*TODO
 .slider-view {
   background-color: $background-color;
+  transition: background-color $transition-time-ms ease-in-out;
 }
+//*/
 
 .slider-pane {
   position: absolute;
@@ -1077,6 +1136,13 @@ $radius-lg: $radius * 2;
   &.no-transition {
     transition: none;
   }
+}
+
+.context-hiding-setup .slider {
+  transition: none;
+}
+.context-hiding-to .slider {
+  //transition: transform $transition-time-context-ms ease-in-out, opacity $transition-time-context-ms ease-in;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1174,6 +1240,10 @@ $radius-lg: $radius * 2;
 
   @include short-transition;
 
+  @at-root .no-transition & {
+    transition: none;
+  }
+
   &:not(.current) {
     opacity: 0.25;
   }
@@ -1189,6 +1259,34 @@ $radius-lg: $radius * 2;
   .has-zoom[data-dpi="120"] .rulers .target {
     cursor: zoom-out;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+  }
+  @at-root #the-context .slide.current.has-samples {
+    cursor: zoom-in;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cpath d='M7,13 a 8 8 0 0 1 6,-6' stroke='#{$theme-color-data-uri}' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/svg%3E") 13 13, zoom-in;
+  }
+
+  @at-root #the-context .slide:not(.has-samples) {
+    &::after {
+      pointer-events: none;
+      @include absolute-center();
+      content: 'No samples available. :-(';
+      font-size: 2em;
+      line-height: 2em;
+      padding: 0 0.5em;
+      color: red;
+      background: white;
+      border-radius: $radius;
+      opacity: 0;
+      @include short-transition;
+    }
+
+    &.current {
+      cursor: not-allowed;
+
+      &::after {
+        opacity: 1;
+      }
+    }
   }
 
   // prev/next cursors
