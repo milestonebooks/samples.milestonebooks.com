@@ -113,7 +113,7 @@ export default {
         'is-init':      this.$_.isInit,
         'has-touch':    this.$_.hasTouch,
         'has-mouse':    this.$_.hasMouse,
-        'show-title':   true,
+        //TODO 'show-title':   true,
       }
     },
 

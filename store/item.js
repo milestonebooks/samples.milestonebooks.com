@@ -1,6 +1,4 @@
-//import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.store';
-//import sleep    from '~/plugins/sleep';
+import mixins from '~/plugins/mixins.store';
 
 //======================================================================================================================
 

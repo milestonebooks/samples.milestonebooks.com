@@ -823,8 +823,10 @@ export default {
 
       const $slider = window.$('#the-samples .slider');
       const $slide  = window.$(`#the-context .slide[data-index="${this.currentIndex}"]`);
-      const slideS  = $slide[0].getBoundingClientRect();
-      const slideI  = window.$(`#the-samples .slide[data-index="0"]`)[0].getBoundingClientRect();
+      const $btn    = window.$('#the-samples .btn-context');
+
+      const slideS  = $slide[0].getBoundingClientRect(); // slide series
+      const slideI  = window.$(`#the-samples .slide[data-index="0"]`)[0].getBoundingClientRect(); // slide item
 
       const xRatio = (slideI.width / slideS.width);
       const yRatio = (slideI.height / slideS.height);
@@ -836,13 +838,14 @@ export default {
 
       const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
 
-      console.log('showSamples() ratio:', ratio, xOffset);
+      const aspectRatio = (slideS.top + (slideS.height / 2)) / (slideS.left + (slideS.width / 2));
 
-      this.uiStateClass({add:'context-to-samples context-to-samples-setup'});
+      this.uiStateClass({add:'--xing context-to-samples context-to-samples-setup'});
 
       await nextFrame();
 
-      $slider.css({'transform-origin':`50% ${ySlider}px`, 'transform':`translateX(${xOffset}px) scale(${1 / ratio})`});
+      $slider.css({'transform-origin': `50% ${ySlider}px`, 'transform': `translateX(${xOffset}px) scale(${1 / ratio})`});
+      $btn.css({'transform-origin': `-20% ${50 - (70 * aspectRatio)}%`, 'transform': 'scale(1.2)'});
 
       await nextFrame();
 
@@ -851,13 +854,14 @@ export default {
       await nextFrame();
 
       $slider.css({'transform': null});
+      $btn.css({'transform-origin': null, 'transform': null});
 
       $slide.css({'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`) + ` scale(${ratio})`});
 
-      setTimeout(() => {
-        this.uiStateClass({remove:'context-hiding-active context-hiding-to'});
-        $slide.css({'transform': null});
-      }, settings.TRANSITION_TIME_CONTEXT_MS);
+      await sleep(settings.TRANSITION_TIME_MS);
+
+      this.uiStateClass({remove:'--xing context-to-samples context-to-samples-active'});
+      $slide.css({'transform': null});
 
     }, // showSamples()
 
@@ -1077,6 +1081,43 @@ export default {
 }
 </script>
 
+<style lang="scss">
+//----------------------------------------------------------------------------------------------------------------------
+// TRANSITION
+@import "../assets/settings.scss";
+
+.show-context:not(.--xing) #the-samples .slider-frame > *,
+.context-to-samples-setup #the-samples .slider-frame > *:not(.slider-view) {
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.context-to-samples-active #the-samples .slider-frame > *,
+.context-to-samples-active #the-samples .the-opt-context {
+  transition: opacity $transition-time-ms ease-in;
+}
+.context-to-samples-setup #the-samples .slide:not(.current) {
+  transition: none;
+  opacity: 0;
+}
+.context-to-samples-active #the-samples .slide:not(.current) {
+  transition: opacity $transition-time-ms ease-in;
+}
+
+.context-to-samples-setup #the-samples .slider {
+  transition: none;
+}
+.context-to-samples #the-context {
+  transition: opacity $transition-time-ms ease-out;
+}
+.context-to-samples-active #the-context,
+.show-samples #the-context {
+  pointer-events: none;
+  opacity: 0;
+}
+//----------------------------------------------------------------------------------------------------------------------
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
@@ -1092,13 +1133,6 @@ $radius-lg: $radius * 2;
   height: 100%;
   overflow: auto;
 }
-
-/*TODO
-.slider-view {
-  background-color: $background-color;
-  transition: background-color $transition-time-ms ease-in-out;
-}
-//*/
 
 .slider-pane {
   position: absolute;

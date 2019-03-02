@@ -65,35 +65,6 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "../assets/settings.scss";
-
-.show-context:not(.context-to-samples) #the-samples .slider-frame > *,
-.show-context.context-to-samples       #the-samples .slider-frame > *:not(.slider-view) {
-  z-index: 0;
-  opacity: 0;
-}
-.context-to-samples-setup #the-samples .slide:not(.current) {
-  transition: none;
-  opacity: 0;
-}
-.context-to-samples-active #the-samples .slide:not(.current) {
-  transition: opacity $transition-time-ms ease-in;
-}
-
-.context-to-samples-setup #the-samples .slider {
-  transition: none;
-}
-.context-to-samples #the-context {
-  transition: opacity $transition-time-ms ease-out;
-}
-.context-to-samples-active #the-context,
-.show-samples #the-context {
-  pointer-events: none;
-  opacity: 0;
-}
-</style>
-
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 

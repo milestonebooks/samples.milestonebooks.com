@@ -32,7 +32,8 @@ const mutations = {
     }
     if (remove) {
       for (const v of remove.split(' ')) {
-        state.uiStateClasses.splice(state.uiStateClasses.findIndex(a => a === v), 1);
+        const i = state.uiStateClasses.findIndex(a => a === v);
+        if (i !== -1) state.uiStateClasses.splice(i, 1);
       }
     }
     if (show) {
