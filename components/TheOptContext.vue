@@ -2,7 +2,9 @@
   <aside class="the-opt-context controls sidebar floating">
     <div class="axis-x"><div class="axis-y">
       <button v-if="img" class="btn btn-opt btn-context ltr" :style="buttonStyle" title="product info..." tabindex="1" @click="showContext">
-        <img class="img-context" :src="imageSrc" />
+        <span class="img-wrapper">
+          <img class="img-context" :src="imageSrc" />
+        </span>
       </button>
     </div></div>
   </aside>
@@ -62,17 +64,22 @@ export default {
 
     async showContext() {
 
-      const $slide = window.$(`#the-context .slide[data-index="${this.$_s.currentIndex}"]`);
-      const slideS = $slide[0].getBoundingClientRect();
-      const $opt   = window.$('#the-samples .the-opt-context');
-      const $btn   = $opt.find('.btn');
-      const $sliderPane = window.$('#the-samples .slider-pane');
-      const slideI = $btn[0].getBoundingClientRect();
+      const $slider = window.$('#the-samples .slider');
+      const $slide  = window.$(`#the-context .slide[data-index="${this.$_s.currentIndex}"]`);
+      const slideS  = $slide[0].getBoundingClientRect(); // slide series
+      const slideI  = window.$(`#the-samples .slide[data-index="${this.$_i.currentIndex}"]`)[0].getBoundingClientRect(); // slide item
 
-      const ratio = (slideS.width  / slideI.width);
+      const xRatio  = (slideI.width / slideS.width);
+      const yRatio  = (slideI.height / slideS.height);
+      const ratio   = Math.max(xRatio, yRatio);
 
-      const xOffset = (slideS.left + (slideS.width / 2)) - (slideI.left + (slideI.width / 2));
-      const yOffset = (slideS.top + (slideS.height / 2)) - (slideI.top + (slideI.height / 2));
+      const $opt    = window.$('#the-samples .the-opt-context');
+      const $btn    = $opt.find('.btn');
+      const slideB  = $btn[0].getBoundingClientRect();
+
+      const bRatio  = (slideS.width  / slideB.width);
+      const xOffset = (slideS.left + (slideS.width / 2)) - (slideB.left + (slideB.width / 2));
+      const yOffset = (slideS.top + (slideS.height / 2)) - (slideB.top + (slideB.height / 2));
 
       this.uiStateClass({add:'--xing samples-to-context samples-to-context-setup'});
 
@@ -84,13 +91,19 @@ export default {
 
       $opt.find('.axis-x').css({'transform': `translateX(${xOffset}px)`});
       $opt.find('.axis-y').css({'transform': `translateY(${yOffset}px)`});
-      $btn.css({'transform': `scale(${ratio})`, 'box-shadow': `0 0 ${1 / ratio}em transparent`});
+      $btn.css({'transform': `scale(${bRatio})`, 'box-shadow': `0 0 ${1 / bRatio}em transparent`});
 
       await sleep(settings.TRANSITION_TIME_CONTEXT_MS);
 
-      $sliderPane.css({'transition':'none'});
+      this.uiStateClass({add:'samples-to-context-cleanup'});
 
-      this.uiStateClass({remove:'--xing samples-to-context samples-to-context-active'});
+      await nextFrame();
+
+      // give enough time for cleanup
+
+      await nextFrame();
+
+      this.uiStateClass({remove:'--xing samples-to-context samples-to-context-active samples-to-context-cleanup'});
 
       await nextFrame();
 
@@ -99,8 +112,6 @@ export default {
       $btn.css({'transform': null, 'box-shadow': null});
 
       await nextFrame();
-
-      $sliderPane.css({'transition': null});
 
     }, // showContext()
 
@@ -125,12 +136,6 @@ export default {
   opacity: 0;
   transition: opacity $transition-time-ms ease-out;
 }
-/*
-.samples-to-context-active #the-samples .slider-frame > *:not(.slider-pane),
-.samples-to-context-active #the-samples .slider-pane > *:not(.the-opt-context) {
-  transition: opacity $transition-time-ms ease-out;
-}
-//*/
 
 .show-samples:not(.context-to-samples) .the-opt-context,
 .--xing .the-opt-context {
@@ -146,6 +151,12 @@ export default {
 
 .samples-to-context #the-context {
   transition: opacity #{$transition-time-ms} ease-in-out #{$transition-time-context-ms - $transition-time-ms};
+}
+.samples-to-context #the-context .slide.current {
+  transition: none;
+}
+.samples-to-context:not(.samples-to-context-cleanup) #the-context .slide.current {
+  opacity: 0;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -170,6 +181,24 @@ export default {
     // overwrite
     top: 0;
     transform: none;
+  }
+
+  .img-wrapper {
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+
+    &::before {
+      z-index: 1; // make sure it's above <img>
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      //border: 1px solid $border-color;
+    }
   }
 
   img {

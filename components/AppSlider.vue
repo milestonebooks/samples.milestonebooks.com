@@ -11,8 +11,8 @@
         <div v-for="frame of frames" :class="`frame ${frame.type} dpi${frame.dpi}`">
           <div class="slides">
             <section v-for="slide in slides" :key="slide.index" :data-index="slide.index"
-                     :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
-              <div class="slide-liner">
+                     :class="`slide wrapper-frame ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
+              <div class="slide-liner wrapper-frame">
                 <img v-if="slide.image" :style="imageStyleSize(slide, frame.dpi)" :data-src="imageSrc(slide, frame.dpi)" :data-error="imageError(slide, frame.dpi)" draggable="false"
                      @load="onImageLoaded(slide.index, frame.dpi, $event)" @error="onImageLoadError(slide.index, frame.dpi)" />
                 <h1 v-else class="slide-title">{{slide.title ? slide.title : `(${slide.id})` }}</h1>
@@ -339,7 +339,8 @@ export default {
         + ` ${i < this.currentIndex ? 'before-' : i > this.currentIndex ? 'after-' : ''}current`
         + (slide.nonsequential ? ' non-' : ' ') + 'sequential-before'
         + (i < this.slides.length - 1 && this.slides[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after'
-        + (this.type === 'series' && this.$_s.items[i].samples.length ? ' has-samples' : '');
+        + (this.type === 'series' && this.$_s.items[i].samples.length ? ' has-samples' : '')
+        + (this.type === 'series' ? ` spine-${this.$_s.items[i].spine}` : '');
     }, // slideClass()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -510,9 +511,11 @@ export default {
         this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
+      const slide = window.$(e.target).closest('.slide')[0];
+
       // when zoomed-in, don't grab if view is entirely within the slide boundaries
       if (!this.isGrabbing && !this.isScrolling && this.hasScrollbarX) {
-        const {view} = this.getSlidePositionData(e.target);
+        const {view} = this.getSlidePositionData(slide);
         const EDGE_OFFSET = 10;
         //console.log(`view._scrollLeftMax:${view._scrollLeftMax} scrollLeft:${view.scrollLeft} deltaX:${this.touchPoint.deltaX} this.isGrabbing?${this.isGrabbing}`);
         if ((view.scrollLeft > EDGE_OFFSET && this.touchPoint.deltaX > 0) || (view.scrollLeft < view._scrollLeftMax - EDGE_OFFSET && this.touchPoint.deltaX < 0)) {
@@ -561,18 +564,20 @@ export default {
 
       // decide what the interaction means
       let action = 'click';
+
+      const slide = window.$(e.target).closest('.slide')[0];
       const duration = Date.now() - this.touchPoint.time;
       const diffX = Math.abs(this.touchPoint.deltaX);
       const diffY = Math.abs(this.touchPoint.deltaY);
       const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
       const $frame = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const {slide, isOverEdge, isOverCenter} = this.getSlidePositionData(e.target);
+      const {slideRect, isOverEdge, isOverCenter} = this.getSlidePositionData(slide);
 
-      const isDiffEnough = diffX > slide.width / 3 || (this.hasScrollbarX && isOverCenter);
+      const isDiffEnough = diffX > slideRect.width / 3 || (this.hasScrollbarX && isOverCenter);
       const isFlick = duration < 300 && diffX > 25 && diffX > diffY;
       // main button, quickly, without moving, on a slide
-      const elIndex = e.target.getAttribute('data-index');
+      const elIndex = slide.getAttribute('data-index');
       const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
@@ -613,8 +618,8 @@ export default {
 
       } else if (action === 'zoom') {
         this.toggleDpi({
-          elX: e.offsetX / slide.width,
-          elY: e.offsetY / slide.height,
+          elX: e.offsetX / slideRect.width,
+          elY: e.offsetY / slideRect.height,
         });
 
       } else if (index !== this.currentIndex && this.slides[index]) {
@@ -623,7 +628,7 @@ export default {
 
       } else if (action === 'pan') {
         setTimeout(() => {
-          const {view, slider, slide, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(e.target);
+          const {view, sliderRect, slideRect, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(slide);
 
           if (isOverEdge || wasGrabbing) {
             this.autosize({action});
@@ -631,7 +636,7 @@ export default {
             if (wasGrabbing) this.scrollEase({el:view, left:view.scrollLeft - this.touchPoint.deltaX});
 
             if (isOverEdgeLeft)  view.scrollLeft = 0;
-            if (isOverEdgeRight) view.scrollLeft = slide.width - slider.width;
+            if (isOverEdgeRight) view.scrollLeft = slideRect.width - sliderRect.width;
           }
         }, settings.TRANSITION_TIME_MS);
 
@@ -775,8 +780,8 @@ export default {
 
       return {
         view,
-        slider: sliderRect,
-        slide:  slideRect,
+        sliderRect,
+        slideRect,
         isOverEdge,
         isOverEdgeLeft,
         isOverEdgeRight,
@@ -828,13 +833,13 @@ export default {
       const slideS  = $slide[0].getBoundingClientRect(); // slide series
       const slideI  = window.$(`#the-samples .slide[data-index="0"]`)[0].getBoundingClientRect(); // slide item
 
-      const xRatio = (slideI.width / slideS.width);
-      const yRatio = (slideI.height / slideS.height);
-      const ratio = Math.max(xRatio, yRatio);
+      const xRatio  = (slideI.width / slideS.width);
+      const yRatio  = (slideI.height / slideS.height);
+      const ratio   = Math.max(xRatio, yRatio);
 
       const xOffset = (slideS.left + (slideS.width / 2)) - (slideI.left + (slideI.width / 2));
       const yOffset = (slideS.top + (slideS.height / 2)) - (slideI.top + (slideI.height / 2));
-      const XY = `${-xOffset}px, ${-yOffset}px`;
+      const XY      = `${-xOffset}px, ${-yOffset}px`;
 
       const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
 
@@ -1141,7 +1146,7 @@ $radius-lg: $radius * 2;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  @include short-transition;
+  //@include short-transition; // removed to prevent transitioning bugs on initial load and switching from samples to context
   pointer-events: none;
 
   > * {
@@ -1363,18 +1368,8 @@ $radius-lg: $radius * 2;
     opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
   }
 
-  &::before {
-    z-index: 1; // make sure it's above <img>
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    border: 1px solid hsl(0, 0%, 60%);
-  }
-
   .slide-liner {
+    z-index: 1; // make sure it's above container
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1382,7 +1377,6 @@ $radius-lg: $radius * 2;
     height: 100%;
     overflow: hidden;
 
-    // TODO specific to #the-samples
     @at-root #the-samples &::after {
       pointer-events: none;
       @include absolute-center(x);
@@ -1392,7 +1386,54 @@ $radius-lg: $radius * 2;
       color: darken($alert-color, 25%);
       text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
     }
-    // ^^^
+  }
+
+  perspective: 1000px;
+
+  &.current.has-samples {
+    .slide-liner {
+      transition: transform 1s ease;
+      outline: 1px solid transparent; // [2019-03-04] fix for jagged edges in Firefox
+    }
+    &.spine-left {
+      perspective-origin: 75% 50%;
+      .slide-liner {
+        transform-origin: left;
+      }
+      &:hover .slide-liner {
+        transform: rotateY(-20deg);
+      }
+      @at-root .context-to-samples .slide.current.spine-left .slide-liner {
+        @include short-transition;
+        transform: rotateY(-90deg);
+      }
+    }
+    &.spine-top {
+      perspective-origin: 50% 75%;
+      .slide-liner {
+        transform-origin: top;
+      }
+      &:hover .slide-liner {
+        transform: rotateX(15deg);
+      }
+      @at-root .context-to-samples .slide.current.spine-top .slide-liner {
+        @include short-transition;
+        transform: rotateX(90deg) !important;
+      }
+    }
+    &.spine-right {
+      perspective-origin: 25% 50%;
+      .slide-liner {
+        transform-origin: right;
+      }
+      &:hover .slide-liner {
+        transform: rotateY(20deg);
+      }
+      @at-root .context-to-samples .slide.current.spine-right .slide-liner {
+        @include short-transition;
+        transform: rotateY(90deg);
+      }
+    }
   }
 
   img {
@@ -1422,6 +1463,17 @@ $radius-lg: $radius * 2;
   }
 
 } // .slide
+
+.wrapper-frame::before {
+  z-index: 1; // make sure it's above wrapped element
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  border: 1px solid $border-color;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 
