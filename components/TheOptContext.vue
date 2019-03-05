@@ -73,13 +73,17 @@ export default {
       const yRatio  = (slideI.height / slideS.height);
       const ratio   = Math.max(xRatio, yRatio);
 
+      const xOffset = (slideS.left + (slideS.width  / 2)) - (slideI.left + (slideI.width  / 2));
+      const yOffset = (slideS.top  + (slideS.height / 2)) - (slideI.top  + (slideI.height / 2));
+      const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
+
       const $opt    = window.$('#the-samples .the-opt-context');
       const $btn    = $opt.find('.btn');
       const slideB  = $btn[0].getBoundingClientRect();
 
-      const bRatio  = (slideS.width  / slideB.width);
-      const xOffset = (slideS.left + (slideS.width / 2)) - (slideB.left + (slideB.width / 2));
-      const yOffset = (slideS.top + (slideS.height / 2)) - (slideB.top + (slideB.height / 2));
+      const btnRatio   = (slideS.width  / slideB.width);
+      const xBtnOffset = (slideS.left + (slideS.width / 2)) - (slideB.left + (slideB.width / 2));
+      const yBtnOffset = (slideS.top + (slideS.height / 2)) - (slideB.top + (slideB.height / 2));
 
       this.uiStateClass({add:'--xing samples-to-context samples-to-context-setup'});
 
@@ -89,9 +93,10 @@ export default {
 
       await nextFrame();
 
-      $opt.find('.axis-x').css({'transform': `translateX(${xOffset}px)`});
-      $opt.find('.axis-y').css({'transform': `translateY(${yOffset}px)`});
-      $btn.css({'transform': `scale(${bRatio})`, 'box-shadow': `0 0 ${1 / bRatio}em transparent`});
+      $slider.css({'transform-origin': `50% ${ySlider}px`, 'transform': `translateX(${xOffset}px) scale(${1 / ratio})`});
+      $opt.find('.axis-x').css({'transform': `translateX(${xBtnOffset}px)`});
+      $opt.find('.axis-y').css({'transform': `translateY(${yBtnOffset}px)`});
+      $btn.css({'transform': `scale(${btnRatio})`, 'box-shadow': `0 0 ${1 / btnRatio}em transparent`});
 
       await sleep(settings.TRANSITION_TIME_CONTEXT_MS);
 
@@ -107,6 +112,7 @@ export default {
 
       await nextFrame();
 
+      $slider.css({'transform-origin': null, 'transform': null});
       $opt.find('.axis-x').css({'transform': null});
       $opt.find('.axis-y').css({'transform': null});
       $btn.css({'transform': null, 'box-shadow': null});
@@ -142,11 +148,14 @@ export default {
   opacity: 1 !important; // override scoped style
 }
 
+.samples-to-context .the-opt-context {
+  transition: transform $transition-time-context-ms linear;
+}
 .samples-to-context .the-opt-context .axis-x {
   transition: transform $transition-time-context-ms ease-in-out;
 }
 .samples-to-context .the-opt-context .axis-y {
-  transition: transform $transition-time-context-ms cubic-bezier(0.15, 0.75, 0.35, 1);
+  transition: transform $transition-time-context-ms cubic-bezier(0.4, 0.85, 0.6, 1);
 }
 
 .samples-to-context #the-context {
@@ -188,17 +197,6 @@ export default {
     top: 0;
     width: 100%;
     height: 100%;
-
-    &::before {
-      z-index: 1; // make sure it's above <img>
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      //border: 1px solid $border-color;
-    }
   }
 
   img {

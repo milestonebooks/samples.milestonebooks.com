@@ -86,6 +86,10 @@ export default {
     zoomDpi: {
       type: Number,
       default: 0,
+    },
+    marginY: {
+      type: Number,
+      default: 0,
     }
   },
 
@@ -244,8 +248,8 @@ export default {
 
       this.isMinSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
 
-      this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
-      this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
+      this.availWidth  = this.width       - (el.offsetWidth  - el.clientWidth);
+      this.availHeight = this.getHeight() - (el.offsetHeight - el.clientHeight);
 
       // delay autosize() until above settings are propagated in layout
 
@@ -256,6 +260,12 @@ export default {
       }, settings.TRANSITION_TIME_MS);
 
     }, // onResize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getHeight() {
+      return this.height - (this.marginY * 2);
+    }, // getAvailSize()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -676,11 +686,11 @@ export default {
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
-      this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-      this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+      this.availWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+      this.availHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight - (this.$_i.type === 'audio' && !this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight - (this.type === 'item' && this.$_i.type === 'audio' && !this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
 
       // this determines how much gutter space is masked from being grabbable for sliding
       const groupHeight = Math.max((this.type === 'series' ? this.availHeight : height), $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
@@ -698,13 +708,14 @@ export default {
 
         $slider.css({
           width:  `${frameWidth}px`,
-          height: `${frameHeight}px`,
+          height: `${frameHeight + (this.marginY * 2)}px`,
         });
         window.$(this.$refs.slider).find('.frame-mask.side').css({height: `${yMargin}px`});
 
         $frame.css({
           width:  `${frameWidth}px`,
           height: `${frameHeight}px`,
+          top:             `${this.marginY}px`,
           left:            `${ xMargin}px`,
           'margin-left':   `${-xMargin}px`,
           'padding-left':  `${ xMargin}px`,
@@ -712,6 +723,8 @@ export default {
           'padding-right': `${ xMargin}px`,
         });
       }
+
+      if (this.type === 'series') console.log(`autosize availHeight:${this.availHeight} frameHeight:${frameHeight}`, $slide);
 
       const {xOffset, yOffset} = this.getSlideOffset($slide);
       const XY = `${-xOffset}px, ${-yOffset}px`;
@@ -752,7 +765,7 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
-      //console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
+      if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
 
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
@@ -837,10 +850,9 @@ export default {
       const yRatio  = (slideI.height / slideS.height);
       const ratio   = Math.max(xRatio, yRatio);
 
-      const xOffset = (slideS.left + (slideS.width / 2)) - (slideI.left + (slideI.width / 2));
-      const yOffset = (slideS.top + (slideS.height / 2)) - (slideI.top + (slideI.height / 2));
+      const xOffset = (slideS.left + (slideS.width  / 2)) - (slideI.left + (slideI.width  / 2));
+      const yOffset = (slideS.top  + (slideS.height / 2)) - (slideI.top  + (slideI.height / 2));
       const XY      = `${-xOffset}px, ${-yOffset}px`;
-
       const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
 
       const aspectRatio = (slideS.top + (slideS.height / 2)) / (slideS.left + (slideS.width / 2));
@@ -997,8 +1009,8 @@ export default {
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
-        this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-        this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+        this.availWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+        this.availHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
 
         // extra space available within view
         const xMargin = this.availWidth  - $slide.width();
@@ -1087,9 +1099,16 @@ export default {
 </script>
 
 <style lang="scss">
+@import "../assets/settings.scss";
+
 //----------------------------------------------------------------------------------------------------------------------
 // TRANSITION
-@import "../assets/settings.scss";
+
+// enable visibility on .slide rotation
+#the-context .slider,
+#the-context .slider .frame {
+  overflow: visible;
+}
 
 .show-context:not(.--xing) #the-samples .slider-frame > *,
 .context-to-samples-setup #the-samples .slider-frame > *:not(.slider-view) {
@@ -1175,13 +1194,6 @@ $radius-lg: $radius * 2;
   &.no-transition {
     transition: none;
   }
-}
-
-.context-hiding-setup .slider {
-  transition: none;
-}
-.context-hiding-to .slider {
-  //transition: transform $transition-time-context-ms ease-in-out, opacity $transition-time-context-ms ease-in;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1391,6 +1403,7 @@ $radius-lg: $radius * 2;
   perspective: 1000px;
 
   &.current.has-samples {
+    z-index: 1;
     .slide-liner {
       transition: transform 1s ease;
       outline: 1px solid transparent; // [2019-03-04] fix for jagged edges in Firefox
@@ -1465,7 +1478,6 @@ $radius-lg: $radius * 2;
 } // .slide
 
 .wrapper-frame::before {
-  z-index: 1; // make sure it's above wrapped element
   content: '';
   position: absolute;
   left: 0;

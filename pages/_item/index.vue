@@ -108,11 +108,12 @@ export default {
 
     mainClass() {
       return {
-        '-debug':       this.$_._showDebugger,
-        'is-dev':       this.$_.isDev,
-        'is-init':      this.$_.isInit,
-        'has-touch':    this.$_.hasTouch,
-        'has-mouse':    this.$_.hasMouse,
+        '-debug':      this.$_._showDebugger,
+        'is-dev':      this.$_.isDev,
+        'is-init':     this.$_.isInit,
+        'has-touch':   this.$_.hasTouch,
+        'has-mouse':   this.$_.hasMouse,
+        'is-resizing': this.$_.isResizing,
         //TODO 'show-title':   true,
       }
     },

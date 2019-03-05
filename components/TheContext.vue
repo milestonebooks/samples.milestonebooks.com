@@ -1,7 +1,7 @@
 <template>
   <AppFrame id="the-context">
     <AppSlider type="series" slot="view"
-               :slides="$_s.items" :currentIndex="$_s.currentIndex" :isLoading="$_s.isLoading"
+               :slides="$_s.items" :currentIndex="$_s.currentIndex" :isLoading="$_s.isLoading" :marginY="10"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
@@ -71,8 +71,8 @@ export default {
 $slider-height: 75%;
 
 #the-context /deep/ .app-view {
-  height: calc(#{$slider-height} - 20px);
-  margin-top: 10px;
+  height: $slider-height; // calc(#{$slider-height} - 20px);
+  //margin-top: 10px;
 }
 
 #the-context /deep/ .slider-view {
