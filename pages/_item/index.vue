@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-title="$_i.title" :data-dir="$_i.direction">
+  <main :class="mainClass" :data-dir="$_i.direction">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
@@ -17,10 +17,13 @@ import TheAlerts   from '~/components/TheAlerts';
 import TheSamples  from '~/components/TheSamples';
 import TheContext  from '~/components/TheContext';
 
-import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.vue';
+import settings  from '~/assets/settings';
+import mixins    from '~/plugins/mixins.vue';
+import nextFrame from '~/plugins/nextFrame';
 
 import axios from 'axios';
+
+import { mapMutations } from 'vuex';
 
 export default {
   key: '_item', // ensure page doesn't get recreated on route change
@@ -114,7 +117,6 @@ export default {
         'has-touch':   this.$_.hasTouch,
         'has-mouse':   this.$_.hasMouse,
         'is-resizing': this.$_.isResizing,
-        //TODO 'show-title':   true,
       }
     },
 
@@ -165,6 +167,9 @@ export default {
   //====================================================================================================================
 
   methods: {
+    ...mapMutations([
+      'uiStateClass',
+    ]),
 
     set: mixins.set,
 
@@ -190,21 +195,23 @@ export default {
       const items  = series.items;
       const item   = items[d.seriesIndex];
 
-      const {maxH, maxHRatio} = this.initImagesData(items);
+      const {maxW, maxH, maxHRatio} = this.initImagesData(items);
 
       this.set('series', {...series,
         currentIndex: d.seriesIndex,
         firstCode:    items[0].code,
         lastCode:     items[items.length - 1].code,
+        maxW,
         maxH,
         maxHRatio,
       });
 
       await this.initItemData(item);
 
-      this.set({
-        isInit: true,
-      });
+      //console.log('init: is-group?', d.isGroup);
+      this.uiStateClass({show: (d.isGroup || !item.samples.length ? 'context' : 'samples')});
+
+      this.set({isInit: true});
 
       console.timeEnd('index');
 
@@ -235,13 +242,6 @@ export default {
         };
       }
 
-      /*TODO: depends on what is currently in focus
-      if (!samples.length) {
-        return;
-        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
-      }
-      //*/
-
       this.set('item', item);
 
     }, // initItemData()
@@ -250,6 +250,7 @@ export default {
 
     initImagesData(arr = []) {
       const _ = {
+        maxW: null,
         maxH: null,
         maxHRatio: null,
       };
@@ -258,8 +259,9 @@ export default {
         if (!i.image) continue;
         i.image.loaded = {}; // create object to monitor loaded state
         i.image.hRatio = i.image.h / i.image.w;
-        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
+        if (_.maxW === null || i.image.w > _.maxW) _.maxW = i.image.w;
         if (_.maxH === null || i.image.h > _.maxH) _.maxH = i.image.h;
+        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
       }
 
       return _;
@@ -353,27 +355,9 @@ main {
   display: flex;
   flex-direction: column;
   margin: auto;
-  //@include short-transition;
 
   &[data-dir="rtl"] {
     direction: rtl;
-  }
-
-  &.show-title::before {
-    content: attr(data-title);
-    z-index: $layer-title;
-    @include absolute-center(fixed);
-    max-width: 100vw;
-    text-align: center;
-    font-size: 3em;
-    font-weight: bold;
-    padding: 1em;
-    border-radius: $radius / 3;
-    background-color: white;
-    color: $theme-color;
-    box-shadow: 0 0 1em transparentize($theme-color, 0.5);
-    pointer-events: none;
-    animation: a-titlefade 3s 1 forwards ease-in-out;
   }
 
   &.is-dev::after {
@@ -389,21 +373,9 @@ main {
   }
 }
 
-@keyframes a-titlefade {
-  from {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-  }
-  10%, 75% {
-    transform: translate(-50%, -50%) scale(1.0);
-    opacity: 1;
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1.0);
-    opacity: 0;
-  }
+main {
+  transition: opacity 1s ease-in-out;
 }
-
 main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;

@@ -82,8 +82,8 @@ export default {
       const slideB  = $btn[0].getBoundingClientRect();
 
       const btnRatio   = (slideS.width  / slideB.width);
-      const xBtnOffset = (slideS.left + (slideS.width / 2)) - (slideB.left + (slideB.width / 2));
-      const yBtnOffset = (slideS.top + (slideS.height / 2)) - (slideB.top + (slideB.height / 2));
+      const xBtnOffset = slideS.left - slideB.left;
+      const yBtnOffset = slideS.top  - slideB.top;
 
       this.uiStateClass({add:'--xing samples-to-context samples-to-context-setup'});
 
@@ -155,7 +155,10 @@ export default {
   transition: transform $transition-time-context-ms ease-in-out;
 }
 .samples-to-context .the-opt-context .axis-y {
-  transition: transform $transition-time-context-ms cubic-bezier(0.4, 0.85, 0.6, 1);
+  transition: transform $transition-time-context-ms cubic-bezier(0.2, 0.8, 0.5, 1);
+}
+.samples-to-context .the-opt-context .btn {
+  transition: transform $transition-time-context-ms ease-in-out;
 }
 
 .samples-to-context #the-context {
@@ -175,7 +178,7 @@ export default {
 @import "../assets/settings.scss";
 
 .the-opt-context {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-context-btn;
   top: 1em;
   left: 1em;
   width: $unit;
@@ -187,6 +190,7 @@ export default {
 
   .btn {
     @include drop-shadow;
+    transform-origin: left top;
     // overwrite
     top: 0;
     transform: none;

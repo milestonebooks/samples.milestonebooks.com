@@ -16,7 +16,7 @@ export const state = () => ({
   isResizing:  false,
 
   uiStateClasses: ['ui-state'],
-  uiStateShow:    'context',
+  uiStateShow:    'init',
 
   isCompactList:       true,
   isCompactListTitles: false,
@@ -48,7 +48,7 @@ export const getters = {
   //--------------------------------------------------------------------------------------------------------------------
 
   uiStateClassString(state) {
-    return state.uiStateClasses.join(' ') + ` show-${state.uiStateShow}`;
+    return (state.isInit ? 'is-init ' : '') + state.uiStateClasses.join(' ') + ` show-${state.uiStateShow}`;
   },
 
   //--------------------------------------------------------------------------------------------------------------------

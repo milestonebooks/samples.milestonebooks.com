@@ -1,9 +1,10 @@
 //----------------------------------------------------------------------------------------------------------------------
 // layers
 $layer-the-debugger: 999;
-$layer-the-alerts: 99;
-$layer-the-nav:    80;
-$layer-title:      50;
+$layer-the-alerts:    99;
+$layer-the-nav:       80;
+$layer-context-btn: $layer-the-nav - 1;
+$layer-title:         50;
 
 //----------------------------------------------------------------------------------------------------------------------
 // sizes
@@ -17,6 +18,7 @@ $zoom-ratio: 120 / 80; // => ZOOM_RATIO
 $ruler-width-nominal: 32px; // => RULER_WIDTH_NOMINAL
 $scrollbar-width: 17px; // major browsers on Windows <https://codepen.io/sambible/post/browser-scrollbar-widths>
 $controls-height: 40px; // => CONTROLS_HEIGHT
+$info-visibility-height: 6em;
 
 //----------------------------------------------------------------------------------------------------------------------
 // colors
@@ -96,20 +98,6 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   @if ($axis == y) {
     top: 50%;
     transform: translateY(-50%);
-  }
-}
-
-// TODO: obsolete...
-@mixin below-sheet-music-min() {
-  @at-root .below-sheet-music-width & {
-    @content;
-  }
-}
-
-// TODO: obsolete...
-@mixin sheet-music-min {
-  @media (min-width: #{$sheet-music-width}) {
-    @content;
   }
 }
 

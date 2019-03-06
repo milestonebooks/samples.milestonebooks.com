@@ -195,6 +195,24 @@ export default {
 
       await this.$nextTick();
       forceRepaint();
+
+      /* TODO: intended for transitioning item info
+      if (this.type === 'series') {
+        this.uiStateClass({add:'slide-to-slide slide-to-slide-setup'});
+
+        await nextFrame();
+
+        this.uiStateClass({remove:'slide-to-slide-setup', add:'slide-to-slide-active'});
+
+        await sleep(settings.TRANSITION_TIME_MS / 2);
+
+        this.uiStateClass({add:'slide-to-slide-cleanup'});
+
+        await sleep(settings.TRANSITION_TIME_MS / 2);
+
+        this.uiStateClass({remove: 'slide-to-slide slide-to-slide-cleanup slide-to-slide-active'});
+      }
+      //*/
     },
 
     //------------------------------------------------------------------------------------------------------------------
@@ -360,16 +378,17 @@ export default {
       if (this.type === 'series') {
 
         let wScale = 1;
-        if (this.$_s.maxH > this.availHeight) {
-          wScale = this.availHeight / this.$_s.maxH; // TODO
+        if (this.$_s.maxW > this.availWidth) {
+          wScale = this.availWidth / this.$_s.maxW;
+        }
+        if ((this.$_s.maxH * wScale) > this.availHeight) {
+          wScale = this.availHeight / (this.$_s.maxH * wScale);
         }
 
         if (slide.image) this.$store.commit('series/setImageWScale', {slides:'items', i:slide.index, wScale});
 
         const w = Math.floor(slide.image.w * wScale);
         const h = Math.floor(slide.image.h * wScale);
-
-        //console.log('slideStyleSize()', slide.index, h);
 
         this.slides[slide.index].width  = `${w}px`;
         this.slides[slide.index].height = `${h}px`;
@@ -379,6 +398,8 @@ export default {
           height: this.slides[slide.index].height,
         };
       }
+
+      // else this.type === 'item' ...
 
       const xdpi = slide.image && dpi ? dpi : 1;
 
@@ -724,7 +745,7 @@ export default {
         });
       }
 
-      if (this.type === 'series') console.log(`autosize availHeight:${this.availHeight} frameHeight:${frameHeight}`, $slide);
+      //if (this.type === 'series') console.log(`autosize availHeight:${this.availHeight} frameHeight:${frameHeight}`, $slide);
 
       const {xOffset, yOffset} = this.getSlideOffset($slide);
       const XY = `${-xOffset}px, ${-yOffset}px`;
@@ -765,7 +786,7 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
-      if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
+      //if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
 
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
@@ -840,11 +861,11 @@ export default {
       if (!hasSamples) return;
 
       const $slider = window.$('#the-samples .slider');
-      const $slide  = window.$(`#the-context .slide[data-index="${this.currentIndex}"]`);
+      const $slide  = window.$(`#the-context .slide[data-index="${this.$_s.currentIndex}"]`);
       const $btn    = window.$('#the-samples .btn-context');
 
       const slideS  = $slide[0].getBoundingClientRect(); // slide series
-      const slideI  = window.$(`#the-samples .slide[data-index="0"]`)[0].getBoundingClientRect(); // slide item
+      const slideI  = window.$(`#the-samples .slide[data-index="${this.$_i.currentIndex}"]`)[0].getBoundingClientRect(); // slide item
 
       const xRatio  = (slideI.width / slideS.width);
       const yRatio  = (slideI.height / slideS.height);
@@ -1120,7 +1141,7 @@ export default {
 .context-to-samples-active #the-samples .the-opt-context {
   transition: opacity $transition-time-ms ease-in;
 }
-.context-to-samples-setup #the-samples .slide:not(.current) {
+.context-to-samples-setup #the-samples .slide {
   transition: none;
   opacity: 0;
 }
@@ -1138,6 +1159,18 @@ export default {
 .show-samples #the-context {
   pointer-events: none;
   opacity: 0;
+}
+
+.context-to-samples #the-context .info-liner {
+  @include short-transition;
+  transform: translateY(-100%);
+}
+.samples-to-context-setup #the-context .info-liner {
+  transform: translateY(-100%);
+}
+.samples-to-context-active #the-context .info-liner {
+  @include short-transition;
+  transform: none;
 }
 //----------------------------------------------------------------------------------------------------------------------
 </style>
@@ -1418,7 +1451,7 @@ $radius-lg: $radius * 2;
       }
       @at-root .context-to-samples .slide.current.spine-left .slide-liner {
         @include short-transition;
-        transform: rotateY(-90deg);
+        transform: rotateY(-90deg) !important;
       }
     }
     &.spine-top {
@@ -1444,7 +1477,7 @@ $radius-lg: $radius * 2;
       }
       @at-root .context-to-samples .slide.current.spine-right .slide-liner {
         @include short-transition;
-        transform: rotateY(90deg);
+        transform: rotateY(90deg) !important;
       }
     }
   }

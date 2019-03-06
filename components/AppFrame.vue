@@ -23,12 +23,9 @@ export default {
 
 .app-frame {
   position: absolute;
-  //z-index: 1;
   width: 100%; // % instead of vw to avoid potential h scrollbar
   height: 100vh;
   overflow: auto;
-  //TODO background-color: $background-color;
-  //TODO transition: background-color $transition-time-ms ease-in-out;
 }
 
 .app-view {
