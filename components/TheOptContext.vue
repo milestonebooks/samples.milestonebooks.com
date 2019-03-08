@@ -85,7 +85,7 @@ export default {
       const xBtnOffset = slideS.left - slideB.left;
       const yBtnOffset = slideS.top  - slideB.top;
 
-      this.uiStateClass({add:'--xing samples-to-context samples-to-context-setup'});
+      this.uiStateClass({add:'-xing samples-to-context samples-to-context-setup'});
 
       await nextFrame();
 
@@ -108,13 +108,13 @@ export default {
 
       await nextFrame();
 
-      this.uiStateClass({remove:'--xing samples-to-context samples-to-context-active samples-to-context-cleanup'});
+      this.uiStateClass({remove:'-xing samples-to-context samples-to-context-active samples-to-context-cleanup'});
 
       await nextFrame();
 
       $slider.css({'transform-origin': null, 'transform': null});
-      $opt.find('.axis-x').css({'transform': null});
-      $opt.find('.axis-y').css({'transform': null});
+      $opt.find('.axis-x').css({'transform': 'none'}); // `null` does not unset value in IE [2019-03-07]
+      $opt.find('.axis-y').css({'transform': 'none'});
       $btn.css({'transform': null, 'box-shadow': null});
 
       await nextFrame();
@@ -144,7 +144,7 @@ export default {
 }
 
 .show-samples:not(.context-to-samples) .the-opt-context,
-.--xing .the-opt-context {
+.-xing .the-opt-context {
   opacity: 1 !important; // override scoped style
 }
 
@@ -186,7 +186,7 @@ export default {
   height: auto;
   box-shadow: none;
   background: transparent;
-  opacity: 0;
+  //opacity: 0;
 
   .btn {
     @include drop-shadow;

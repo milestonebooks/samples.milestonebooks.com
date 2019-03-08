@@ -7,14 +7,15 @@ export const state = () => ({
   _debugText:    null,
   _debugCheck:   null,
 
-  isDev:      false,
-  isInit:     false,
-  gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
-  psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
-  urlBase:    'https://samples.milestonebooks.com/',
-  urlBaseImg: 'https://www.milestonebooks.com/img/',
-  isResizing:  false,
+  isDev:       false,
+  isInit:      false,
+  gtmID:       'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
+  psID:        '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
+  urlBase:     'https://samples.milestonebooks.com/',
+  urlBaseImg:  'https://www.milestonebooks.com/img/',
+  urlBaseItem: 'https://www.milestonebooks.com/item/',
 
+  isResizing:     false,
   uiStateClasses: ['ui-state'],
   uiStateShow:    'init',
 

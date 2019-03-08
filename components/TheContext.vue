@@ -6,7 +6,7 @@
 
     <template slot="frame">
       <div class="info"><div class="info-liner">
-        <h1 class="title">{{ $_i.title }}</h1>
+        <h1 class="title"><a :href="$_.urlBaseItem + $_i.code + '/'">{{ $_i.title }}</a></h1>
       </div></div>
     </template>
   </AppFrame>
@@ -107,7 +107,11 @@ $slider-height: 100%;//calc(100% - #{$info-visibility-height});
     margin: 0;
     text-align: center;
     font: normal 2em "Trebuchet MS", Helvetica, sans-serif;
-    color: $theme-color;
+    //color: $theme-color;
+    a {
+      color: hsl(210, 100%, 40%); /* match store links */
+      text-decoration: none;
+    }
   }
 }
 

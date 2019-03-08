@@ -878,7 +878,7 @@ export default {
 
       const aspectRatio = (slideS.top + (slideS.height / 2)) / (slideS.left + (slideS.width / 2));
 
-      this.uiStateClass({add:'--xing context-to-samples context-to-samples-setup'});
+      this.uiStateClass({add:'-xing context-to-samples context-to-samples-setup'});
 
       await nextFrame();
 
@@ -898,7 +898,7 @@ export default {
 
       await sleep(settings.TRANSITION_TIME_MS);
 
-      this.uiStateClass({remove:'--xing context-to-samples context-to-samples-active'});
+      this.uiStateClass({remove:'-xing context-to-samples context-to-samples-active'});
       $slide.css({'transform': null});
 
     }, // showSamples()
@@ -1131,7 +1131,7 @@ export default {
   overflow: visible;
 }
 
-.show-context:not(.--xing) #the-samples .slider-frame > *,
+.show-context:not(.-xing) #the-samples .slider-frame > *,
 .context-to-samples-setup #the-samples .slider-frame > *:not(.slider-view) {
   z-index: 0;
   pointer-events: none;
