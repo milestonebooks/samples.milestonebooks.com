@@ -1,14 +1,14 @@
 <template>
   <aside class="audio-player sidebar bottom h" :class="uiClass">
 
-    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
+    <button class="btn btn-play ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
     </button>
 
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a ref="handle" class="bar-handle" tabindex="0" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
+          <a ref="handle" class="bar-handle" tabindex="0" :disabled="!$store.getters.isSamplesShown" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -60,9 +60,15 @@ export default {
       'playTitle',
       'handleTip',
     ]),
+
+    $_i() {
+      return this.$store.state;
+    },
+
     $_p() {
       return this.$store.state.player;
     },
+
     btnPlayPath() {
       return (this.$_p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
@@ -84,6 +90,14 @@ export default {
   watch: {
     currentIndex() {
       this.update();
+    },
+
+    '$store.getters.isSamplesShown'() {
+      if (this.$store.getters.isSamplesShown) {
+        this.update();
+      } else {
+        if (this.$_p.isPlaying) this.$store.dispatch('player/togglePlay', {play: false});
+      }
     },
 
     '$_p.isAutoPlay'() {
@@ -132,16 +146,19 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      this.load(this.currentIndex);
+      if (this.$store.getters.isSamplesShown) {
+        this.load();
+      }
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async load(index) {
-      if (this.currentIndex === null) return;
+    async load() {
+      if (this.currentIndex === -1) return;
 
-      await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$root.error({statusCode:500, message:`Error loading audio #${index} [${err_code}]`});
+      console.log('call: player/loadAudio...');
+      await this.$store.dispatch('player/loadAudio').catch((err_code) => {
+        this.$root.error({statusCode:500, message:`Error loading audio #${this.currentIndex} [${err_code}]`});
       });
       this.refresh();
     }, // load()

@@ -25,12 +25,12 @@
     </article>
 
     <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="getLink(-1)" replace :aria-label="getLinkLabel('previous')" tag="button">
+      <nuxt-link class="btn btn-slider prev ltr" tabindex="0" :disabled="!isActive || isFirst" :to="getLink(-1)" replace :aria-label="getLinkLabel('previous')" tag="button">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
     <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="getLink(+1)" replace :aria-label="getLinkLabel('next')" tag="button">
+      <nuxt-link class="btn btn-slider next ltr" tabindex="0" :disabled="!isActive || isLast" :to="getLink(+1)" replace :aria-label="getLinkLabel('next')" tag="button">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
@@ -119,7 +119,6 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-
     $_() {
       return this.$store.state;
     },
@@ -161,6 +160,10 @@ export default {
       return frames;
     },
 
+    isActive() {
+      return (this.type === 'series' && !this.$store.getters.isSamplesShown) || (this.type === 'item' && this.$store.getters.isSamplesShown);
+    },
+
     isFirst() {
       return this.getSlide && !this.getSlide(-1);
     },
@@ -174,7 +177,7 @@ export default {
     },
 
     labelPrevLink() {
-      if (this.type === 'series') return 'previous in series';set
+      if (this.type === 'series') return 'previous in series';
       if (this.type === 'item')   return 'previous sample';
     },
 

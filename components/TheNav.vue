@@ -3,15 +3,15 @@
     <aside class="sidebar top h">
 
       <div class="controls">
-        <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <nuxt-link class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSample(-1)" :title="getSample(-1, 'title')" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
-        <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+        <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
           <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
         </button>
-        <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
+        <nuxt-link class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSample(+1)" :title="getSample(+1, 'title')" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
       </div>
@@ -20,7 +20,7 @@
 
     <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="slides">
-        <button v-for="sample in $_i.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
+        <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
             <span class="item-flex">
               <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
@@ -29,8 +29,8 @@
         </button>
       </div>
       <ul class="settings">
-        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
+        <li><label><input type="checkbox" v-model="compactList" tabindex="0" :disabled="!$store.getters.isSamplesShown" />compact list</label></li>
+        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" tabindex="0" :disabled="!$store.getters.isSamplesShown" />autoplay</label></li>
       </ul>
     </nav>
     <div class="list-shadow-mask"></div>
@@ -66,30 +66,38 @@ export default {
       'getSample',
       'listItemClass',
     ]),
+
     $_() {
       return this.$store.state;
     },
+
     $_i() {
       return this.$store.state.item;
     },
+
     $_p() {
       return this.$store.state.player;
     },
+
     btnNavPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z'; // right-pointing: 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z'
     },
+
     btnListTitle() {
       return `${this.isListShown ? 'hide' : 'show'} sample list`;
     },
+
     listClass() {
       return {
         'compact': ((this.$_i.type === 'items' && this.$_.isCompactList) || (this.$_i.type === 'audio' && this.$_.isCompactListTitles)),
         'accept-events': this.listAcceptPointerEvents,
       };
     },
+
     idStyle() {
       return `transform: translateX(${this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1) * 2.8}rem)`;
     },
+
     autoPlay: {
       get() {
         return this.$_p.isAutoPlay;
@@ -98,6 +106,7 @@ export default {
         this.set('player', {isAutoPlay});
       },
     },
+
     compactList: {
       get() {
         return (this.$_i.type === 'audio' ? this.$_.isCompactListTitles : this.$_.isCompactList);
@@ -106,6 +115,7 @@ export default {
         this.set({[this.$_i.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
       },
     },
+
   }, // computed {}
 
   //====================================================================================================================

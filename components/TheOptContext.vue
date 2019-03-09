@@ -1,7 +1,7 @@
 <template>
   <aside class="the-opt-context controls sidebar floating">
     <div class="axis-x"><div class="axis-y">
-      <button v-if="img" class="btn btn-opt btn-context ltr" :style="buttonStyle" title="product info..." tabindex="1" @click="showContext">
+      <button v-if="img" class="btn btn-opt btn-context ltr" :style="buttonStyle" title="product info..." tabindex="0" :disabled="!$store.getters.isSamplesShown" @click="showContext">
         <span class="img-wrapper">
           <img class="img-context" :src="imageSrc" />
         </span>

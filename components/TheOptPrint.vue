@@ -1,6 +1,6 @@
 <template>
   <aside class="the-opt-print controls sidebar floating">
-    <button class="btn btn-opt print ltr" tabindex="1" title="print page" @click="print">
+    <button class="btn btn-opt print ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" title="print page" @click="print">
       <SvgIcon view="28" :d="btnPrintPath" />
     </button>
     <img class="thumbnail" @load="onLoad($event)" @error="onError" />
