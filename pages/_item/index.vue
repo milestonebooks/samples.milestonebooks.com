@@ -19,7 +19,6 @@ import TheContext  from '~/components/TheContext';
 
 import settings  from '~/assets/settings';
 import mixins    from '~/plugins/mixins.vue';
-import nextFrame from '~/plugins/nextFrame';
 
 import axios from 'axios';
 
@@ -363,13 +362,13 @@ main {
   &.is-dev::after {
     pointer-events: none;
     z-index: $layer-the-alerts;
-    content: '*';
-    color: red;
+    content: '';
     position: absolute;
     left: 0;
-    bottom: 0;
-    font-size: 40px;
-    line-height: 0;
+    top: 0;
+    width: 1em;
+    height: 1em;
+    background-color: red;
   }
 }
 
