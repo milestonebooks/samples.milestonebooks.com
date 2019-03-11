@@ -194,6 +194,22 @@ export default {
     // overwrite
     top: 0;
     transform: none;
+
+    .img-wrapper::before {
+      content: '';
+      z-index: 1;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 1px solid transparent;
+      @include short-transition;
+    }
+    @at-root .ui-state:not(.-xing) &:focus .img-wrapper::before {
+      border-color: $focus-color;
+    }
   }
 
   .img-wrapper {

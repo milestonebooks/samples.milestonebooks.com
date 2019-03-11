@@ -8,7 +8,7 @@
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a ref="handle" class="bar-handle" tabindex="0" :disabled="!$store.getters.isSamplesShown" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
+          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isSamplesShown" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -156,7 +156,6 @@ export default {
     async load() {
       if (this.currentIndex === -1) return;
 
-      console.log('call: player/loadAudio...');
       await this.$store.dispatch('player/loadAudio').catch((err_code) => {
         this.$root.error({statusCode:500, message:`Error loading audio #${this.currentIndex} [${err_code}]`});
       });

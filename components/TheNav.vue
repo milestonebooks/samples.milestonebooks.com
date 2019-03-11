@@ -18,7 +18,7 @@
 
     </aside>
 
-    <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
+    <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown="onListKey">
       <div class="slides">
         <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
@@ -29,8 +29,8 @@
         </button>
       </div>
       <ul class="settings">
-        <li><label><input type="checkbox" v-model="compactList" tabindex="0" :disabled="!$store.getters.isSamplesShown" />compact list</label></li>
-        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" tabindex="0" :disabled="!$store.getters.isSamplesShown" />autoplay</label></li>
+        <li><label><input type="checkbox" v-model="compactList" tabindex="0" :disabled="!isListShown" />compact list</label></li>
+        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" tabindex="0" :disabled="!isListShown" />autoplay</label></li>
       </ul>
     </nav>
     <div class="list-shadow-mask"></div>
@@ -206,6 +206,12 @@ export default {
         if (isBtn) this.toggleList();
         else this.gotoId(id);
         break;
+      case 'Escape':
+        if (this.isListShown) {
+          this.hideList();
+          this.$refs.btnList.focus();
+        }
+        break;
       default:
         dir = null;
       }
@@ -236,6 +242,10 @@ export default {
       if (isBtn && this.throttleKey(e)) return;
 
       const dir = this.getListKeyDir(e, isBtn);
+
+      if (e.target === this.$refs.navList && !this.isListShown) {
+        this.$refs.btnList.focus();
+      }
 
       if (!dir) return;
 

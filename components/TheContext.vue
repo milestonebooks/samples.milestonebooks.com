@@ -6,7 +6,7 @@
 
     <template slot="frame">
       <div class="info"><div class="info-liner">
-        <h1 class="title"><a :href="$_.urlBaseItem + $_i.code + '/'">{{ $_i.title }}</a></h1>
+        <h1 class="title"><a tabindex="0" :href="!$store.getters.isSamplesShown ? $_.urlBaseItem + $_i.code + '/' : null">{{ $_i.title }}</a></h1>
       </div></div>
     </template>
   </AppFrame>
