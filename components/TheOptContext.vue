@@ -186,7 +186,6 @@ export default {
   height: auto;
   box-shadow: none;
   background: transparent;
-  //opacity: 0;
 
   .btn {
     @include drop-shadow;

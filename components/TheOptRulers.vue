@@ -82,8 +82,6 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     toggleRulers() {
-      // TODO
-      //this.$store.commit('set',{_debugText:`!`});
       this.$store.commit('item/set', {showRulers: !this.$_i.showRulers});
     }, // toggleRulers()
 
@@ -103,10 +101,6 @@ export default {
           top:  '',
         });
       }
-
-      // TODO
-      //this.$store.commit('set',{_debugText:`show? ${this.$_i.showRulers}`});
-
     }, // onToggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
