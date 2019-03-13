@@ -67,7 +67,18 @@ export default {
   async asyncData({params, store, error}) {
 
     if (store.state.series.id) {
-      return store.commit('series/set', {currentIndex: store.state.series.items.findIndex(s => s.code === params.item)});
+      let index = store.state.series.items.findIndex(s => s.code === params.item);
+
+      // this happens when routing to a set (isGroup:true) item, usually only occurring via the back button
+      if (index === -1) {
+        if (store.state.uiStateShow === 'samples') {
+          return store.commit('set', {request: 'showContext'});
+        }
+
+        index = 0;
+      }
+
+      return store.commit('series/set', {currentIndex: index});
     }
 
     if (!store.state.isInit) store.commit('set', {isDev: window.$nuxt.$cookies.get('dev')});
@@ -207,7 +218,6 @@ export default {
 
       await this.initItemData(item);
 
-      //console.log('init: is-group?', d.isGroup);
       this.uiStateClass({show: (d.isGroup || !item.samples.length ? 'context' : 'samples')});
 
       this.set({isInit: true});
@@ -297,10 +307,15 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async update() {
-      console.log('update() route', this.$route.path, this.$route.hash);
+      console.log('update() route', this.$route.path, this.$route.hash, `[${this.$_s.currentIndex}]`);
 
       if (this.$_i.code !== this.$route.params.item) {
-        await this.initItemData(this.$_s.items[this.$_s.currentIndex]);
+        const item = this.$_s.items[this.$_s.currentIndex];
+
+        // this happens when routing to a set (isGroup:true) item, usually only occurring via the back button
+        if (item.code !== this.$route.params.item && this.$_.uiStateShow === 'samples') return;
+
+        await this.initItemData(item);
       }
 
       // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)

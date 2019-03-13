@@ -33,6 +33,8 @@ export const state = () => ({
 
   history: [],
 
+  request: null, // can by watched by components to trigger internal function calls
+
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
     {key:'isCompactListTitles', get: v => v === 'true'},

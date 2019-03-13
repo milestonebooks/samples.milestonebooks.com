@@ -870,6 +870,11 @@ export default {
 
     async showSamples() {
 
+      // this scenario happens when a set (isGroup:true) is loaded, and the first item is clicked
+      if (this.$route.params.item !== this.$_i.code) {
+        this.$router.push(`/${this.$_i.code}/`);
+      }
+
       const hasSamples = this.$_s.items[this.currentIndex].samples.length;
 
       if (!hasSamples) return;
@@ -1449,49 +1454,87 @@ $radius-lg: $radius * 2;
 
   perspective: 1000px;
 
+  &.has-samples::after { // "reverse" of cover
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px solid $border-color;
+    background-color: darken(white, 10%);
+  }
+
   &.current.has-samples {
     z-index: 1;
     .slide-liner {
       transition: transform 1s ease;
       outline: 1px solid transparent; // [2019-03-04] fix for jagged edges in Firefox
+      backface-visibility: hidden;
+    }
+    &::after {
+      transition: transform 1s ease;
     }
     &.spine-left {
       perspective-origin: 75% 50%;
+      &::after,
       .slide-liner {
         transform-origin: left;
       }
-      &:hover .slide-liner {
-        transform: rotateY(-20deg);
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateY(-20deg);
+        }
       }
-      @at-root .context-to-samples .slide.current.spine-left .slide-liner {
-        @include short-transition;
-        transform: rotateY(-90deg) !important;
+      @at-root .context-to-samples .slide.current.spine-left {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateY(-90deg) !important;
+        }
       }
     }
     &.spine-top {
       perspective-origin: 50% 75%;
+      &::after,
       .slide-liner {
         transform-origin: top;
       }
-      &:hover .slide-liner {
-        transform: rotateX(15deg);
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateX(15deg);
+        }
       }
-      @at-root .context-to-samples .slide.current.spine-top .slide-liner {
-        @include short-transition;
-        transform: rotateX(90deg) !important;
+      @at-root .context-to-samples .slide.current.spine-top {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateX(90deg) !important;
+        }
       }
     }
     &.spine-right {
       perspective-origin: 25% 50%;
+      &::after,
       .slide-liner {
         transform-origin: right;
       }
-      &:hover .slide-liner {
-        transform: rotateY(20deg);
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateY(20deg);
+        }
       }
-      @at-root .context-to-samples .slide.current.spine-right .slide-liner {
-        @include short-transition;
-        transform: rotateY(90deg) !important;
+      @at-root .context-to-samples .slide.current.spine-right {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateY(90deg) !important;
+        }
       }
     }
   }

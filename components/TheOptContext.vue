@@ -59,6 +59,14 @@ export default {
 
   //====================================================================================================================
 
+  watch: {
+    '$_.request'() {
+      if (this.$_.request === 'showContext') this.showContext();
+    },
+  },
+
+  //====================================================================================================================
+
   methods: {
     ...mapMutations([
       'uiStateClass',
@@ -91,6 +99,8 @@ export default {
       const xBtnOffset = slideS.left - slideB.left;
       const yBtnOffset = slideS.top  - slideB.top;
 
+      $btn[0].blur();
+
       this.uiStateClass({add:'-xing samples-to-context samples-to-context-setup'});
 
       await nextFrame();
@@ -109,13 +119,6 @@ export default {
       this.uiStateClass({add:'samples-to-context-cleanup'});
 
       await sleep(settings.TRANSITION_TIME_MS);
-
-      await nextFrame();
-
-      // give enough time for cleanup
-//return;
-
-      await nextFrame();
 
       this.uiStateClass({remove:'-xing samples-to-context samples-to-context-active samples-to-context-cleanup'});
 
@@ -173,6 +176,7 @@ export default {
 .samples-to-context .the-opt-context .img-wrapper {
   transition: opacity $transition-time-ms ease-in-out;
 }
+.samples-to-context-cleanup .the-opt-context,
 .samples-to-context-cleanup .the-opt-context .img-wrapper {
   opacity: 0;
 }

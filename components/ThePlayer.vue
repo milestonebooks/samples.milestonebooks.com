@@ -62,7 +62,7 @@ export default {
     ]),
 
     $_i() {
-      return this.$store.state;
+      return this.$store.state.item;
     },
 
     $_p() {

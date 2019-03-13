@@ -17,6 +17,7 @@ export default {
       return `mailto:office@milestonebooks.com?subject=${encodeURIComponent('site error')}&body=${encodeURIComponent('The following page has an error:')}%0A`
            + (window && window.location ? encodeURIComponent(window.location) : '')
            + (error.message ? `%0A>> ${encodeURIComponent(error.message)}` : '')
+           + '%0A%0A' + `[using ${encodeURIComponent(navigator.userAgent)}]`
            + '%0A%0A';
     }
   }
