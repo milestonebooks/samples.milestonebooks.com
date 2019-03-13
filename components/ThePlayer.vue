@@ -146,7 +146,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      if (this.$store.getters.isSamplesShown) {
+      if (this.$_i.type === 'audio' && this.$store.getters.isSamplesShown) {
         this.load();
       }
     }, // update()
@@ -287,16 +287,13 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "../assets/settings.scss";
-
-[data-type="audio"] .below-sheet-music-width .slider {
-  margin-bottom: $controls-height;
-}
-</style>
-
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
+
+#the-samples:not([data-type="audio"]) .audio-player {
+  opacity: 0;
+  pointer-events: none;
+}
 
 .audio-player {
   z-index: $layer-the-nav - 1;

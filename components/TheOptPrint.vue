@@ -1,6 +1,6 @@
 <template>
   <aside class="the-opt-print controls sidebar floating">
-    <button class="btn btn-opt print ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" title="print page" @click="print">
+    <button class="btn btn-opt print ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" title="print page" @click="print" @blur="onAfterPrint">
       <SvgIcon view="28" :d="btnPrintPath" />
     </button>
     <img class="thumbnail" @load="onLoad($event)" @error="onError" />
@@ -41,6 +41,14 @@ export default {
 
   //====================================================================================================================
 
+  watch: {
+    $route() {
+      this.onAfterPrintCleanup();
+    }
+  },
+
+  //====================================================================================================================
+
   methods: {
 
     //------------------------------------------------------------------------------------------------------------------
@@ -48,7 +56,8 @@ export default {
     print() {
       if (!this.$_i.isPrinting) {
         this.$store.commit('item/set', {isPrinting: true});
-        window.$(this.$el).find('.thumbnail').attr('src', this.$store.getters.item.imageSrc(this.$_i.samples[this.$_i.currentIndex], 200));
+        const src = this.$store.getters['item/imageSrc'](this.$_i.samples[this.$_i.currentIndex], 200);
+        window.$(this.$el).find('.thumbnail').attr('src', src);
       } else {
         this.onAfterPrint();
       }
@@ -69,9 +78,17 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onAfterPrint() {
-      window.$('#printout').removeClass('is-printing').find('img').removeAttr('src');
+      window.$(this.$el).find('.thumbnail').removeAttr('src');
+      window.$('#printout').removeClass('is-printing');
       this.$store.commit('item/set', {isPrinting: false});
     }, // onAfterPrint()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onAfterPrintCleanup() {
+      // delayed until route change because some browsers fire onafterprint() immediately, before print dialog is closed
+      window.$('#printout').find('img').removeAttr('src');
+    }, // onAfterPrintCleanup()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -84,6 +101,11 @@ export default {
 
 <style lang="scss">
 @import "../assets/settings.scss";
+
+.slider-frame:not(.has-print) .the-opt-print {
+  opacity: 0;
+  pointer-events: none;
+}
 
 .the-opt-print {
   z-index: $layer-the-nav - 1;

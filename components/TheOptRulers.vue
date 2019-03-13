@@ -217,6 +217,11 @@ export default {
 $ruler-inch: 80px;
 $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
+.slider-frame:not(.has-rulers) .the-samples-rulers {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .the-samples-rulers {
   position: absolute;
   top: 0;

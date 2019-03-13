@@ -1,5 +1,5 @@
 <template>
-  <div :class="`the-nav ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
+  <div :class="`the-nav ${isListShown ? 'is-list-shown' : ''} ${$_i.samples.length === 1 ? 'hide' : ''}`" @click="onMaskClick">
     <aside class="sidebar top h">
 
       <div class="controls">
@@ -19,9 +19,9 @@
     </aside>
 
     <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown="onListKey">
-      <div class="slides">
+      <div class="slides" @click="onSlidesClick($event)">
         <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
-                @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
+                @mouseenter="onListItemMouseEnter">
             <span class="item-flex">
               <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
               <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
@@ -272,6 +272,13 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    onSlidesClick($event) {
+      const id = window.$($event.target).closest('[data-id]').attr('data-id');
+      if (id) this.gotoId(id);
+    }, // onSlidesClick()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     gotoId(id) {
       this.$router.replace(`#${id}`);
       if (this.isListShown) {
@@ -306,6 +313,10 @@ export default {
   height: 100%;
   overflow: hidden;
   pointer-events: none;
+
+  &.hide {
+    display: none;
+  }
 
   > * {
     pointer-events: all;

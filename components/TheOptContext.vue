@@ -1,7 +1,7 @@
 <template>
   <aside class="the-opt-context controls sidebar floating">
     <div class="axis-x"><div class="axis-y">
-      <button v-if="img" class="btn btn-opt btn-context ltr" :style="buttonStyle" title="product info..." tabindex="0" :disabled="!$store.getters.isSamplesShown" @click="showContext">
+      <button class="btn btn-opt btn-context ltr" :style="buttonStyle" title="product info..." tabindex="0" :disabled="!$store.getters.isSamplesShown" @click="showContext">
         <span class="img-wrapper">
           <img class="img-context" :src="imageSrc" />
         </span>
@@ -24,7 +24,13 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   props: {
-    img: null,
+    img: {
+      type: Object,
+      default: {
+        w: 0,
+        h: 0,
+      }
+    },
   },
 
   computed: {
@@ -47,7 +53,7 @@ export default {
     },
 
     imageSrc() {
-      return `${this.$_.urlBaseImg}${this.img.file}`;
+      return this.img.file ? `${this.$_.urlBaseImg}${this.img.file}` : null;
     },
   }, // computed {}
 
@@ -102,9 +108,12 @@ export default {
 
       this.uiStateClass({add:'samples-to-context-cleanup'});
 
+      await sleep(settings.TRANSITION_TIME_MS);
+
       await nextFrame();
 
       // give enough time for cleanup
+//return;
 
       await nextFrame();
 
@@ -146,6 +155,7 @@ export default {
 .show-samples:not(.context-to-samples) .the-opt-context,
 .-xing .the-opt-context {
   opacity: 1 !important; // override scoped style
+  z-index: $layer-the-nav + 1 !important;
 }
 
 .samples-to-context .the-opt-context {
@@ -159,6 +169,12 @@ export default {
 }
 .samples-to-context .the-opt-context .btn {
   transition: transform $transition-time-context-ms ease-in-out;
+}
+.samples-to-context .the-opt-context .img-wrapper {
+  transition: opacity $transition-time-ms ease-in-out;
+}
+.samples-to-context-cleanup .the-opt-context .img-wrapper {
+  opacity: 0;
 }
 
 .samples-to-context #the-context {

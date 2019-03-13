@@ -103,6 +103,7 @@ export default {
       availWidth:    null,
       availHeight:   null,
       isMinSheetMusicWidth: null,
+      isFullview:    null,
       hasScrollbarX: false,
       hasScrollbarY: false,
       slideHeight:   null,
@@ -134,12 +135,14 @@ export default {
     frameClass() {
       let css = {
         'is-loading':      this.isLoading,
+        'is-fullview':     this.isFullview,
         'has-scrollbar-x': this.hasScrollbarX && this.$_.scrollbarWidth,
         'has-scrollbar-y': this.hasScrollbarY && this.$_.scrollbarWidth,
       };
       if (this.type === 'item') css = {...css,
         'has-zoom':    this.$_i.hasZoom,
         'has-print':   this.$_i.hasPrint,
+        'has-rulers':  this.$_i.hasRulers,
         'show-rulers': this.$_i.hasRulers && this.$_i.showRulers,
         'is-printing': this.$_i.isPrinting,
       };
@@ -236,6 +239,12 @@ export default {
       this.onResize();
     },
 
+    '$_.uiStateShow'() {
+      if (this.$_.uiStateShow === 'context' && this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM) {
+        this.toggleDpi();
+      }
+    },
+
   }, // watch {}
 
   //====================================================================================================================
@@ -268,6 +277,7 @@ export default {
       this.height = el.getBoundingClientRect().height;
 
       this.isMinSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
+      this.isFullview = this.width === window.innerWidth && this.height === window.innerHeight;
 
       this.availWidth  = this.width       - (el.offsetWidth  - el.clientWidth);
       this.availHeight = this.getHeight() - (el.offsetHeight - el.clientHeight);
@@ -323,6 +333,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     preloadImage(img) {
+      if (!img) return;
       const src = img.getAttribute('data-src');
       if (this.isLoading || img.src || !src) return;
       img.src = src;
@@ -687,7 +698,7 @@ export default {
     autosize({routeChange = false, resize = false, action = ''} = {}) {
       if (this.currentIndex === null) return;
 
-      const frameType = (this.$_i.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
+      const frameType = (this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM ? 'zoom' : 'default');
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list

@@ -5,17 +5,17 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 
       <template slot="frame">
-        <TheNav v-if="$_i.samples.length > 1" />
+        <TheNav />
       </template>
 
       <template slot="pane">
         <TheOptContext :img="$_i.image" />
 
-        <TheOptRulers v-if="$_i.hasRulers" />
+        <TheOptPrint />
 
-        <TheOptPrint v-if="$_i.hasPrint" />
+        <TheOptRulers />
 
-        <ThePlayer v-if="$_i.type === 'audio'" :currentIndex="$_i.currentIndex" />
+        <ThePlayer :currentIndex="$_i.currentIndex" />
 
         <TheOptRevert v-if="$_i.type === 'items'" />
       </template>
