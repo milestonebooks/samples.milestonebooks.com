@@ -19,7 +19,7 @@
     </aside>
 
     <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown="onListKey">
-      <div class="slides" @click="onSlidesClick($event)">
+      <div class="slides" @click="onSlidesClick">
         <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter">
             <span class="item-flex">
@@ -244,7 +244,8 @@ export default {
       const dir = this.getListKeyDir(e, isBtn);
 
       if (e.target === this.$refs.navList && !this.isListShown) {
-        this.$refs.btnList.focus();
+        if (e.key !== 'Tab' && e.key !== 'Shift') this.$refs.btnList.focus();
+        return;
       }
 
       if (!dir) return;
@@ -272,8 +273,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onSlidesClick($event) {
-      const id = window.$($event.target).closest('[data-id]').attr('data-id');
+    onSlidesClick(e) {
+      const id = window.$(e.target).closest('[data-id]').attr('data-id');
       if (id) this.gotoId(id);
     }, // onSlidesClick()
 

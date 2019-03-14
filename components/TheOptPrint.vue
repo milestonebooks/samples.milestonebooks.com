@@ -3,7 +3,7 @@
     <button class="btn btn-opt print ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" title="print page" @click="print" @blur="onAfterPrint">
       <SvgIcon view="28" :d="btnPrintPath" />
     </button>
-    <img class="thumbnail" @load="onLoad($event)" @error="onError" />
+    <img class="thumbnail" @load="onLoad" @error="onError" />
   </aside>
 </template>
 
@@ -65,8 +65,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onLoad(event) {
-      if (this.$_i.isPrinting) window.$('#printout').addClass('is-printing').find('img').attr('src', event.target.src);
+    onLoad(e) {
+      if (this.$_i.isPrinting) window.$('#printout').addClass('is-printing').find('img').attr('src', e.target.src);
     }, // onLoad()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -103,8 +103,8 @@ export default {
 @import "../assets/settings.scss";
 
 .slider-frame:not(.has-print) .the-opt-print {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
+  
 }
 
 .the-opt-print {

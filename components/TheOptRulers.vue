@@ -218,8 +218,7 @@ $ruler-inch: 80px;
 $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
 .slider-frame:not(.has-rulers) .the-samples-rulers {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .the-samples-rulers {

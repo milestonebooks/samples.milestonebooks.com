@@ -252,12 +252,15 @@ export default {
   mounted() {
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
+    window.addEventListener('keydown', this.onKeydown);
+
     this.onResize();
   },
 
   beforeDestroy () {
     this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
+    window.removeEventListener('keydown', this.onKeydown);
   },
 
   //====================================================================================================================
@@ -610,19 +613,26 @@ export default {
       // decide what the interaction means
       let action = 'click';
 
-      const slide = window.$(e.target).closest('.slide')[0];
+      let slide = window.$(e.target).closest('.slide')[0];
+
+      if (!slide) {
+        // TODO: find nearest (x-axis) slide
+        const $slides = window.$(e.target).closest('.slides');
+        console.log(e, $slides, $slides.find('.slide')[0]);
+      }
+
       const duration = Date.now() - this.touchPoint.time;
-      const diffX = Math.abs(this.touchPoint.deltaX);
-      const diffY = Math.abs(this.touchPoint.deltaY);
-      const dir = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
-      const $frame = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
+      const diffX    = Math.abs(this.touchPoint.deltaX);
+      const diffY    = Math.abs(this.touchPoint.deltaY);
+      const dirIndex = (this.touchPoint.deltaX < 0 ? -1 : 1) * (this.$_i.direction === 'rtl' ? -1 : 1);
+      const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
       const {slideRect, isOverEdge, isOverCenter} = this.getSlidePositionData(slide);
 
       const isDiffEnough = diffX > slideRect.width / 3 || (this.hasScrollbarX && isOverCenter);
-      const isFlick = duration < 300 && diffX > 25 && diffX > diffY;
+      const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
       // main button, quickly, without moving, on a slide
-      const elIndex = slide.getAttribute('data-index');
+      const elIndex      = slide.getAttribute('data-index');
       const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
@@ -637,8 +647,6 @@ export default {
       let index = this.currentIndex;
 
       if (action === 'swipe') {
-        const dirIndex = ((dir === 'left' && this.$_i.direction === 'ltr') || (dir === 'right' && this.$_i.direction === 'rtl') ? 1 : -1);
-
         let offsetX = diffX;
         //TODO: attempt at kinetic scrolling is too jerky using css transitioning
         //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
@@ -667,10 +675,6 @@ export default {
           elY: e.offsetY / slideRect.height,
         });
 
-      } else if (index !== this.currentIndex && this.slides[index]) {
-        if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
-        if (this.type === 'item') this.$router.replace(`#${this.slides[index].id}`);
-
       } else if (action === 'pan') {
         setTimeout(() => {
           const {view, sliderRect, slideRect, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(slide);
@@ -685,6 +689,8 @@ export default {
           }
         }, settings.TRANSITION_TIME_MS);
 
+      } else if (this.routeTo(index)) {
+        // handled in function call
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
         this.$nextTick(() => {
@@ -692,6 +698,40 @@ export default {
         });
       }
     }, // onTouchend()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onKeydown(e) {
+      if (e.target !== document.body || (this.$_.uiStateShow === 'context' && this.type === 'item') || (this.$_.uiStateShow === 'samples' && this.type === 'series')) return;
+
+      let index = null;
+
+      const dir = (this.$_i.direction === 'ltr' ? 1 : -1);
+
+      if (e.key === 'ArrowLeft')  index = this.currentIndex - dir;
+      if (e.key === 'ArrowRight') index = this.currentIndex + dir;
+      if (e.key === 'PageUp')     index = this.currentIndex - 1;
+      if (e.key === 'PageDown')   index = this.currentIndex + 1;
+      if (e.key === 'Home')       index = 0;
+      if (e.key === 'End')        index = this.slides.length - 1;
+
+      if (index !== null) this.routeTo(index);
+    }, // onKeydown()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    routeTo(index) {
+
+      const canRoute = (index !== this.currentIndex && this.slides[index]);
+
+      if (canRoute) {
+        if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
+        if (this.type === 'item') this.$router.replace(`#${this.slides[index].id}`);
+      }
+
+      return canRoute;
+
+    }, // routeTo()
 
     //------------------------------------------------------------------------------------------------------------------
 

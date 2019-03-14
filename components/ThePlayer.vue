@@ -1,5 +1,5 @@
 <template>
-  <aside class="audio-player sidebar bottom h" :class="uiClass">
+  <aside class="audio-player sidebar bottom h controls" :class="uiClass">
 
     <button class="btn btn-play ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
