@@ -369,10 +369,10 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getSlide(dir = 0, key, currentIndex = null) {
+    getSlide(dir = 0, key = null, currentIndex = null) {
       const i = (currentIndex === null ? this.currentIndex : currentIndex) + dir;
       const slide = (this.slides[i] ? this.slides[i] : null);
-      return (slide && key) ? slide[key] : slide;
+      return (slide && key) ? slide[key] : (key === null ? slide : null);
     }, // getSlide()
 
     //--------------------------------------------------------------------------------------------------------------------
@@ -452,7 +452,7 @@ export default {
         if (slide.index === this.currentIndex) this.set('item', {currentWScale: wScale});
       } // end default dpi
 
-      // add some vertical padding so sheet music title/credits won't be obscured by controls
+      // [hack!] add some vertical padding so sheet music title/credits won't be obscured by controls
       if (slide.audio && slide.image) h += Math.floor(settings.CONTROLS_HEIGHT / wScale);
 
       const width     = `${w}px`;
@@ -734,7 +734,7 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({routeChange = false, resize = false, action = ''} = {}) {
+    async autosize({routeChange = false, resize = false, action = ''} = {}) {
       if (this.currentIndex === null) return;
 
       const frameType = (this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM ? 'zoom' : 'default');
@@ -760,14 +760,25 @@ export default {
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
-      this.availWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-      this.availHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+      const newAvailWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+      const newAvailHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+
+      const diffW = newAvailWidth  - this.availWidth;
+
+      this.availWidth  = newAvailWidth;
+      this.availHeight = newAvailHeight;
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight - (this.type === 'item' && this.$_i.type === 'audio' && !this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight));
+
+      const isFullviewWidth = width >= this.availWidth;
 
       // this determines how much gutter space is masked from being grabbable for sliding
-      const groupHeight = Math.max((this.type === 'series' ? this.availHeight : height), $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+      const groupHeight = Math.max(
+        (this.type === 'series' ? this.availHeight : height),
+        $slidePrev.length && !isFullviewWidth ? $slidePrev.height() : 0,
+        $slideNext.length && !isFullviewWidth ? $slideNext.height() : 0,
+      );
 
       if (resize || width !== this.slideWidth || height !== this.slideHeight || groupHeight !== this.groupHeight) {
 
@@ -777,8 +788,6 @@ export default {
 
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
-
-        //console.log('autosize() this.isMinSheetMusicWidth?', this.isMinSheetMusicWidth, this.$_i.type, 'availHeight:', this.availHeight, 'groupHeight:', groupHeight, 'frameHeight:', frameHeight, 'yMargin:', yMargin);
 
         $slider.css({
           width:  `${frameWidth}px`,
@@ -798,16 +807,24 @@ export default {
         });
       }
 
-      //if (this.type === 'series') console.log(`autosize availHeight:${this.availHeight} frameHeight:${frameHeight}`, $slide);
+      // [hack!] compensate for when sliding toggles the vertical scrollbar
+      const adjX = diffW && Math.abs(diffW) === this.$_.scrollbarWidth ? diffW : 0;
 
       const {xOffset, yOffset} = this.getSlideOffset($slide);
-      const XY = `${-xOffset}px, ${-yOffset}px`;
+      const XY = `${-xOffset - adjX}px, ${-yOffset}px`;
 
       $slides.css({
         transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
 
       if (this.noTransition) forceRepaint();
+
+      if (!this.noTransition && adjX) {
+        await sleep(settings.TRANSITION_TIME_MS);
+        this.autosize();
+        await sleep(settings.TRANSITION_TIME_MS);
+        this.autosize();
+      }
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------

@@ -301,6 +301,8 @@ export default {
   width: 10 * $unit;
 
   @at-root .below-sheet-music-width & {
+    left: 0;
+    transform: translateX(0);
     width: 100%;
     border-radius: 0 !important;
   }
