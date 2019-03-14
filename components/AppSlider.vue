@@ -613,26 +613,25 @@ export default {
       // decide what the interaction means
       let action = 'click';
 
-      let slide = window.$(e.target).closest('.slide')[0];
-
-      if (!slide) {
-        // TODO: find nearest (x-axis) slide
-        const $slides = window.$(e.target).closest('.slides');
-        console.log(e, $slides, $slides.find('.slide')[0]);
-      }
-
+      const slide    = window.$(e.target).closest('.slide')[0];
       const duration = Date.now() - this.touchPoint.time;
       const diffX    = Math.abs(this.touchPoint.deltaX);
       const diffY    = Math.abs(this.touchPoint.deltaY);
-      const dirIndex = (this.touchPoint.deltaX < 0 ? -1 : 1) * (this.$_i.direction === 'rtl' ? -1 : 1);
+      const dirIndex = (this.touchPoint.deltaX < 0 ? 1 : -1) * (this.$_i.direction === 'ltr' ? 1 : -1);
       const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const {slideRect, isOverEdge, isOverCenter} = this.getSlidePositionData(slide);
+      const {slideRect, isOverEdge, isOverCenter} = slide
+        ? this.getSlidePositionData(slide)
+        : {
+          slideRect:    {width: window.$(this.$refs.slider).find(`.slide[data-index="${this.currentIndex}"]`).width()},
+          isOverEdge:   true,
+          isOverCenter: false,
+        };
 
       const isDiffEnough = diffX > slideRect.width / 3 || (this.hasScrollbarX && isOverCenter);
       const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
       // main button, quickly, without moving, on a slide
-      const elIndex      = slide.getAttribute('data-index');
+      const elIndex      = slide ? slide.getAttribute('data-index') : this.currentIndex;
       const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
@@ -675,7 +674,7 @@ export default {
           elY: e.offsetY / slideRect.height,
         });
 
-      } else if (action === 'pan') {
+      } else if (action === 'pan' && slide) {
         setTimeout(() => {
           const {view, sliderRect, slideRect, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(slide);
 
