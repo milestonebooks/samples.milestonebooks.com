@@ -80,7 +80,6 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   setImageLoaded(state, {i, dpi, loaded = true}) {
-    //console.log('setImageLoaded', i, dpi, loaded);
     state.samples[i].image.loaded[dpi] = loaded;
   }, //setImageLoaded()
 

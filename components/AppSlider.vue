@@ -459,8 +459,6 @@ export default {
       const height    = slide.image ? `${h}px` : '';
       const maxWidth  = !slide.image ? `${settings.SHEET_MUSIC_WIDTH}px` : '';
 
-      //console.log(`slideStyleSize(#${slide.id}, @${dpi}) w:${width}, h:${height} | availHeight:${this.availHeight} | maxW:${maxWidth} ${this.$_.isResizing ? '--resizing--' : ''}`, slide.id);
-
       return {width, height, maxWidth};
     }, // slideStyleSize()
 
@@ -565,7 +563,7 @@ export default {
       if (!this.isGrabbing && !this.isScrolling && this.hasScrollbarX) {
         const {view} = this.getSlidePositionData(slide);
         const EDGE_OFFSET = 10;
-        //console.log(`view._scrollLeftMax:${view._scrollLeftMax} scrollLeft:${view.scrollLeft} deltaX:${this.touchPoint.deltaX} this.isGrabbing?${this.isGrabbing}`);
+
         if ((view.scrollLeft > EDGE_OFFSET && this.touchPoint.deltaX > 0) || (view.scrollLeft < view._scrollLeftMax - EDGE_OFFSET && this.touchPoint.deltaX < 0)) {
           this.isScrolling = true;
         }
@@ -856,8 +854,6 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
-      //if (this.type === 'series') console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
-
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
 
@@ -871,8 +867,6 @@ export default {
       const slideRect  = slide.getBoundingClientRect();
       const sliderRect = window.$(this.$el)[0].getBoundingClientRect();
       const view       = window.$(this.$el).find('.slider-view')[0];
-
-      //console.log(`getSlidePositionData() s.left:${slideRect.left} S.left:${sliderRect.left} s.right:${slideRect.right} S.right:${sliderRect.right}`);
 
       const isOverEdgeLeft  = slideRect.left > sliderRect.left;
       const isOverEdgeRight = slideRect.right < sliderRect.right;
@@ -911,8 +905,6 @@ export default {
 
         const pct = easeInOutCubic(ms / settings.TRANSITION_TIME_MS);
         const l = Math.round(startLeft + (offsetLeft * pct));
-
-        //console.log('stepping...', l, '@', pct);
 
         if (left !== null) el.scrollLeft = l;
 
