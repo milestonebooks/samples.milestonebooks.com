@@ -38,7 +38,7 @@ export default {
     const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (s ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
+      title: (s && this.$store.getters.isSamplesShown ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
         class: this.$store.getters.uiStateClassString,
