@@ -218,7 +218,7 @@ export default {
 
       await this.initItemData(item);
 
-      this.uiStateClass({show: (d.isGroup || !item.samples.length ? 'context' : 'samples')});
+      this.uiStateClass({show: ((d.isGroup && items.length > 1) || !item.samples.length ? 'context' : 'samples')});
 
       this.set({isInit: true});
 
