@@ -7,8 +7,10 @@
       <template slot="frame">
         <TheNavbar />
 
-        <SeriesLink dir="prev" :currentIndex="$_i.currentIndex" />
-        <SeriesLink dir="next" :currentIndex="$_i.currentIndex" />
+        <div class="series-links-pane">
+          <SeriesLink dir="prev" :currentIndex="$_i.currentIndex" />
+          <SeriesLink dir="next" :currentIndex="$_i.currentIndex" />
+        </div>
       </template>
 
       <template slot="pane">

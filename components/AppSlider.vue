@@ -27,7 +27,7 @@
     <aside v-for="i of [{cls:'prev', label:'previous', isDisabled:isFirst, dir:-1},
                         {cls:'next', label:'next',     isDisabled:isLast,  dir:+1}]"
            :class="`sidebar ${i.cls} v ${i.isDisabled ? 'disabled' : ''}`">
-      <nuxt-link :class="`btn btn-slider ${i.cls} ltr`" tabindex="0" :disabled="!isActive || isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)" tag="button">
+      <nuxt-link tag="button" :class="`btn btn-slider ${i.cls} ltr`" tabindex="0" :disabled="!isActive || isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
@@ -1405,16 +1405,16 @@ $radius-lg: $radius * 2;
   @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
   .has-zoom[data-dpi="80"] .rulers .target {
     cursor: zoom-in;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
+    cursor: $cursor-zoom-in, zoom-in;
   }
   @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
   .has-zoom[data-dpi="120"] .rulers .target {
     cursor: zoom-out;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+    cursor: $cursor-zoom-out, zoom-out;
   }
   @at-root #the-context .slide.current.has-samples {
     cursor: zoom-in;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cpath d='M7,13 a 8 8 0 0 1 6,-6' stroke='#{$theme-color-data-uri}' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/svg%3E") 13 13, zoom-in;
+    cursor: $cursor-zoom, zoom-in;
   }
 
   @at-root #the-context .slide:not(.has-samples) {
@@ -1441,16 +1441,15 @@ $radius-lg: $radius * 2;
     }
   }
 
-  // prev/next cursors
   @at-root
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
   [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
+    cursor: $cursor-prev, grab;
   }
   @at-root
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
   [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
+    cursor: $cursor-next, grab;
   }
 
   @at-root [data-dir="ltr"] &.non-sequential-after {
@@ -1520,7 +1519,7 @@ $radius-lg: $radius * 2;
     z-index: 1;
     .slide-liner {
       transition: transform 1s ease;
-      outline: 1px solid transparent; // [2019-03-04] fix for jagged edges in Firefox
+      outline: 1px solid transparent; // [2019-03] fix for jagged edges in Firefox
       backface-visibility: hidden;
     }
     &::after {

@@ -25,6 +25,7 @@ $info-visibility-height: 6em;
 $alert-color: hsl(0, 100%, 50%);
 $alert-bg-color: lighten($alert-color, 40%);
 $background-color: hsl(0, 0%, 95%);
+$drop-shadow-color: transparentize(darken($background-color, 75%), .5);
 $border-color: hsl(0, 0%, 60%);
 $controls-color: black;
 $sidebar-bg-color: white;
@@ -67,6 +68,24 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
   @return hsl($h, $s, $l);
 }
 
+@function dataUriSvgCursor($content, $hotspot:16 16) {
+  @return url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3C#{$content} /%3E%3C/svg%3E") $hotspot;
+}
+
+@function dataUriSvgCursorZoom($content, $hotspot:13 13) {
+  @return dataUriSvgCursor("line x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C#{$content}", $hotspot);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// cursors (uses colors and functions)
+
+$cursor-prev: dataUriSvgCursor("path d='M5,16  l  16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color-data-uri}'");
+$cursor-next: dataUriSvgCursor("path d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}'");
+
+$cursor-zoom:     dataUriSvgCursorZoom("path d='M7,13 a 8 8 0 0 1 6,-6' stroke='#{$theme-color-data-uri}' stroke-width='2' stroke-linecap='round' fill='none'");
+$cursor-zoom-in:  dataUriSvgCursorZoom("line x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3'");
+$cursor-zoom-out: dataUriSvgCursorZoom("line x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3'");
+
 //----------------------------------------------------------------------------------------------------------------------
 // mixins
 
@@ -75,7 +94,7 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
 }
 
 @mixin drop-shadow() {
-  box-shadow: 0 0 1em transparentize(darken($background-color, 75%), .5);
+  box-shadow: 0 0 1em $drop-shadow-color;
 }
 
 @mixin one-line-ellipsis() {
@@ -131,7 +150,32 @@ $isIE: 'html[data-browser*="Trident"]'; // [2018-07] IE11 still has about 5% usa
       color: $disabled-color;
       pointer-events: none;
     }
-  }
+
+    .img-wrapper {
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+
+      img {
+        vertical-align: middle;
+        width: 100%;
+      }
+    }
+
+    .img-wrapper::before {
+      content: '';
+      z-index: 1;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 1px solid transparent;
+      @include short-transition;
+    }
+  } // .btn
 
   .sidebar {
     box-sizing: border-box;

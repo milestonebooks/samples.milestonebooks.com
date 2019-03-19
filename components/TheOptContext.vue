@@ -197,6 +197,8 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
+@include base_styling;
+
 .the-opt-context {
   z-index: $layer-context-btn;
   top: 1em;
@@ -214,34 +216,14 @@ export default {
     top: 0;
     transform: none;
 
-    .img-wrapper::before {
-      content: '';
-      z-index: 1;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      box-sizing: border-box;
-      border: 1px solid transparent;
-      @include short-transition;
-    }
     @at-root .ui-state:not(.-xing) &:focus .img-wrapper::before {
       border-color: $focus-color;
     }
   }
 
-  .img-wrapper {
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-  }
-
   img {
     left: 0;
     top: 0;
-    width: 100%;
   }
 }
 

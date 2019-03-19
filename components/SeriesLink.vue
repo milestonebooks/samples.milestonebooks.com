@@ -1,21 +1,15 @@
 <template>
   <aside :class="`series-link ${dir} ${isDisabled ? 'disabled' : ''}`">
-    <div class="axis-x"><div class="axis-y">
-      <button class="btn btn-opt btn-context ltr" :style="buttonStyle" :title="getTitle" :aria-label="getLabel" tabindex="0" :disabled="isDisabled" @click="">
-        <span class="img-wrapper">
-          <img class="img-series" :src="imageSrc" />
-        </span>
-      </button>
-    </div></div>
+    <nuxt-link tag="button" class="btn ltr" :title="getTitle" :aria-label="getLabel" tabindex="0" :disabled="isDisabled" :to="getLink" replace>
+      <span class="img-wrapper">
+        <img class="img-series" :src="imageSrc" />
+      </span>
+    </nuxt-link>
   </aside>
 </template>
 
 <script>
-import settings from '~/assets/settings';
-
-import mixins    from '~/plugins/mixins.vue';
-import nextFrame from '~/plugins/nextFrame';
-import sleep from '~/plugins/sleep';
+import mixins from '~/plugins/mixins.vue';
 
 import { mapGetters, mapMutations } from 'vuex';
 
@@ -43,11 +37,16 @@ export default {
     },
 
     getTitle() {
-      return `[${this.dir === 'prev' ? 'previous' : 'next'} title here]`;
+      return this.getSeriesSlide(this.dir === 'prev' ? -1 : +1, 'title');
     },
 
     getLabel() {
       return `${this.dir === 'prev' ? 'previous' : 'next'} in series`;
+    },
+
+    getLink() {
+      const slide = this.getSeriesSlide(this.dir === 'prev' ? -1 : +1);
+      return slide ? '/' + slide.code + '/' : null;
     },
 
     isEnabled() {
@@ -61,7 +60,8 @@ export default {
     },
 
     imageSrc() {
-      return null;//this.img.file ? `${this.$_.urlBaseImg}${this.img.file}` : null;
+      const img = this.getSeriesSlide(-1, 'image');
+      return img ? `${this.$_.urlBaseImg}${img.file}` : null;
     },
   }, // computed {}
 
@@ -93,6 +93,14 @@ export default {
 // TRANSITION
 @import "../assets/settings.scss";
 
+.series-links-pane {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 </style>
 
@@ -100,19 +108,48 @@ export default {
 @import "../assets/settings.scss";
 
 .series-link {
+  pointer-events: all;
+  z-index: $layer-the-navbar - 1;
   @include absolute-center(y);
-  overflow: auto; // TODO necessary?
+  @include short-transition;
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 0 !important;
+  }
 
   @at-root
   [data-dir="ltr"] &.prev,
   [data-dir="rtl"] &.next {
     left: 0;
+
+    & .btn {
+      left: 0;
+      transform: translateX(-50%) translateY(-50%) scale(2);
+      &:hover {
+        transform: translateX(-40%) translateY(-50%) scale(2.1);
+      }
+    }
   }
 
   @at-root
   [data-dir="ltr"] &.next,
   [data-dir="rtl"] &.prev {
     right: 0;
+
+    & .btn {
+      right: 0;
+      transform: translateX(50%) translateY(-50%) scale(2);
+      &:hover {
+        transform: translateX(40%) translateY(-50%) scale(2.1);
+      }
+    }
+  }
+
+  .btn {
+    height: unset;
+    @include drop-shadow;
+    box-shadow: 0 0 calc(1em / 2) $drop-shadow-color;
   }
 
 } // .series-link

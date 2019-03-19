@@ -3,7 +3,7 @@
     <aside class="sidebar top h">
 
       <div class="controls">
-        <nuxt-link class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
         <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
@@ -11,7 +11,7 @@
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
         </button>
-        <nuxt-link class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample" tag="button">
+        <nuxt-link tag="button" class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
       </div>
