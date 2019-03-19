@@ -1,5 +1,5 @@
 <template>
-  <div :class="`the-nav ${isListShown ? 'is-list-shown' : ''} ${$_i.samples.length === 1 ? 'hide' : ''}`" @click="onMaskClick">
+  <div :class="`the-navbar ${isListShown ? 'is-list-shown' : ''} ${$_i.samples.length === 1 ? 'hide' : ''}`" @click="onMaskClick">
     <aside class="sidebar top h">
 
       <div class="controls">
@@ -295,7 +295,7 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-.the-nav {
+.the-navbar {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -312,7 +312,7 @@ export default {
 
   // modal mask
   &::before {
-    z-index: $layer-the-nav;
+    z-index: $layer-the-navbar;
     content: '';
     position: absolute;
     left: 0;
@@ -331,7 +331,7 @@ export default {
   }
 
   .sidebar {
-    z-index: $layer-the-nav;
+    z-index: $layer-the-navbar;
     width: 3 * $unit;
   }
 
@@ -341,7 +341,7 @@ export default {
   }
 }
 
-.has-scrollbar-y .the-nav {
+.has-scrollbar-y .the-navbar {
   .sidebar,
   .list,
   .list-shadow-mask {
@@ -445,7 +445,7 @@ export default {
 .list-shadow-mask {
   pointer-events: none;
   position: absolute;
-  z-index: $layer-the-nav + 1;
+  z-index: $layer-the-navbar + 1;
   @include absolute-center(x);
   background: $background-color;
   top: 3.25em;
@@ -463,7 +463,7 @@ export default {
 }
 
 .list {
-  z-index: $layer-the-nav;
+  z-index: $layer-the-navbar;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);

@@ -104,11 +104,11 @@ export default {
 
 .slider-frame:not(.has-print) .the-opt-print {
   display: none;
-  
+
 }
 
 .the-opt-print {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   top: 1em !important;
   right: (1em + $unit + 1em) !important;
   width: $unit;

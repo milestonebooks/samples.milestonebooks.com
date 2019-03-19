@@ -1632,7 +1632,7 @@ $radius-lg: $radius * 2;
 //----------------------------------------------------------------------------------------------------------------------
 
 .sidebar {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   height: 8em;
   @include short-transition;
 

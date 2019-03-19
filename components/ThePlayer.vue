@@ -283,7 +283,7 @@ export default {
 }
 
 .audio-player {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   width: 10 * $unit;
 

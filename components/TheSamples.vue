@@ -5,7 +5,7 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 
       <template slot="frame">
-        <TheNav />
+        <TheNavbar />
       </template>
 
       <template slot="pane">
@@ -31,7 +31,7 @@ import TheOptContext from '~/components/TheOptContext';
 import TheOptRulers  from '~/components/TheOptRulers';
 import TheOptPrint   from '~/components/TheOptPrint';
 import TheOptRevert  from '~/components/TheOptRevert';
-import TheNav        from '~/components/TheNav';
+import TheNavbar     from '~/components/TheNavbar';
 import ThePlayer     from '~/components/ThePlayer';
 
 import settings from '~/assets/settings';
@@ -46,7 +46,7 @@ export default {
     TheOptRulers,
     TheOptPrint,
     TheOptRevert, // TODO: temporary
-    TheNav,
+    TheNavbar,
     ThePlayer,
   },
 

@@ -158,7 +158,7 @@ export default {
 .show-samples:not(.context-to-samples) .the-opt-context,
 .-xing .the-opt-context {
   opacity: 1 !important; // override scoped style
-  z-index: $layer-the-nav + 1 !important;
+  z-index: $layer-the-navbar + 1 !important;
 }
 
 .samples-to-context .the-opt-context {

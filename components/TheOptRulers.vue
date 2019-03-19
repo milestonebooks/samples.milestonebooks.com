@@ -235,7 +235,7 @@ $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 }
 
 .the-opt-rulers {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   top: 1em;
   right: 1em;
   width: $unit;
