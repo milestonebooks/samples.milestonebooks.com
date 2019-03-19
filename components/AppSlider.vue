@@ -24,13 +24,10 @@
       </article>
     </article>
 
-    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider prev ltr" tabindex="0" :disabled="!isActive || isFirst" :to="getLink(-1)" replace :aria-label="getLinkLabel('previous')" tag="button">
-        <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
-      </nuxt-link>
-    </aside>
-    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider next ltr" tabindex="0" :disabled="!isActive || isLast" :to="getLink(+1)" replace :aria-label="getLinkLabel('next')" tag="button">
+    <aside v-for="i of [{cls:'prev', label:'previous', isDisabled:isFirst, dir:-1},
+                        {cls:'next', label:'next',     isDisabled:isLast,  dir:+1}]"
+           :class="`sidebar ${i.cls} v ${i.isDisabled ? 'disabled' : ''}`">
+      <nuxt-link class="btn btn-slider prev ltr" tabindex="0" :disabled="!isActive || isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)" tag="button">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
