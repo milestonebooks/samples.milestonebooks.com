@@ -272,6 +272,8 @@ export default {
 
     set: mixins.set,
 
+    throttleKey: mixins.throttleKey,
+
     //------------------------------------------------------------------------------------------------------------------
 
     onResize() {
@@ -700,6 +702,8 @@ export default {
 
     onKeydown(e) {
       if (e.target !== document.body || (this.$_.uiStateShow === 'context' && this.type === 'item') || (this.$_.uiStateShow === 'samples' && this.type === 'series')) return;
+
+      if (this.throttleKey(e)) return;
 
       let index = null;
 

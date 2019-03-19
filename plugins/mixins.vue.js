@@ -1,3 +1,5 @@
+import settings from '~/assets/settings';
+
 export default {
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -10,6 +12,22 @@ export default {
 
     this.$store.commit(`${module ? module + '/' : ''}set`, data);
   }, // set()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  throttleKey(e, ms_ignore = settings.TRANSITION_TIME_MS) {
+    if (this.$_keyActive) {
+      e.preventDefault();
+      return true;
+    }
+
+    this.$_keyActive = true;
+
+    setTimeout(() => {
+      this.$_keyActive = false;
+    }, ms_ignore);
+
+  }, // throttleKey()
 
   //--------------------------------------------------------------------------------------------------------------------
 
