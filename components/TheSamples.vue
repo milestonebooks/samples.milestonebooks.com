@@ -6,6 +6,9 @@
 
       <template slot="frame">
         <TheNavbar />
+
+        <SeriesLink dir="prev" :currentIndex="$_i.currentIndex" />
+        <SeriesLink dir="next" :currentIndex="$_i.currentIndex" />
       </template>
 
       <template slot="pane">
@@ -24,9 +27,9 @@
 </template>
 
 <script>
-import AppFrame  from '~/components/AppFrame';
-import AppSlider from '~/components/AppSlider';
-
+import AppFrame      from '~/components/AppFrame';
+import AppSlider     from '~/components/AppSlider';
+import SeriesLink    from '~/components/SeriesLink';
 import TheOptContext from '~/components/TheOptContext';
 import TheOptRulers  from '~/components/TheOptRulers';
 import TheOptPrint   from '~/components/TheOptPrint';
@@ -42,6 +45,7 @@ export default {
   components: {
     AppFrame,
     AppSlider,
+    SeriesLink,
     TheOptContext,
     TheOptRulers,
     TheOptPrint,

@@ -3,7 +3,7 @@
     <aside class="sidebar top h">
 
       <div class="controls">
-        <nuxt-link class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSample(-1)" :title="getSample(-1, 'title')" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
+        <nuxt-link class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample" tag="button">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
         <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
@@ -11,7 +11,7 @@
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
         </button>
-        <nuxt-link class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSample(+1)" :title="getSample(+1, 'title')" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
+        <nuxt-link class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample" tag="button">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
       </div>
@@ -63,7 +63,7 @@ export default {
 
   computed: {
     ...mapGetters('item', [
-      'getSample',
+      'getSlide',
       'listItemClass',
     ]),
 
@@ -242,7 +242,7 @@ export default {
       const id = e.target.getAttribute('data-id');
       const i  = this.getIndexById(id);
 
-      const newId = this.getSample(dir.value, 'id', i);
+      const newId = this.getSlide(dir.value, 'id', i);
       if (newId === null) return;
 
       if (!this.isListShown) return this.gotoId(newId);
@@ -254,7 +254,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     updateListFocus(id = null) {
-      if (!id) id = this.getSample(0, 'id');
+      if (!id) id = this.getSlide(0, 'id');
       window.$(this.$el).find(`.list .item[data-id="${id}"]`)[0].focus();
     }, // updateListFocus()
 

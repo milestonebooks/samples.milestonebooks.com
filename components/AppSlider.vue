@@ -368,10 +368,10 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getSlide(dir = 0, key = null, currentIndex = null) {
-      const i = (currentIndex === null ? this.currentIndex : currentIndex) + dir;
-      const slide = (this.slides[i] ? this.slides[i] : null);
-      return (slide && key) ? slide[key] : (key === null ? slide : null);
+    getSlide(dir = 0, key = null) {
+      const i = this.currentIndex + dir;
+      const slide = (this.slides[i] || null);
+      return key ? (slide ? slide[key] : null) : slide;
     }, // getSlide()
 
     //--------------------------------------------------------------------------------------------------------------------

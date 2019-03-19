@@ -23,7 +23,6 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters } from 'vuex';
 
-import settings from '~/assets/settings';
 import mixins   from '~/plugins/mixins.vue';
 
 export default {
@@ -48,7 +47,7 @@ export default {
 
   computed: {
     ...mapGetters('item', [
-      'getSample',
+      'getSlide',
       'listItemClass',
     ]),
     ...mapGetters('player',[
@@ -78,7 +77,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
+      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSlide(+1)) this.$router.replace('#' + this.getSlide(+1, 'id'));
     });
     this.init();
   }, // mounted ()

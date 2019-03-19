@@ -41,13 +41,7 @@ export const state = () => ({
 
 export const getters = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  getSample: (state) => (dir = 0, key, currentIndex = null) => {
-    const i = (currentIndex === null ? state.currentIndex : currentIndex) + dir;
-    const sample = (state.samples[i] ? state.samples[i] : null);
-    return sample && key ? sample[key] : sample;
-  }, // getSample()
+  getSlide: mixins.getters.getSlide,
 
   //------------------------------------------------------------------------------------------------------------------
 
