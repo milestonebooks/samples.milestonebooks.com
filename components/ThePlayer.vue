@@ -111,6 +111,8 @@ export default {
 
     set: mixins.set,
 
+    throttleKey: mixins.throttleKey,
+
     //------------------------------------------------------------------------------------------------------------------
 
     init() {
@@ -161,21 +163,6 @@ export default {
       });
       this.refresh();
     }, // load()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    throttleKey(e) {
-      if (this.keyActive) {
-        e.preventDefault();
-        return true;
-      }
-
-      this.keyActive = true;
-
-      setTimeout(() => {
-        this.keyActive = false;
-      }, settings.TRANSITION_TIME_MS);
-    }, // throttleKey()
 
     //------------------------------------------------------------------------------------------------------------------
 

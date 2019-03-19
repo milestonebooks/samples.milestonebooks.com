@@ -14,6 +14,7 @@ export const state = () => ({
   currentIndex:  null,
   currentWScale: 1,
   direction:    'ltr', // 'ltr' | 'rtl'
+  isInactive:    false,
 
   hasRulers:     false,
   showRulers:    false,

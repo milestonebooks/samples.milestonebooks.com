@@ -6,7 +6,7 @@
 
     <template slot="frame">
       <div class="info"><div class="info-liner">
-        <h1 class="title"><a tabindex="0" :href="$_.urlBaseItem + ($_i.isInactive ? $_.series.code : $_i.code ) + '/'" @click="$event.target.style.cursor = 'progress'">{{ $_i.title }}</a></h1>
+        <h1 class="title"><a tabindex="0" :href="$_.urlBaseItem + ($_i.isInactive ? $_s.code : $_i.code ) + '/'" @click="$event.target.style.cursor = 'progress'">{{ $_i.title }}</a></h1>
       </div></div>
     </template>
   </AppFrame>
