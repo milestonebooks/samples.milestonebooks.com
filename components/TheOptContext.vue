@@ -194,10 +194,8 @@ export default {
 //----------------------------------------------------------------------------------------------------------------------
 </style>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "../assets/settings.scss";
-
-@include base_styling;
 
 .the-opt-context {
   z-index: $layer-context-btn;
@@ -205,9 +203,9 @@ export default {
   left: 1em;
   width: $unit;
   // overwrite
-  height: auto;
-  box-shadow: none;
-  background: transparent;
+  height: auto !important;
+  box-shadow: none !important;
+  background: transparent !important;
 
   .btn {
     @include drop-shadow;

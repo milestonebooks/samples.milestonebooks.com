@@ -152,6 +152,7 @@ $cursor-zoom-out: dataUriSvgCursorZoom("line x1='8' y1='13' x2='18' y2='13' stro
     }
 
     .img-wrapper {
+      display: block;
       left: 0;
       top: 0;
       width: 100%;

@@ -36,8 +36,12 @@ export default {
       return this.$store.state.series;
     },
 
+    dirIndex() {
+      return this.dir === 'prev' ? -1 : +1;
+    },
+
     getTitle() {
-      return this.getSeriesSlide(this.dir === 'prev' ? -1 : +1, 'title');
+      return this.getSeriesSlide(this.dirIndex, 'title');
     },
 
     getLabel() {
@@ -45,14 +49,12 @@ export default {
     },
 
     getLink() {
-      const slide = this.getSeriesSlide(this.dir === 'prev' ? -1 : +1);
+      const slide = this.getSeriesSlide(this.dirIndex);
       return slide ? '/' + slide.code + '/' : null;
     },
 
     isEnabled() {
-      return this.$store.getters.isSamplesShown
-        && ((this.dir === 'prev' && !this.getItemSlide(-1) && this.getSeriesSlide(-1))
-        ||  (this.dir === 'next' && !this.getItemSlide(+1) && this.getSeriesSlide(+1)));
+      return this.$store.getters.isSamplesShown && !this.getItemSlide(this.dirIndex) && this.getSeriesSlide(this.dirIndex);
     },
 
     isDisabled() {
@@ -60,7 +62,7 @@ export default {
     },
 
     imageSrc() {
-      const img = this.getSeriesSlide(-1, 'image');
+      const img = this.getSeriesSlide(this.dirIndex, 'image');
       return img ? `${this.$_.urlBaseImg}${img.file}` : null;
     },
   }, // computed {}
@@ -123,11 +125,15 @@ export default {
   [data-dir="rtl"] &.next {
     left: 0;
 
+    &.disabled .btn {
+      transform: translateX(-50%) translateY(-50%) scale(2)  translateX(-50%);
+    }
+
     & .btn {
       left: 0;
       transform: translateX(-50%) translateY(-50%) scale(2);
       &:hover {
-        transform: translateX(-40%) translateY(-50%) scale(2.1);
+        transform: translateX(-40%) translateY(-50%) scale(2);
       }
     }
   }
@@ -137,11 +143,15 @@ export default {
   [data-dir="rtl"] &.prev {
     right: 0;
 
+    &.disabled .btn {
+      transform: translateX(50%) translateY(-50%) scale(2) translateX(50%);
+    }
+
     & .btn {
       right: 0;
       transform: translateX(50%) translateY(-50%) scale(2);
       &:hover {
-        transform: translateX(40%) translateY(-50%) scale(2.1);
+        transform: translateX(40%) translateY(-50%) scale(2);
       }
     }
   }
