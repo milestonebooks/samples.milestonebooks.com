@@ -468,7 +468,7 @@ export default {
   user-select: none;
   @include absolute-center(x);
   box-sizing: border-box;
-  top: 4em;
+  top: $unit;
   width: 100%;
   max-width: 10 * $unit;
   max-height: calc(100% - 6em);
@@ -480,7 +480,7 @@ export default {
   @include short-transition;
 
   opacity: 0;
-  transform-origin: center -4em;
+  transform-origin: center -$unit;
   transform: translateX(-50%) scale(0);
 
   &:not([aria-hidden]) {

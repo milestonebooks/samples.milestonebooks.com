@@ -1,10 +1,10 @@
 <template>
-  <aside :class="`series-link ${dir} ${isDisabled ? 'disabled' : ''}`">
-    <nuxt-link tag="button" class="btn ltr" :title="getTitle" :aria-label="getLabel" tabindex="0" :disabled="isDisabled" :to="getLink" replace>
+  <aside :class="`series-link ${dir} ${isDisabled ? 'disabled' : 'enabled'}`" :style="styleHeight">
+    <button class="btn ltr" :title="getTitle" :aria-label="getLabel" tabindex="0" :disabled="isDisabled" @click="goTo">
       <span class="img-wrapper">
         <img class="img-series" :src="imageSrc" />
       </span>
-    </nuxt-link>
+    </button>
   </aside>
 </template>
 
@@ -36,25 +36,24 @@ export default {
       return this.$store.state.series;
     },
 
+    slide() {
+      return this.getSeriesSlide(this.dirIndex) || {};
+    },
+
     dirIndex() {
       return this.dir === 'prev' ? -1 : +1;
     },
 
     getTitle() {
-      return this.getSeriesSlide(this.dirIndex, 'title');
+      return this.slide.title || null;
     },
 
     getLabel() {
       return `${this.dir === 'prev' ? 'previous' : 'next'} in series`;
     },
 
-    getLink() {
-      const slide = this.getSeriesSlide(this.dirIndex);
-      return slide ? '/' + slide.code + '/' : null;
-    },
-
     isEnabled() {
-      return this.$store.getters.isSamplesShown && !this.getItemSlide(this.dirIndex) && this.getSeriesSlide(this.dirIndex);
+      return this.$store.getters.isSamplesShown && !this.getItemSlide(this.dirIndex) && this.slide.code;
     },
 
     isDisabled() {
@@ -62,15 +61,13 @@ export default {
     },
 
     imageSrc() {
-      const img = this.getSeriesSlide(this.dirIndex, 'image');
-      return img ? `${this.$_.urlBaseImg}${img.file}` : null;
+      return this.slide.image ? `${this.$_.urlBaseImg}${this.slide.image.file}` : null;
+    },
+
+    styleHeight() {
+      return this.slide.image ? `height: ${Math.floor(this.slide.image.hRatio * 80)}px` : null; // pixel rounding provides smoother animation
     },
   }, // computed {}
-
-  //====================================================================================================================
-
-  watch: {
-  },
 
   //====================================================================================================================
 
@@ -80,6 +77,16 @@ export default {
     ]),
 
     set: mixins.set,
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async goTo() {
+
+      const s  = this.slide;
+      const to = `/${s.code}/` + (this.dirIndex < 0 ? `#${s.samples[s.samples.length - 1].id}` : '');
+      this.$router.push(to);
+
+    }, // goTo()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -113,11 +120,11 @@ export default {
   pointer-events: all;
   z-index: $layer-the-navbar - 1;
   @include absolute-center(y);
+  width: $unit;
   @include short-transition;
 
   &.disabled {
     pointer-events: none;
-    opacity: 0 !important;
   }
 
   @at-root
@@ -125,16 +132,15 @@ export default {
   [data-dir="rtl"] &.next {
     left: 0;
 
-    &.disabled .btn {
-      transform: translateX(-50%) translateY(-50%) scale(2)  translateX(-50%);
-    }
-
     & .btn {
       left: 0;
-      transform: translateX(-50%) translateY(-50%) scale(2);
-      &:hover {
-        transform: translateX(-40%) translateY(-50%) scale(2);
-      }
+      transform: translateX(-50%) translateY(-50%);
+    }
+    &.disabled .btn {
+      transform: translateX(-50%) translateY(-50%) translateX(-50%);
+    }
+    &:hover .btn {
+      transform: translateX(-50%) translateY(-50%) translateX(10%);
     }
   }
 
@@ -143,23 +149,24 @@ export default {
   [data-dir="rtl"] &.prev {
     right: 0;
 
-    &.disabled .btn {
-      transform: translateX(50%) translateY(-50%) scale(2) translateX(50%);
-    }
-
     & .btn {
       right: 0;
-      transform: translateX(50%) translateY(-50%) scale(2);
-      &:hover {
-        transform: translateX(40%) translateY(-50%) scale(2);
-      }
+      transform: translateX(50%) translateY(-50%);
+    }
+    &.disabled .btn {
+      transform: translateX(50%) translateY(-50%) translateX(50%);
+    }
+    &:hover .btn {
+      transform: translateX(50%) translateY(-50%) translateX(-10%);
     }
   }
 
   .btn {
-    height: unset;
+    width: 2 * $unit;
+    height: 100%;
+  }
+  &.enabled .btn {
     @include drop-shadow;
-    box-shadow: 0 0 calc(1em / 2) $drop-shadow-color;
   }
 
 } // .series-link

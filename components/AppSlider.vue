@@ -315,7 +315,7 @@ export default {
           entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
           entries.forEach(entry => {
             if (entry.isIntersecting) {
-              this.preloadImage(entry.target);
+              this.preloadImage({img:entry.target});
               self.unobserve(entry.target);
             }
           });
@@ -334,17 +334,17 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    preloadImage(img) {
+    preloadImage({img, force = false}) {
       if (!img) return;
       const src = img.getAttribute('data-src');
-      if (this.isLoading || img.src || !src) return;
+      if ((this.isLoading && !force) || img.src || !src) return;
       img.src = src;
     }, // preloadImage()
 
     //------------------------------------------------------------------------------------------------------------------
 
     preloadSlideImage(frameType, index) {
-      this.preloadImage(this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${index}"] img`));
+      this.preloadImage({img: this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${index}"] img`), force:true});
     }, // preloadSlideImage()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -1629,7 +1629,7 @@ $radius-lg: $radius * 2;
 
 .sidebar {
   z-index: $layer-the-navbar - 1;
-  height: 8em;
+  height: 2 * $unit;
   @include short-transition;
 
   &.disabled {
