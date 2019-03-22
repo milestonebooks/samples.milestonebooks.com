@@ -629,7 +629,7 @@ export default {
       const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
       // main button, quickly, without moving, on a slide
       const elIndex      = slide ? slide.getAttribute('data-index') : this.currentIndex;
-      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
+      const isSlideClick = slide && e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
       if (isOverEdge && (isDiffEnough || isFlick)) {
