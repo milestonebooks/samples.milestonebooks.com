@@ -164,6 +164,11 @@ export default {
   .btn {
     width: 2 * $unit;
     height: 100%;
+    outline: none;
+
+    @at-root .ui-state:not(.-xing) &:focus .img-wrapper::before {
+      border-color: $focus-color;
+    }
   }
   &.enabled .btn {
     @include drop-shadow;
