@@ -8,7 +8,7 @@
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isSamplesShown" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
+          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isSamplesShown" :style="barHandleStyle" @keydown.stop="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>

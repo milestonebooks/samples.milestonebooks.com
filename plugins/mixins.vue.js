@@ -18,6 +18,7 @@ export default {
   throttleKey(e, ms_ignore = settings.TRANSITION_TIME_MS) {
     if (this.$_keyActive) {
       e.preventDefault();
+      e.stopPropagation();
       return true;
     }
 

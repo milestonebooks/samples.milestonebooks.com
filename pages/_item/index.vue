@@ -249,6 +249,10 @@ export default {
           lastId:    samples[samples.length - 1].id,
           maxHRatio: maxHRatio,
         };
+      } else {
+        if (this.$store.getters.isSamplesShown) {
+          this.$store.commit('set', {request: 'showContext'});
+        }
       }
 
       this.set('item', item);

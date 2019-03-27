@@ -6,7 +6,7 @@
         <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
-        <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
+        <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
           <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
@@ -18,7 +18,7 @@
 
     </aside>
 
-    <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown="onListKey">
+    <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown.stop="onListKey">
       <div class="slides" @click="onSlidesClick">
         <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
                 @mouseenter="onListItemMouseEnter">
@@ -178,22 +178,25 @@ export default {
 
       const id = e.target.getAttribute('data-id');
 
-      switch (e.key) {
-      case 'ArrowLeft': case 'Left':
+      switch (e.key) { // <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key>
+      case 'ArrowLeft': case 'Left': case 'PageUp':
         dir.x = -1; break;
       case 'ArrowUp': case 'Up':
-        dir.y = -1;
-        break;
-      case 'ArrowRight': case 'Right':
+        dir.y = -1; break;
+      case 'Home':
+        dir.x = -1; dir.end = true; break;
+      case 'ArrowRight': case 'Right': case 'PageDown':
         dir.x = 1; break;
       case 'ArrowDown': case 'Down':
         dir.y = 1; break;
+      case 'End':
+        dir.x = 1; dir.end = true; break;
       case ' ':
       case 'Enter':
         if (isBtn) this.toggleList();
         else this.gotoId(id);
         break;
-      case 'Escape':
+      case 'Escape': case 'Esc':
         if (this.isListShown) {
           this.hideList();
           this.$refs.btnList.focus();
@@ -240,7 +243,12 @@ export default {
       e.preventDefault();
 
       const id = e.target.getAttribute('data-id');
-      const i  = this.getIndexById(id);
+      let i = this.getIndexById(id);
+
+      if (dir.end === true) {
+        i = dir.value < 0 ? 0 : this.$_i.samples.length - 1;
+        dir.value = 0;
+      }
 
       const newId = this.getSlide(dir.value, 'id', i);
       if (newId === null) return;
@@ -412,6 +420,10 @@ export default {
     display: inline-block;
     height: 100%;
     @include short-transition;
+
+    @at-root .no-transition#{&} {
+      transition: opacity $transition-time-ms ease-in-out;
+    }
   }
 
   & .id-indicator {

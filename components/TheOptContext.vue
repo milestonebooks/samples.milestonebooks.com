@@ -11,11 +11,10 @@
 </template>
 
 <script>
-import settings from '~/assets/settings';
-
+import settings  from '~/assets/settings';
 import mixins    from '~/plugins/mixins.vue';
 import nextFrame from '~/plugins/nextFrame';
-import sleep from '~/plugins/sleep';
+import sleep     from '~/plugins/sleep';
 
 import { mapMutations } from 'vuex';
 
@@ -45,7 +44,7 @@ export default {
     },
 
     wRatio() {
-      return this.img.w / settings.CONTEXT_MIN_WIDTH;
+      return this.img.w / settings.CONTEXT_BTN_WIDTH;
     },
 
     buttonStyle() {
@@ -61,7 +60,10 @@ export default {
 
   watch: {
     '$_.request'() {
-      if (this.$_.request === 'showContext') this.showContext();
+      if (this.$_.request === 'showContext') {
+        this.showContext();
+        this.$store.commit('set', {request: ''});
+      }
     },
   },
 
@@ -78,10 +80,15 @@ export default {
 
     async showContext() {
 
+      const $opt    = window.$('#the-samples .the-opt-context');
+      const $btn    = $opt.find('.btn');
+      const slideB  = $btn[0].getBoundingClientRect();
+
       const $slider = window.$('#the-samples .slider');
       const $slide  = window.$(`#the-context .slide[data-index="${this.$_s.currentIndex}"]`);
+      const $slideI = window.$(`#the-samples .slide[data-index="${this.$_i.currentIndex}"]`);
       const slideS  = $slide[0].getBoundingClientRect(); // slide series
-      const slideI  = window.$(`#the-samples .slide[data-index="${this.$_i.currentIndex}"]`)[0].getBoundingClientRect(); // slide item
+      const slideI  = ($slideI.length ? $slideI : $slide)[0].getBoundingClientRect(); // if there are no item samples, use series slide for slide item positioning
 
       const xRatio  = (slideI.width / slideS.width);
       const yRatio  = (slideI.height / slideS.height);
@@ -90,10 +97,6 @@ export default {
       const xOffset = (slideS.left + (slideS.width  / 2)) - (slideI.left + (slideI.width  / 2));
       const yOffset = (slideS.top  + (slideS.height / 2)) - (slideI.top  + (slideI.height / 2));
       const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
-
-      const $opt    = window.$('#the-samples .the-opt-context');
-      const $btn    = $opt.find('.btn');
-      const slideB  = $btn[0].getBoundingClientRect();
 
       const btnRatio   = (slideS.width  / slideB.width);
       const xBtnOffset = slideS.left - slideB.left;
@@ -155,8 +158,7 @@ export default {
   transition: opacity $transition-time-ms ease-out;
 }
 
-.show-samples:not(.context-to-samples) .the-opt-context,
-.-xing .the-opt-context {
+.samples-to-context .the-opt-context {
   opacity: 1 !important; // override scoped style
   z-index: $layer-the-navbar + 1 !important;
 }

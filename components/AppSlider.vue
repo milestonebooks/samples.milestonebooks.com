@@ -92,6 +92,7 @@ export default {
 
   data () {
     return {
+      isInit:        false,
       isGrabbing:    false,
       isScrolling:   null,
       noTransition:  true,
@@ -135,6 +136,7 @@ export default {
         'is-fullview':     this.isFullview,
         'has-scrollbar-x': this.hasScrollbarX && this.$_.scrollbarWidth,
         'has-scrollbar-y': this.hasScrollbarY && this.$_.scrollbarWidth,
+        'no-transition':   !this.isInit,
       };
       if (this.type === 'item') css = {...css,
         'has-zoom':    this.$_i.hasZoom,
@@ -148,8 +150,8 @@ export default {
 
     sliderClass() {
       return {
-        'has-prev': !this.isFirst,
-        'has-next': !this.isLast,
+        'has-prev':      !this.isFirst,
+        'has-next':      !this.isLast,
         'no-transition': this.noTransition,
       }
     },
@@ -369,9 +371,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getSlide(dir = 0, key = null) {
-      const i = this.currentIndex + dir;
-      const slide = (this.slides[i] || null);
-      return key ? (slide ? slide[key] : null) : slide;
+      return this.$store.getters[`${this.type}/getSlide`](dir, key);
     }, // getSlide()
 
     //--------------------------------------------------------------------------------------------------------------------
@@ -698,7 +698,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onKeydown(e) {
-      if (e.target !== document.body || (this.$_.uiStateShow === 'context' && this.type === 'item') || (this.$_.uiStateShow === 'samples' && this.type === 'series')) return;
+      if ((this.$_.uiStateShow === 'context' && this.type === 'item') || (this.$_.uiStateShow === 'samples' && this.type === 'series')) return;
 
       if (this.throttleKey(e)) return;
 
@@ -762,7 +762,7 @@ export default {
       const newAvailWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
       const newAvailHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
 
-      const diffW = newAvailWidth  - this.availWidth;
+      const diffW = newAvailWidth - this.availWidth;
 
       this.availWidth  = newAvailWidth;
       this.availHeight = newAvailHeight;
@@ -807,7 +807,7 @@ export default {
       }
 
       // [hack!] compensate for when sliding toggles the vertical scrollbar
-      const adjX = diffW && Math.abs(diffW) === this.$_.scrollbarWidth ? diffW : 0;
+      const adjX = this.isInit && diffW && Math.abs(diffW) === this.$_.scrollbarWidth ? diffW : 0;
 
       const {xOffset, yOffset} = this.getSlideOffset($slide);
       const XY = `${-xOffset - adjX}px, ${-yOffset}px`;
@@ -817,6 +817,8 @@ export default {
       });
 
       if (this.noTransition) forceRepaint();
+
+      if (!this.isInit) this.isInit = true;
 
       if (!this.noTransition && adjX) {
         await sleep(settings.TRANSITION_TIME_MS);
@@ -1266,7 +1268,11 @@ $radius-lg: $radius * 2;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  //@include short-transition; // removed to prevent transitioning bugs on initial load and switching from samples to context
+
+  @at-root .samples-to-samples & {
+    @include short-transition;
+  }
+
   pointer-events: none;
 
   > * {
@@ -1500,7 +1506,7 @@ $radius-lg: $radius * 2;
     }
   }
 
-  perspective: 1000px;
+  perspective: $standard-perspective;
 
   &.has-samples::after { // "reverse" of cover
     content: '';
@@ -1588,11 +1594,10 @@ $radius-lg: $radius * 2;
   }
 
   img {
-    // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cstyle type='text/css'%3E .c1, .c2 %7B transform-origin: 100px 100px; animation: x 2s ease-out infinite; %7D .c2 %7B animation-delay:-1s; %7D @keyframes x %7B from %7B transform: scale%280%29; opacity:.5; %7D to %7B transform:scale%281.0%29; opacity:0; %7D %7D %3C/style%3E%3Ccircle class='c1' cx='100' cy='100' r='20' fill='black' /%3E%3Ccircle class='c2' cx='100' cy='100' r='20' fill='black' /%3E%3C/svg%3E") no-repeat center / cover;
+    background: $data-uri-img-loading no-repeat center / cover;
 
     &[data-error] {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B transform-origin: 100px 100px; animation: sad 1s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; transform: scale(0); %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
+      background-image: $data-uri-img-error;
     }
   }
 
@@ -1604,26 +1609,16 @@ $radius-lg: $radius * 2;
     &::after {
       content: '';
       display: block;
-      width: 100%;
       margin-top: 0.25em;
+      width: 100%;
+      min-width: 4em;
       height: 4em;
-      // icon sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M0,6 v6 h4 l5,5 v-16 l-5,5 h-4 z' /%3E%3Cpath d='M13.5,9 c0,-1.8 -1,-3.3 -2.5,-4 v8 c1.5,-0.7 2.5,-2.2 2.5,-4 z' /%3E%3Cpath d='M11,.2 v2 c3,1 5,3.6 5,6.8 s-2,5.8 -5,6.7 v2 c4,-0.8 7,-4.4 7,-8.7 s-3,-8 -7,-8.8 z' /%3E%3C/svg%3E") no-repeat center;
+      background: $data-uri-img-audio no-repeat center;
       opacity: .05;
     }
   }
 
 } // .slide
-
-.wrapper-frame::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  border: 1px solid $border-color;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 
