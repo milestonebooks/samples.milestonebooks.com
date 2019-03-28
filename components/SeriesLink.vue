@@ -161,7 +161,7 @@ export default {
 
       await nextFrame();
 
-      $btn.css({'transform': null, 'box-shadow': null}).parent().addClass('-xing-out');
+      $btn.css({'transform': '', 'box-shadow': null}).parent().addClass('-xing-out'); // transform: `null` does not unset value in IE [2019-03-07]
       $samplesFrame.css({'transition': 'none', 'transform-origin': null, 'transform': 'none'});
       $navBtnList.addClass('no-transition');
 
