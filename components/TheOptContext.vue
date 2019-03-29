@@ -25,10 +25,10 @@ export default {
   props: {
     img: {
       type: Object,
-      default: {
+      default() { return {
         w: 0,
         h: 0,
-      }
+      }; },
     },
   },
 

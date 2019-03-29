@@ -6,7 +6,7 @@
         <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
-        <button ref="btnList" class="btn btn-nav btn-list" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
+        <button ref="btnList" :class="`btn btn-nav btn-list w${idFrameWidth}`" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
           <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
@@ -53,6 +53,7 @@ export default {
 
   data () {
     return {
+      idFrameWidth: 3, // expand to 4 when needed
       isListShown: false,
       listAcceptPointerEvents: false,
       keyActive: false,
@@ -95,7 +96,7 @@ export default {
     },
 
     idStyle() {
-      return `transform: translateX(${this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1) * 2.8}rem)`;
+      return `transform: translateX(${this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1) * (this.idFrameWidth - 0.2)}rem)`;
     },
 
     autoPlay: {
@@ -127,6 +128,10 @@ export default {
       this.$nextTick(() => {
         if (document.activeElement.hasAttribute('disabled')) document.activeElement.blur();
       });
+    },
+
+    '$_i.currentIndex'() {
+      this.idFrameWidth = this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3;
     },
   },
 
@@ -396,13 +401,16 @@ export default {
   left: 50%;
 }
 
+$frame_width:    3rem;
+$frame_width_w4: 4rem;
+
 .btn-list {
   z-index: 1; // raise above .list shadow
   padding: 1em 1em 0 1em;
   transform: translateY(-50%) translateY(-.5em) translateX(-50%); // sequential because IE11 doesn't support calc() here
 
   & .id-indicator-frame {
-    width: 3em;
+    width: $frame_width;
     height: 2em;
     @include absolute-center();
     text-align: left;
@@ -413,6 +421,9 @@ export default {
     white-space: nowrap;
     overflow: hidden;
     @include short-transition;
+  }
+  &.w4 .id-indicator-frame {
+    width: $frame_width_w4;
   }
 
   & .id-indicator-tray {
@@ -433,10 +444,13 @@ export default {
     line-height: 1.2em; // 16 * 1.2 = 19.2 (best compromise between Chrome and Firefox alignment)
     font-weight: bold;
     text-align: center;
-    width: 2.8rem;
+    width: $frame_width - 0.2rem;
     height: 1.8rem;
     overflow: hidden;
     @include short-transition;
+  }
+  &.w4 .id-indicator {
+    width: $frame_width_w4 - 0.2rem;
   }
 } // .btn-list
 

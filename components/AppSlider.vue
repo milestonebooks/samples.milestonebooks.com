@@ -27,7 +27,7 @@
     <aside v-for="i of [{cls:'prev', label:'previous', isDisabled:isFirst, dir:-1},
                         {cls:'next', label:'next',     isDisabled:isLast,  dir:+1}]"
            :class="`sidebar ${i.cls} v ${i.isDisabled ? 'disabled' : ''}`">
-      <nuxt-link tag="button" :class="`btn btn-slider ${i.cls} ltr`" tabindex="0" :disabled="!isActive || isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)">
+      <nuxt-link tag="button" :class="`btn btn-slider ${i.cls} ltr`" tabindex="0" :disabled="!isActive || i.isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
