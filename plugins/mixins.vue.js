@@ -32,4 +32,17 @@ export default {
 
   //--------------------------------------------------------------------------------------------------------------------
 
+  addToHistory(o = {}) {
+    const state = Object.assign({
+      at:    window.history.length,
+      code:  this.$_i.code,
+      index: this.$_i.currentIndex,
+      show:  this.$store.state.uiStateShow
+    }, o);
+
+    this.$store.commit('addToHistory', state);
+  }, // addToHistory()
+
+  //--------------------------------------------------------------------------------------------------------------------
+
 };

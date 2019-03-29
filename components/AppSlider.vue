@@ -239,8 +239,16 @@ export default {
     },
 
     '$_.uiStateShow'() {
+      // if transitioning to context from samples while zoomed it, also zoom out
       if (this.$_.uiStateShow === 'context' && this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM) {
         this.toggleDpi();
+      }
+    },
+
+    '$_.request'() {
+      if (this.$_.request === 'showSamples') {
+        this.showSamples();
+        this.$store.commit('set', {request: ''});
       }
     },
 
@@ -272,6 +280,8 @@ export default {
     set: mixins.set,
 
     throttleKey: mixins.throttleKey,
+
+    addToHistory: mixins.addToHistory,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -921,10 +931,7 @@ export default {
 
     async showSamples() {
 
-      // this scenario happens when a set (isGroup:true) is loaded, and the first item is clicked
-      if (this.$route.params.item !== this.$_i.code) {
-        this.$router.push(`/${this.$_i.code}/`);
-      }
+      this.$router.push(`/${this.$_i.code}/#${this.$_i.samples[this.$_i.currentIndex].id}`);
 
       const hasSamples = this.$_s.items[this.currentIndex].samples.length;
 

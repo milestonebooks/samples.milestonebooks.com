@@ -76,9 +76,13 @@ export default {
 
     set: mixins.set,
 
+    addToHistory: mixins.addToHistory,
+
     //------------------------------------------------------------------------------------------------------------------
 
     async showContext() {
+
+      this.$router.push(`/${this.$_i.code}/`);
 
       const $opt    = window.$('#the-samples .the-opt-context');
       const $btn    = $opt.find('.btn');

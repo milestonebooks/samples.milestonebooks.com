@@ -54,9 +54,26 @@ export default {
 
   watch: {
     $route(to, from) {
-      this.$store.commit('addToHistory', {code:from.params.item, index:this.$_i.currentIndex});
+      this.addToHistory({code:from.params.item});
       this.update();
+    },
+  },
+
+  beforeRouteUpdate(to, from, next) {
+    // TODO make route-driven transitions, refactor:
+    // - AppSlider->showSamples()
+    // - TheOptContext->showContext()
+    // - SeriesLink->goTo()
+
+    //console.log('beforeRouteUpdate() ', this.$store.state.popstate ? 'popped!' : '', '\nfrom:', from, '\nto:  ', to);
+
+    if (this.$store.state.popstate && to.path === from.path && to.hash && !from.hash) {
+      this.$store.commit('set', {request: 'showSamples'});
     }
+
+    if (this.$store.state.popstate) this.set({'popstate': false});
+
+    next();
   },
 
   data () {
@@ -69,7 +86,7 @@ export default {
     if (store.state.series.id) {
       let index = store.state.series.items.findIndex(s => s.code === params.item);
 
-      // this happens when routing to a set (isGroup:true) item, usually only occurring via the back button
+      // this happens when routing to a set (isGroup:true) item
       if (index === -1) {
         if (store.state.uiStateShow === 'samples') {
           return store.commit('set', {request: 'showContext'});
@@ -167,11 +184,14 @@ export default {
       window.addEventListener('touchstart', _firsttouchstart, false);
     }
 
+    window.addEventListener('popstate', this.onPopState);
+
     this.initData();
   }, // mounted()
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('popstate', this.onPopState);
   },
 
   //====================================================================================================================
@@ -182,6 +202,8 @@ export default {
     ]),
 
     set: mixins.set,
+
+    addToHistory: mixins.addToHistory,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -194,6 +216,12 @@ export default {
         this.set({'isResizing': false});
       }, settings.TRANSITION_TIME_MS);
     }, // onResize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onPopState: function() {
+      this.set({'popstate': true});
+    }, // onPopState()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -220,11 +248,11 @@ export default {
 
       this.uiStateClass({show: ((d.isGroup && items.length > 1) || !item.samples.length ? 'context' : 'samples')});
 
+      await this.update();
+
       this.set({isInit: true});
 
       console.timeEnd('index');
-
-      this.update();
     }, // initData()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -316,10 +344,17 @@ export default {
       if (this.$_i.code !== this.$route.params.item) {
         const item = this.$_s.items[this.$_s.currentIndex];
 
-        // this happens when routing to a set (isGroup:true) item, usually only occurring via the back button
-        if (item.code !== this.$route.params.item && this.$_.uiStateShow === 'samples') return;
+        if (!this.$_.isInit) return this.$router.replace(`/${item.code}/`);
 
         await this.initItemData(item);
+      }
+
+      if (this.$store.getters.isSamplesShown && !this.$route.hash) {
+        if (!this.$_.isInit) {
+          return this.$router.replace(`./#${this.$_i.firstId}`);
+        } else {
+          return this.$store.commit('set', {request: 'showContext'});
+        }
       }
 
       // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
@@ -337,6 +372,8 @@ export default {
         if (this.getRouteFromSequence(id)) return;
         return this.$router.replace('./');
       }
+
+      //console.log('update route hash', `|${this.$route.hash}|`, 'index:', index, 'current:', this.$_i.currentIndex, 'id:', id);
 
       this.set('item', {currentIndex: index});
 

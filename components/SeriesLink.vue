@@ -168,7 +168,7 @@ export default {
       await nextFrame();
 
       const s = this.slide;
-      const to = `/${s.code}/` + (this.dirIndex < 0 && s.samples.length > 1 ? `#${s.samples[s.samples.length - 1].id}` : '');
+      const to = `/${s.code}/` + (s.samples.length ? `#${s.samples[this.dirIndex > 0 ? 0 : s.samples.length - 1].id}` : '');
       this.$router.push(to);
 
       await nextFrame();
