@@ -101,7 +101,7 @@ export default {
 
       if (!toSamples.length) console.log('no samples!'); // TODO
 
-      const toImg = toSamples[this.dirIndex < 0 ? toSamples.length - 1 : 0].image;
+      const toImg = toSamples.length ? toSamples[this.dirIndex < 0 ? toSamples.length - 1 : 0].image : null;
 
       const wTo   = toImg ? toImg.w * this.$_i.dpi : slide.width;
       const hTo   = toImg ? toImg.h * this.$_i.dpi : slide.height;
