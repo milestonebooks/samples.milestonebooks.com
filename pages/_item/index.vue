@@ -1,12 +1,12 @@
 <template>
-  <main :class="mainClass" :data-title="$_i.title" :data-dir="$_i.direction">
+  <main :class="mainClass" :data-dir="$_i.direction">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
 
-    <TheSamples v-if="true" />
+    <TheSamples />
 
-    <TheContext v-if="true && !$_._focusItem" />
+    <TheContext />
 
   </main>
 </template>
@@ -17,10 +17,12 @@ import TheAlerts   from '~/components/TheAlerts';
 import TheSamples  from '~/components/TheSamples';
 import TheContext  from '~/components/TheContext';
 
-import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.vue';
+import settings  from '~/assets/settings';
+import mixins    from '~/plugins/mixins.vue';
 
 import axios from 'axios';
+
+import { mapMutations } from 'vuex';
 
 export default {
   key: '_item', // ensure page doesn't get recreated on route change
@@ -36,15 +38,15 @@ export default {
     const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (s ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
+      title: (s && this.$store.getters.isSamplesShown ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
-        class: (this.$_.showContext ? 'show-context' : '') + (this.$_.isResizing ? 'is-resizing' : ''),
+        class: this.$store.getters.uiStateClassString,
       },
 
       link: [
-        // audio speaker favicon
         this.$_i.type !== 'audio' ? {} :
+          // audio speaker favicon
           {hid: 'favicon', rel: 'icon', href: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAM5JREFUeNqkkoENgyAQRdWwAB3BFbqCHYGOICPYEewIdgVGqCOUFVjBESjXfBJCDpXU5Es47r/cHbTe++afT9j75ShHBm2lw+7APAZdsxjtpzMAMi9MfIbUHoAzD1g1WppLgJL5jdJd0Cuop1wC+Exc2Ss0YagmgruKGzMwUzUWsb4G4KIpvZEaQDSmb2KrAahkHhFmRfjdmMSRuYUB03fJQ1oFiPnEmwxCsQcAMjkzolCuZiBPrAtaIKATOz3rQtxCP2D7UfLM9F3p8CvAAEfFMGJjRb1WAAAAAElFTkSuQmCC'},
       ],
     }
@@ -52,9 +54,26 @@ export default {
 
   watch: {
     $route(to, from) {
-      this.$store.commit('addToHistory', {code:from.params.item, index:this.$_i.currentIndex});
+      this.addToHistory({code:from.params.item});
       this.update();
+    },
+  },
+
+  beforeRouteUpdate(to, from, next) {
+    // TODO make route-driven transitions, refactor:
+    // - AppSlider->showSamples()
+    // - TheOptContext->showContext()
+    // - SeriesLink->goTo()
+
+    //console.log('beforeRouteUpdate() ', this.$store.state.popstate ? 'popped!' : '', '\nfrom:', from, '\nto:  ', to);
+
+    if (this.$store.state.popstate && to.path === from.path && to.hash && !from.hash) {
+      this.$store.commit('set', {request: 'showSamples'});
     }
+
+    if (this.$store.state.popstate) this.set({'popstate': false});
+
+    next();
   },
 
   data () {
@@ -65,7 +84,18 @@ export default {
   async asyncData({params, store, error}) {
 
     if (store.state.series.id) {
-      return store.commit('series/set', {currentIndex: store.state.series.items.findIndex(s => s.code === params.item)});
+      let index = store.state.series.items.findIndex(s => s.code === params.item);
+
+      // this happens when routing to a set (isGroup:true) item
+      if (index === -1) {
+        if (store.state.uiStateShow === 'samples') {
+          return store.commit('set', {request: 'showContext'});
+        }
+
+        index = 0;
+      }
+
+      return store.commit('series/set', {currentIndex: index});
     }
 
     if (!store.state.isInit) store.commit('set', {isDev: window.$nuxt.$cookies.get('dev')});
@@ -108,14 +138,12 @@ export default {
 
     mainClass() {
       return {
-        'is-dev':       this.$_.isDev,
-        'debug':        this.$_._showDebugger,
-        '-focus-item':  this.$_._focusItem,
-        'is-init':      this.$_.isInit,
-        'show-context': this.$_.showContext,
-        'has-touch':    this.$_.hasTouch,
-        'has-mouse':    this.$_.hasMouse,
-        'show-title':   true,
+        '-debug':      this.$_._showDebugger,
+        'is-dev':      this.$_.isDev,
+        'is-init':     this.$_.isInit,
+        'has-touch':   this.$_.hasTouch,
+        'has-mouse':   this.$_.hasMouse,
+        'is-resizing': this.$_.isResizing,
       }
     },
 
@@ -156,18 +184,26 @@ export default {
       window.addEventListener('touchstart', _firsttouchstart, false);
     }
 
+    window.addEventListener('popstate', this.onPopState);
+
     this.initData();
   }, // mounted()
 
   beforeDestroy () {
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('popstate', this.onPopState);
   },
 
   //====================================================================================================================
 
   methods: {
+    ...mapMutations([
+      'uiStateClass',
+    ]),
 
     set: mixins.set,
+
+    addToHistory: mixins.addToHistory,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -183,6 +219,12 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    onPopState: function() {
+      this.set({'popstate': true});
+    }, // onPopState()
+
+    //------------------------------------------------------------------------------------------------------------------
+
     async initData() {
       if (this.data === undefined) return;
 
@@ -191,25 +233,26 @@ export default {
       const items  = series.items;
       const item   = items[d.seriesIndex];
 
-      const {maxH, maxHRatio} = this.initImagesData(items);
+      const {maxW, maxH, maxHRatio} = this.initImagesData(items);
 
       this.set('series', {...series,
         currentIndex: d.seriesIndex,
         firstCode:    items[0].code,
         lastCode:     items[items.length - 1].code,
+        maxW,
         maxH,
         maxHRatio,
       });
 
       await this.initItemData(item);
 
-      this.set({
-        isInit: true,
-      });
+      this.uiStateClass({show: ((d.isGroup && items.length > 1) || !item.samples.length ? 'context' : 'samples')});
+
+      await this.update();
+
+      this.set({isInit: true});
 
       console.timeEnd('index');
-
-      this.update();
     }, // initData()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -222,23 +265,25 @@ export default {
 
       const samples = item.samples;
 
-      if (!samples.length) {
-        return;
-        //TODO: depends on what is currently in focus
-        //return this.$nuxt.error({statusCode: 404, message: 'No samples found.'});
+      if (samples.length) {
+        const {maxHRatio} = this.initImagesData(samples);
+
+        item = {...item,
+          direction: item.direction || 'ltr',
+          hasRulers: item.type !== 'audio',
+          hasZoom:   item.hasZoom  || false,
+          hasPrint:  item.hasPrint || false,
+          firstId:   samples[0].id,
+          lastId:    samples[samples.length - 1].id,
+          maxHRatio: maxHRatio,
+        };
+      } else {
+        if (this.$store.getters.isSamplesShown) {
+          this.$store.commit('set', {request: 'showContext'});
+        }
       }
 
-      const {maxHRatio} = this.initImagesData(samples);
-
-      this.set('item', {...item,
-        direction: item.direction || 'ltr',
-        hasRulers: item.type !== 'audio',
-        hasZoom:   item.hasZoom  || false,
-        hasPrint:  item.hasPrint || false,
-        firstId:   samples[0].id,
-        lastId:    samples[samples.length - 1].id,
-        maxHRatio: maxHRatio,
-      });
+      this.set('item', item);
 
     }, // initItemData()
 
@@ -246,6 +291,7 @@ export default {
 
     initImagesData(arr = []) {
       const _ = {
+        maxW: null,
         maxH: null,
         maxHRatio: null,
       };
@@ -254,8 +300,9 @@ export default {
         if (!i.image) continue;
         i.image.loaded = {}; // create object to monitor loaded state
         i.image.hRatio = i.image.h / i.image.w;
-        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
+        if (_.maxW === null || i.image.w > _.maxW) _.maxW = i.image.w;
         if (_.maxH === null || i.image.h > _.maxH) _.maxH = i.image.h;
+        if (_.maxHRatio === null || i.image.hRatio > _.maxHRatio) _.maxHRatio = i.image.hRatio;
       }
 
       return _;
@@ -292,10 +339,22 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async update() {
-      console.log('update() route', this.$route.path, this.$route.hash);
+      console.log('update() route', this.$route.path, this.$route.hash, `[${this.$_s.currentIndex}]`);
 
       if (this.$_i.code !== this.$route.params.item) {
-        await this.initItemData(this.$_s.items[this.$_s.currentIndex]);
+        const item = this.$_s.items[this.$_s.currentIndex];
+
+        if (!this.$_.isInit) return this.$router.replace(`/${item.code}/`);
+
+        await this.initItemData(item);
+      }
+
+      if (this.$store.getters.isSamplesShown && !this.$route.hash) {
+        if (!this.$_.isInit) {
+          return this.$router.replace(`./#${this.$_i.firstId}`);
+        } else {
+          return this.$store.commit('set', {request: 'showContext'});
+        }
       }
 
       // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
@@ -313,6 +372,8 @@ export default {
         if (this.getRouteFromSequence(id)) return;
         return this.$router.replace('./');
       }
+
+      //console.log('update route hash', `|${this.$route.hash}|`, 'index:', index, 'current:', this.$_i.currentIndex, 'id:', id);
 
       this.set('item', {currentIndex: index});
 
@@ -349,57 +410,27 @@ main {
   display: flex;
   flex-direction: column;
   margin: auto;
-  //@include short-transition;
 
   &[data-dir="rtl"] {
     direction: rtl;
   }
 
-  &.show-title::before {
-    content: attr(data-title);
-    z-index: $layer-title;
-    @include absolute-center(fixed);
-    max-width: 100vw;
-    text-align: center;
-    font-size: 3em;
-    font-weight: bold;
-    padding: 1em;
-    border-radius: $radius / 3;
-    background-color: white;
-    color: $theme-color;
-    box-shadow: 0 0 1em transparentize($theme-color, 0.5);
-    pointer-events: none;
-    animation: a-titlefade 3s 1 forwards ease-in-out;
-  }
-
   &.is-dev::after {
     pointer-events: none;
     z-index: $layer-the-alerts;
-    content: '*';
-    color: red;
+    content: '';
     position: absolute;
     left: 0;
-    bottom: 0;
-    font-size: 40px;
-    line-height: 0;
+    top: 0;
+    width: 1em;
+    height: 1em;
+    background-color: red;
   }
 }
 
-@keyframes a-titlefade {
-  from {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-  }
-  10%, 75% {
-    transform: translate(-50%, -50%) scale(1.0);
-    opacity: 1;
-  }
-  to {
-    transform: translate(-50%, -50%) scale(1.0);
-    opacity: 0;
-  }
+main {
+  transition: opacity 1s ease-in-out;
 }
-
 main:not(.is-init):not(.error) {
   pointer-events: none;
   opacity: 0;

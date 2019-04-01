@@ -5,35 +5,39 @@
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}">
 
       <template slot="frame">
-        <TheNav v-if="$_i.samples.length > 1" />
+        <TheNavbar />
+
+        <div class="series-links-pane">
+          <SeriesLink dir="prev" :currentIndex="$_i.currentIndex" />
+          <SeriesLink dir="next" :currentIndex="$_i.currentIndex" />
+        </div>
       </template>
 
       <template slot="pane">
-        <TheOptRulers v-if="$_i.hasRulers" />
+        <TheOptContext :img="$_i.image" />
 
-        <TheOptPrint v-if="$_i.hasPrint" />
+        <TheOptPrint />
 
-        <ThePlayer v-if="$_i.type === 'audio'" :currentIndex="$_i.currentIndex" />
+        <TheOptRulers />
+
+        <ThePlayer :currentIndex="$_i.currentIndex" />
 
         <TheOptRevert v-if="$_i.type === 'items'" />
       </template>
     </AppSlider>
-
-    <template slot="frame">
-      <span v-if="$_._showDebugger" style="position:relative; color:red;">TheSamples [{{ this.$_i.currentIndex }}] of {{ this.$_i.samples.length }}</span>
-    </template>
   </AppFrame>
 </template>
 
 <script>
-import AppFrame  from '~/components/AppFrame';
-import AppSlider from '~/components/AppSlider';
-
-import TheOptRulers from '~/components/TheOptRulers';
-import TheOptPrint  from '~/components/TheOptPrint';
-import TheOptRevert from '~/components/TheOptRevert';
-import TheNav       from '~/components/TheNav';
-import ThePlayer    from '~/components/ThePlayer';
+import AppFrame      from '~/components/AppFrame';
+import AppSlider     from '~/components/AppSlider';
+import SeriesLink    from '~/components/SeriesLink';
+import TheOptContext from '~/components/TheOptContext';
+import TheOptRulers  from '~/components/TheOptRulers';
+import TheOptPrint   from '~/components/TheOptPrint';
+import TheOptRevert  from '~/components/TheOptRevert';
+import TheNavbar     from '~/components/TheNavbar';
+import ThePlayer     from '~/components/ThePlayer';
 
 import settings from '~/assets/settings';
 
@@ -43,10 +47,12 @@ export default {
   components: {
     AppFrame,
     AppSlider,
+    SeriesLink,
+    TheOptContext,
     TheOptRulers,
     TheOptPrint,
     TheOptRevert, // TODO: temporary
-    TheNav,
+    TheNavbar,
     ThePlayer,
   },
 
@@ -107,13 +113,5 @@ export default {
 
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
-
-.debug:not(.-focus-item) #the-samples {
-  right: 50px;
-  bottom: 50px;
-  width: 50%;
-  height: 50vh;
-  outline: 1px solid red;
-}
 
 </style>

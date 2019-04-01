@@ -11,8 +11,8 @@
         <div v-for="frame of frames" :class="`frame ${frame.type} dpi${frame.dpi}`">
           <div class="slides">
             <section v-for="slide in slides" :key="slide.index" :data-index="slide.index"
-                     :class="`slide ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
-              <div class="slide-liner">
+                     :class="`slide wrapper-frame ${slideClass(slide)}`" :style="slideStyleSize(slide, frame.dpi)">
+              <div class="slide-liner wrapper-frame">
                 <img v-if="slide.image" :style="imageStyleSize(slide, frame.dpi)" :data-src="imageSrc(slide, frame.dpi)" :data-error="imageError(slide, frame.dpi)" draggable="false"
                      @load="onImageLoaded(slide.index, frame.dpi, $event)" @error="onImageLoadError(slide.index, frame.dpi)" />
                 <h1 v-else class="slide-title">{{slide.title ? slide.title : `(${slide.id})` }}</h1>
@@ -24,13 +24,10 @@
       </article>
     </article>
 
-    <aside :class="`sidebar prev v ${isFirst ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider prev ltr" :tabindex="0" :to="getLink(-1)" replace :aria-label="getLinkLabel('previous')" tag="button">
-        <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
-      </nuxt-link>
-    </aside>
-    <aside :class="`sidebar next v ${isLast ? 'disabled' : ''}`">
-      <nuxt-link class="btn btn-slider next ltr" :tabindex="0" :to="getLink(+1)" replace :aria-label="getLinkLabel('next')" tag="button">
+    <aside v-for="i of [{cls:'prev', label:'previous', isDisabled:isFirst, dir:-1},
+                        {cls:'next', label:'next',     isDisabled:isLast,  dir:+1}]"
+           :class="`sidebar ${i.cls} v ${i.isDisabled ? 'disabled' : ''}`">
+      <nuxt-link tag="button" :class="`btn btn-slider ${i.cls} ltr`" tabindex="0" :disabled="!isActive || i.isDisabled" :to="getLink(i.dir)" replace :aria-label="getLinkLabel(i.label)">
         <SvgIcon view="24 48" :d="btnPrevPath"></SvgIcon>
       </nuxt-link>
     </aside>
@@ -54,9 +51,12 @@ import '~/plugins/jQuery.offsetRect';
 
 import mixins from '~/plugins/mixins.vue';
 import sleep from '~/plugins/sleep';
+import nextFrame from '~/plugins/nextFrame';
 import forceRepaint from '~/plugins/forceRepaint';
 import supports3d from '~/plugins/supports3d';
 import supportsPassive from '~/plugins/supportsPassive';
+
+import { mapMutations } from 'vuex';
 
 export default {
   components: {
@@ -83,11 +83,16 @@ export default {
     zoomDpi: {
       type: Number,
       default: 0,
+    },
+    marginY: {
+      type: Number,
+      default: 0,
     }
   },
 
   data () {
     return {
+      isInit:        false,
       isGrabbing:    false,
       isScrolling:   null,
       noTransition:  true,
@@ -96,6 +101,7 @@ export default {
       availWidth:    null,
       availHeight:   null,
       isMinSheetMusicWidth: null,
+      isFullview:    null,
       hasScrollbarX: false,
       hasScrollbarY: false,
       slideHeight:   null,
@@ -112,7 +118,6 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-
     $_() {
       return this.$store.state;
     },
@@ -128,12 +133,15 @@ export default {
     frameClass() {
       let css = {
         'is-loading':      this.isLoading,
+        'is-fullview':     this.isFullview,
         'has-scrollbar-x': this.hasScrollbarX && this.$_.scrollbarWidth,
         'has-scrollbar-y': this.hasScrollbarY && this.$_.scrollbarWidth,
+        'no-transition':   !this.isInit,
       };
       if (this.type === 'item') css = {...css,
         'has-zoom':    this.$_i.hasZoom,
         'has-print':   this.$_i.hasPrint,
+        'has-rulers':  this.$_i.hasRulers,
         'show-rulers': this.$_i.hasRulers && this.$_i.showRulers,
         'is-printing': this.$_i.isPrinting,
       };
@@ -142,8 +150,8 @@ export default {
 
     sliderClass() {
       return {
-        'has-prev': !this.isFirst,
-        'has-next': !this.isLast,
+        'has-prev':      !this.isFirst,
+        'has-next':      !this.isLast,
         'no-transition': this.noTransition,
       }
     },
@@ -152,6 +160,10 @@ export default {
       const frames = [{type:'default', dpi:this.defaultDpi}];
       if (this.zoomDpi) frames.push({type:'zoom', dpi:this.zoomDpi});
       return frames;
+    },
+
+    isActive() {
+      return (this.type === 'series' && !this.$store.getters.isSamplesShown) || (this.type === 'item' && this.$store.getters.isSamplesShown);
     },
 
     isFirst() {
@@ -188,6 +200,24 @@ export default {
 
       await this.$nextTick();
       forceRepaint();
+
+      /* TODO: intended for transitioning item info
+      if (this.type === 'series') {
+        this.uiStateClass({add:'slide-to-slide slide-to-slide-setup'});
+
+        await nextFrame();
+
+        this.uiStateClass({remove:'slide-to-slide-setup', add:'slide-to-slide-active'});
+
+        await sleep(settings.TRANSITION_TIME_MS / 2);
+
+        this.uiStateClass({add:'slide-to-slide-cleanup'});
+
+        await sleep(settings.TRANSITION_TIME_MS / 2);
+
+        this.uiStateClass({remove: 'slide-to-slide slide-to-slide-cleanup slide-to-slide-active'});
+      }
+      //*/
     },
 
     //------------------------------------------------------------------------------------------------------------------
@@ -208,6 +238,20 @@ export default {
       this.onResize();
     },
 
+    '$_.uiStateShow'() {
+      // if transitioning to context from samples while zoomed it, also zoom out
+      if (this.$_.uiStateShow === 'context' && this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM) {
+        this.toggleDpi();
+      }
+    },
+
+    '$_.request'() {
+      if (this.$_.request === 'showSamples') {
+        this.showSamples();
+        this.$store.commit('set', {request: ''});
+      }
+    },
+
   }, // watch {}
 
   //====================================================================================================================
@@ -215,19 +259,29 @@ export default {
   mounted() {
     this.$el.addEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.addEventListener('mousedown',  this.onTouchstart);
+    window.addEventListener('keydown', this.onKeydown);
+
     this.onResize();
   },
 
   beforeDestroy () {
     this.$el.removeEventListener('touchstart', this.onTouchstart, this.eTouchParams);
     this.$el.removeEventListener('mousedown',  this.onTouchstart);
+    window.removeEventListener('keydown', this.onKeydown);
   },
 
   //====================================================================================================================
 
   methods: {
+    ...mapMutations([
+      'uiStateClass',
+    ]),
 
     set: mixins.set,
+
+    throttleKey: mixins.throttleKey,
+
+    addToHistory: mixins.addToHistory,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -237,9 +291,10 @@ export default {
       this.height = el.getBoundingClientRect().height;
 
       this.isMinSheetMusicWidth = this.width >= settings.SHEET_MUSIC_WIDTH;
+      this.isFullview = this.width === window.innerWidth && this.height === window.innerHeight;
 
-      this.availWidth  = this.width  - (el.offsetWidth  - el.clientWidth);
-      this.availHeight = this.height - (el.offsetHeight - el.clientHeight);
+      this.availWidth  = this.width       - (el.offsetWidth  - el.clientWidth);
+      this.availHeight = this.getHeight() - (el.offsetHeight - el.clientHeight);
 
       // delay autosize() until above settings are propagated in layout
 
@@ -250,6 +305,12 @@ export default {
       }, settings.TRANSITION_TIME_MS);
 
     }, // onResize()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    getHeight() {
+      return this.height - (this.marginY * 2);
+    }, // getAvailSize()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -266,7 +327,7 @@ export default {
           entries = Array.prototype.slice.call(entries, 0); // cast NodeList to Array to support IE/Edge
           entries.forEach(entry => {
             if (entry.isIntersecting) {
-              this.preloadImage(entry.target);
+              this.preloadImage({img:entry.target});
               self.unobserve(entry.target);
             }
           });
@@ -285,16 +346,17 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    preloadImage(img) {
+    preloadImage({img, force = false}) {
+      if (!img) return;
       const src = img.getAttribute('data-src');
-      if (this.isLoading || img.src || !src) return;
+      if ((this.isLoading && !force) || img.src || !src) return;
       img.src = src;
     }, // preloadImage()
 
     //------------------------------------------------------------------------------------------------------------------
 
     preloadSlideImage(frameType, index) {
-      this.preloadImage(this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${index}"] img`));
+      this.preloadImage({img: this.$refs.slider.querySelector(`.frame.${frameType} [data-index="${index}"] img`), force:true});
     }, // preloadSlideImage()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -318,10 +380,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    getSlide(dir = 0, key, currentIndex = null) {
-      const i = (currentIndex === null ? this.currentIndex : currentIndex) + dir;
-      const slide = (this.slides[i] ? this.slides[i] : null);
-      return (slide && key) ? slide[key] : slide;
+    getSlide(dir = 0, key = null) {
+      return this.$store.getters[`${this.type}/getSlide`](dir, key);
     }, // getSlide()
 
     //--------------------------------------------------------------------------------------------------------------------
@@ -332,7 +392,9 @@ export default {
       return 'item'
         + ` ${i < this.currentIndex ? 'before-' : i > this.currentIndex ? 'after-' : ''}current`
         + (slide.nonsequential ? ' non-' : ' ') + 'sequential-before'
-        + (i < this.slides.length - 1 && this.slides[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after';
+        + (i < this.slides.length - 1 && this.slides[i + 1].nonsequential ? ' non-' : ' ') + 'sequential-after'
+        + (this.type === 'series' && this.$_s.items[i].samples.length ? ' has-samples' : '')
+        + (this.type === 'series' ? ` spine-${this.$_s.items[i].spine}` : '');
     }, // slideClass()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -342,16 +404,17 @@ export default {
       if (this.type === 'series') {
 
         let wScale = 1;
-        if (this.$_s.maxH > this.availHeight) {
-          wScale = this.availHeight / this.$_s.maxH; // TODO
+        if (this.$_s.maxW > this.availWidth) {
+          wScale = this.availWidth / this.$_s.maxW;
+        }
+        if ((this.$_s.maxH * wScale) > this.availHeight) {
+          wScale = this.availHeight / (this.$_s.maxH * wScale);
         }
 
         if (slide.image) this.$store.commit('series/setImageWScale', {slides:'items', i:slide.index, wScale});
 
         const w = Math.floor(slide.image.w * wScale);
         const h = Math.floor(slide.image.h * wScale);
-
-        //console.log('slideStyleSize()', slide.index, h);
 
         this.slides[slide.index].width  = `${w}px`;
         this.slides[slide.index].height = `${h}px`;
@@ -361,6 +424,8 @@ export default {
           height: this.slides[slide.index].height,
         };
       }
+
+      // else this.type === 'item' ...
 
       const xdpi = slide.image && dpi ? dpi : 1;
 
@@ -396,14 +461,12 @@ export default {
         if (slide.index === this.currentIndex) this.set('item', {currentWScale: wScale});
       } // end default dpi
 
-      // add some vertical padding so sheet music title/credits won't be obscured by controls
+      // [hack!] add some vertical padding so sheet music title/credits won't be obscured by controls
       if (slide.audio && slide.image) h += Math.floor(settings.CONTROLS_HEIGHT / wScale);
 
       const width     = `${w}px`;
       const height    = slide.image ? `${h}px` : '';
       const maxWidth  = !slide.image ? `${settings.SHEET_MUSIC_WIDTH}px` : '';
-
-      //console.log(`slideStyleSize(#${slide.id}, @${dpi}) w:${width}, h:${height} | availHeight:${this.availHeight} | maxW:${maxWidth} ${this.$_.isResizing ? '--resizing--' : ''}`, slide.id);
 
       return {width, height, maxWidth};
     }, // slideStyleSize()
@@ -503,11 +566,13 @@ export default {
         this.isScrolling = !!(this.isScrolling || (Math.abs(this.touchPoint.deltaX) < Math.abs(this.touchPoint.deltaY) && e.type !== 'mousemove'));
       }
 
+      const slide = window.$(e.target).closest('.slide')[0];
+
       // when zoomed-in, don't grab if view is entirely within the slide boundaries
       if (!this.isGrabbing && !this.isScrolling && this.hasScrollbarX) {
-        const {view} = this.getSlidePositionData(e.target);
+        const {view} = this.getSlidePositionData(slide);
         const EDGE_OFFSET = 10;
-        //console.log(`view._scrollLeftMax:${view._scrollLeftMax} scrollLeft:${view.scrollLeft} deltaX:${this.touchPoint.deltaX} this.isGrabbing?${this.isGrabbing}`);
+
         if ((view.scrollLeft > EDGE_OFFSET && this.touchPoint.deltaX > 0) || (view.scrollLeft < view._scrollLeftMax - EDGE_OFFSET && this.touchPoint.deltaX < 0)) {
           this.isScrolling = true;
         }
@@ -539,8 +604,8 @@ export default {
       const el = this.touchPoint.el;
       el.removeEventListener('touchmove', this.onTouchmove, this.eTouchParams);
       el.removeEventListener('mousemove', this.onTouchmove);
-      el.removeEventListener('touchend',  this.onTouchend);
-      el.removeEventListener('mouseup',   this.onTouchend);
+      el.removeEventListener('touchend', this.onTouchend);
+      el.removeEventListener('mouseup', this.onTouchend);
 
       this.touchPoint.el = null;
 
@@ -554,16 +619,27 @@ export default {
 
       // decide what the interaction means
       let action = 'click';
+
+      const slide    = window.$(e.target).closest('.slide')[0];
       const duration = Date.now() - this.touchPoint.time;
       const diffX    = Math.abs(this.touchPoint.deltaX);
       const diffY    = Math.abs(this.touchPoint.deltaY);
-      const dir      = (this.touchPoint.deltaX < 0 ? 'left' : 'right');
+      const dirIndex = (this.touchPoint.deltaX < 0 ? 1 : -1) * (this.$_i.direction === 'ltr' ? 1 : -1);
       const $frame   = window.$(this.$el).find(`.frame.dpi${this.type === 'item' ? this.$_i.dpi : this.defaultDpi}`);
 
-      const {slideWidth, isOverEdge, isOverCenter} = this.getSlidePositionData(e.target);
+      const {slideRect, isOverEdge, isOverCenter} = slide
+        ? this.getSlidePositionData(slide)
+        : {
+          slideRect:    {width: window.$(this.$refs.slider).find(`.slide[data-index="${this.currentIndex}"]`).width()},
+          isOverEdge:   true,
+          isOverCenter: false,
+        };
 
-      const isDiffEnough = diffX > slideWidth / 3 || (this.hasScrollbarX && isOverCenter);
+      const isDiffEnough = diffX > slideRect.width / 3 || (this.hasScrollbarX && isOverCenter);
       const isFlick      = duration < 300 && diffX > 25 && diffX > diffY;
+      // main button, quickly, without moving, on a slide
+      const elIndex      = slide ? slide.getAttribute('data-index') : this.currentIndex;
+      const isSlideClick = slide && e.button === 0 && duration < 300 && diffX < 5 && elIndex !== null;
 
       // checking for the edge prevents slide changes when attempting to pan within a slide (e.g., when zoomed-in on a phone)
       if (isOverEdge && (isDiffEnough || isFlick)) {
@@ -575,14 +651,8 @@ export default {
       }
 
       let index = this.currentIndex;
-      let elIndex = null;
-
-      // main button, quickly, without moving, on a slide
-      const isSlideClick = e.button === 0 && duration < 300 && diffX < 5 && (elIndex = e.target.getAttribute('data-index')) !== null;
 
       if (action === 'swipe') {
-        const dirIndex = ((dir === 'left' && this.$_i.direction === 'ltr') || (dir === 'right' && this.$_i.direction === 'rtl') ? 1 : -1);
-
         let offsetX = diffX;
         //TODO: attempt at kinetic scrolling is too jerky using css transitioning
         //if (this.touchPoint.vSec > 100) offsetX += this.touchPoint.vSec * 0.25;
@@ -596,26 +666,24 @@ export default {
 
       } else if (isSlideClick) {
         index = Number(elIndex);
-        if (index === this.currentIndex && this.$_i.hasZoom) {
-          action = 'zoom';
+        if (index === this.currentIndex) {
+          if (this.type === 'item' && this.$_i.hasZoom) action = 'zoom';
+          if (this.type === 'series') action = 'select';
         }
       }
 
-      //console.log('touchend:', action, 'x:', this.touchPoint.deltaX, 'wasGrabbing?', wasGrabbing);
+      if (action === 'select') {
+        this.showSamples();
 
-      if (action === 'zoom') {
+      } else if (action === 'zoom') {
         this.toggleDpi({
-          elX: e.offsetX / e.target.getBoundingClientRect().width,
-          elY: e.offsetY / e.target.getBoundingClientRect().height,
+          elX: e.offsetX / slideRect.width,
+          elY: e.offsetY / slideRect.height,
         });
 
-      } else if (index !== this.currentIndex && this.slides[index]) {
-        if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
-        if (this.type === 'item') this.$router.replace(`#${this.slides[index].id}`);
-
-      } else if (action === 'pan') {
+      } else if (action === 'pan' && slide) {
         setTimeout(() => {
-          const {view, sliderWidth, slideWidth, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(e.target);
+          const {view, sliderRect, slideRect, isOverEdge, isOverEdgeLeft, isOverEdgeRight} = this.getSlidePositionData(slide);
 
           if (isOverEdge || wasGrabbing) {
             this.autosize({action});
@@ -623,10 +691,12 @@ export default {
             if (wasGrabbing) this.scrollEase({el:view, left:view.scrollLeft - this.touchPoint.deltaX});
 
             if (isOverEdgeLeft)  view.scrollLeft = 0;
-            if (isOverEdgeRight) view.scrollLeft = slideWidth - sliderWidth;
+            if (isOverEdgeRight) view.scrollLeft = slideRect.width - sliderRect.width;
           }
         }, settings.TRANSITION_TIME_MS);
 
+      } else if (this.routeTo(index)) {
+        // handled in function call
       } else {
         // [2018-09-12] ensures 'no-transition' class is removed in Firefox; forceRepaint() doesn't seem to do the trick
         this.$nextTick(() => {
@@ -637,10 +707,46 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    autosize({routeChange = false, resize = false, action = ''} = {}) {
+    onKeydown(e) {
+      if ((this.$_.uiStateShow === 'context' && this.type === 'item') || (this.$_.uiStateShow === 'samples' && this.type === 'series')) return;
+
+      if (this.throttleKey(e)) return;
+
+      let index = null;
+
+      const dir = (this.$_i.direction === 'ltr' ? 1 : -1);
+
+      if (e.key === 'ArrowLeft')  index = this.currentIndex - dir;
+      if (e.key === 'ArrowRight') index = this.currentIndex + dir;
+      if (e.key === 'PageUp')     index = this.currentIndex - 1;
+      if (e.key === 'PageDown')   index = this.currentIndex + 1;
+      if (e.key === 'Home')       index = 0;
+      if (e.key === 'End')        index = this.slides.length - 1;
+
+      if (index !== null) this.routeTo(index);
+    }, // onKeydown()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    routeTo(index) {
+
+      const canRoute = (index !== this.currentIndex && this.slides[index]);
+
+      if (canRoute) {
+        if (this.type === 'series') this.$router.push(`/${this.slides[index].code}/`);
+        if (this.type === 'item') this.$router.replace(`#${this.slides[index].id}`);
+      }
+
+      return canRoute;
+
+    }, // routeTo()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async autosize({routeChange = false, resize = false, action = ''} = {}) {
       if (this.currentIndex === null) return;
 
-      const frameType = (this.$_i.dpi === settings.DPI_DEFAULT ? 'default' : 'zoom');
+      const frameType = (this.type === 'item' && this.$_i.dpi === settings.DPI_ZOOM ? 'zoom' : 'default');
 
       // the IntersectionObserver [see initImages()] will lazy-load images in the sequence of crossing the threshold
       // the following ensures the current image loads first, which is useful when scrolling past many slides via the nav list
@@ -663,14 +769,25 @@ export default {
       // scrollbars can sometimes be present that won't actually be needed for the actual slide size
       const {needsScrollbar} = this.checkScrollbars({width, height});
 
-      this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-      this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+      const newAvailWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+      const newAvailHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+
+      const diffW = newAvailWidth - this.availWidth;
+
+      this.availWidth  = newAvailWidth;
+      this.availHeight = newAvailHeight;
 
       const frameWidth  = Math.floor(Math.max(width,  this.availWidth));
-      const frameHeight = Math.floor(Math.max(height, this.availHeight - (this.$_i.type === 'audio' && !this.isMinSheetMusicWidth ? settings.CONTROLS_HEIGHT : 0) ));
+      const frameHeight = Math.floor(Math.max(height, this.availHeight));
+
+      const isFullviewWidth = width >= this.availWidth;
 
       // this determines how much gutter space is masked from being grabbable for sliding
-      const groupHeight = Math.max((this.type === 'series' ? this.availHeight : height), $slidePrev.length ? $slidePrev.height() : 0, $slideNext.length ? $slideNext.height() : 0);
+      const groupHeight = Math.max(
+        (this.type === 'series' ? this.availHeight : height),
+        $slidePrev.length && !isFullviewWidth ? $slidePrev.height() : 0,
+        $slideNext.length && !isFullviewWidth ? $slideNext.height() : 0,
+      );
 
       if (resize || width !== this.slideWidth || height !== this.slideHeight || groupHeight !== this.groupHeight) {
 
@@ -681,17 +798,16 @@ export default {
         const xMargin = Math.max(this.availWidth - width, 0) / 2;
         const yMargin = Math.max(this.availHeight - groupHeight, 0) / 2;
 
-        //console.log('autosize() this.isMinSheetMusicWidth?', this.isMinSheetMusicWidth, this.$_i.type, 'availHeight:', this.availHeight, 'groupHeight:', groupHeight, 'frameHeight:', frameHeight, 'yMargin:', yMargin);
-
         $slider.css({
           width:  `${frameWidth}px`,
-          height: `${frameHeight}px`,
+          height: `${frameHeight + (this.marginY * 2)}px`,
         });
         window.$(this.$refs.slider).find('.frame-mask.side').css({height: `${yMargin}px`});
 
         $frame.css({
           width:  `${frameWidth}px`,
           height: `${frameHeight}px`,
+          top:             `${this.marginY}px`,
           left:            `${ xMargin}px`,
           'margin-left':   `${-xMargin}px`,
           'padding-left':  `${ xMargin}px`,
@@ -700,14 +816,26 @@ export default {
         });
       }
 
+      // [hack!] compensate for when sliding toggles the vertical scrollbar
+      const adjX = this.isInit && diffW && Math.abs(diffW) === this.$_.scrollbarWidth ? diffW : 0;
+
       const {xOffset, yOffset} = this.getSlideOffset($slide);
-      const XY = `${-xOffset}px, ${-yOffset}px`;
+      const XY = `${-xOffset - adjX}px, ${-yOffset}px`;
 
       $slides.css({
         transform: (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`),
       });
 
       if (this.noTransition) forceRepaint();
+
+      if (!this.isInit) this.isInit = true;
+
+      if (!this.noTransition && adjX) {
+        await sleep(settings.TRANSITION_TIME_MS);
+        this.autosize();
+        await sleep(settings.TRANSITION_TIME_MS);
+        this.autosize();
+      }
     }, // autosize()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -739,8 +867,6 @@ export default {
       const xOffset = $slide.offsetRect()[metric] - $slides.offsetRect()[metric];
       let yOffset = Math.floor(($slides.height() - frameHeight) / 2);
 
-      //console.log('getSlideOffset() $slides.height():', $slides.height(), '$slide.height():', $slide.height(), 'height:', height, 'this.availHeight:', this.availHeight);
-
       // [2018-11] IE11 (Trident) still has ~5% usage and does not support flexbox (so slides are not vertically centered)
       if (navigator.userAgent.match(/Trident/) && yOffset > settings.CONTROLS_HEIGHT) yOffset = -settings.CONTROLS_HEIGHT;
 
@@ -755,8 +881,6 @@ export default {
       const sliderRect = window.$(this.$el)[0].getBoundingClientRect();
       const view       = window.$(this.$el).find('.slider-view')[0];
 
-      //console.log(`getSlidePositionData() s.left:${slideRect.left} S.left:${sliderRect.left} s.right:${slideRect.right} S.right:${sliderRect.right}`);
-
       const isOverEdgeLeft  = slideRect.left > sliderRect.left;
       const isOverEdgeRight = slideRect.right < sliderRect.right;
       const isOverEdge      = isOverEdgeLeft || isOverEdgeRight;
@@ -767,8 +891,8 @@ export default {
 
       return {
         view,
-        sliderWidth: sliderRect.width,
-        slideWidth:  slideRect.width,
+        sliderRect,
+        slideRect,
         isOverEdge,
         isOverEdgeLeft,
         isOverEdgeRight,
@@ -795,8 +919,6 @@ export default {
         const pct = easeInOutCubic(ms / settings.TRANSITION_TIME_MS);
         const l = Math.round(startLeft + (offsetLeft * pct));
 
-        //console.log('stepping...', l, '@', pct);
-
         if (left !== null) el.scrollLeft = l;
 
         if (ms < settings.TRANSITION_TIME_MS) window.requestAnimationFrame(step);
@@ -804,6 +926,59 @@ export default {
 
       window.requestAnimationFrame(step);
     }, // scrollEase()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    async showSamples() {
+
+      this.$router.push(`/${this.$_i.code}/#${this.$_i.samples[this.$_i.currentIndex].id}`);
+
+      const hasSamples = this.$_s.items[this.currentIndex].samples.length;
+
+      if (!hasSamples) return;
+
+      const $slider = window.$('#the-samples .slider');
+      const $slide  = window.$(`#the-context .slide[data-index="${this.$_s.currentIndex}"]`);
+      const $btn    = window.$('#the-samples .btn-context');
+
+      const slideS  = $slide[0].getBoundingClientRect(); // slide series
+      const slideI  = window.$(`#the-samples .slide[data-index="${this.$_i.currentIndex}"]`)[0].getBoundingClientRect(); // slide item
+
+      const xRatio  = (slideI.width / slideS.width);
+      const yRatio  = (slideI.height / slideS.height);
+      const ratio   = Math.max(xRatio, yRatio);
+
+      const xOffset = (slideS.left + (slideS.width  / 2)) - (slideI.left + (slideI.width  / 2));
+      const yOffset = (slideS.top  + (slideS.height / 2)) - (slideI.top  + (slideI.height / 2));
+      const XY      = `${-xOffset}px, ${-yOffset}px`;
+      const ySlider = slideS.top + ((slideS.height / 2) + (yOffset / (ratio - 1)));
+
+      const aspectRatio = (slideS.top + (slideS.height / 2)) / (slideS.left + (slideS.width / 2));
+
+      this.uiStateClass({add:'-xing context-to-samples context-to-samples-setup'});
+
+      await nextFrame();
+
+      $slider.css({'transform-origin': `50% ${ySlider}px`, 'transform': `translateX(${xOffset}px) scale(${1 / ratio})`});
+      $btn.css({'transform-origin': `-20% ${50 - (70 * aspectRatio)}%`, 'transform': 'scale(1.2)'});
+
+      await nextFrame();
+
+      this.uiStateClass({remove:'context-to-samples-setup', add:'context-to-samples-active', show:'samples'});
+
+      await nextFrame();
+
+      $slider.css({'transform': null});
+      $btn.css({'transform-origin': null, 'transform': null});
+
+      $slide.css({'transform': (this.supports3d ? `translate3d(${XY}, 0)` : `translate(${XY})`) + ` scale(${ratio})`});
+
+      await sleep(settings.TRANSITION_TIME_MS);
+
+      this.uiStateClass({remove:'-xing context-to-samples context-to-samples-active'});
+      $slide.css({'transform': null});
+
+    }, // showSamples()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -932,8 +1107,8 @@ export default {
 
         const {needsScrollbar} = this.checkScrollbars({width:$slide.width(), height:$slide.height()});
 
-        this.availWidth  = this.width  - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
-        this.availHeight = this.height - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
+        this.availWidth  = this.width       - (needsScrollbar.y ? this.$_.scrollbarWidth : 0);
+        this.availHeight = this.getHeight() - (needsScrollbar.x ? this.$_.scrollbarWidth : 0);
 
         // extra space available within view
         const xMargin = this.availWidth  - $slide.width();
@@ -1021,6 +1196,62 @@ export default {
 }
 </script>
 
+<style lang="scss">
+@import "../assets/settings.scss";
+
+//----------------------------------------------------------------------------------------------------------------------
+// TRANSITION
+
+// enable visibility on .slide rotation
+#the-context .slider,
+#the-context .slider .frame {
+  overflow: visible;
+}
+
+.show-context:not(.-xing) #the-samples .slider-frame > *,
+.context-to-samples-setup #the-samples .slider-frame > *:not(.slider-view) {
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.context-to-samples-active #the-samples .slider-frame > *,
+.context-to-samples-active #the-samples .the-opt-context {
+  transition: opacity $transition-time-ms ease-in;
+}
+.context-to-samples-setup #the-samples .slide {
+  transition: none;
+  opacity: 0;
+}
+.context-to-samples-active #the-samples .slide:not(.current) {
+  transition: opacity $transition-time-ms ease-in;
+}
+
+.context-to-samples-setup #the-samples .slider {
+  transition: none;
+}
+.context-to-samples #the-context {
+  transition: opacity $transition-time-ms ease-out;
+}
+.context-to-samples-active #the-context,
+.show-samples #the-context {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.context-to-samples #the-context .info-liner {
+  @include short-transition;
+  transform: translateY(-100%);
+}
+.samples-to-context-setup #the-context .info-liner {
+  transform: translateY(-100%);
+}
+.samples-to-context-active #the-context .info-liner {
+  @include short-transition;
+  transform: none;
+}
+//----------------------------------------------------------------------------------------------------------------------
+</style>
+
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
@@ -1037,10 +1268,6 @@ $radius-lg: $radius * 2;
   overflow: auto;
 }
 
-.slider-view {
-  background-color: $background-color;
-}
-
 .slider-pane {
   position: absolute;
   top: 0;
@@ -1048,7 +1275,11 @@ $radius-lg: $radius * 2;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  @include short-transition;
+
+  @at-root .samples-to-samples & {
+    @include short-transition;
+  }
+
   pointer-events: none;
 
   > * {
@@ -1174,6 +1405,10 @@ $radius-lg: $radius * 2;
 
   @include short-transition;
 
+  @at-root .no-transition & {
+    transition: none;
+  }
+
   &:not(.current) {
     opacity: 0.25;
   }
@@ -1183,24 +1418,51 @@ $radius-lg: $radius * 2;
   @at-root .has-zoom[data-dpi="80"] .slider:not([aria-grabbed]) .slide.current,
   .has-zoom[data-dpi="80"] .rulers .target {
     cursor: zoom-in;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='13' y1='8' x2='13' y2='18' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-in;
+    cursor: $cursor-zoom-in, zoom-in;
   }
   @at-root .has-zoom[data-dpi="120"] .slider:not([aria-grabbed]) .slide.current,
   .has-zoom[data-dpi="120"] .rulers .target {
     cursor: zoom-out;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='22' y1='22' x2='29' y2='29' stroke='#{$theme-color-data-uri}' stroke-width='5' stroke-linecap='round' /%3E%3Ccircle cx='13' cy='13' r='11' fill='white' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3Cline x1='8' y1='13' x2='18' y2='13' stroke='#{$theme-color-data-uri}' stroke-width='3' /%3E%3C/svg%3E") 13 13, zoom-out;
+    cursor: $cursor-zoom-out, zoom-out;
+  }
+  @at-root #the-context .slide.current.has-samples {
+    cursor: zoom-in;
+    cursor: $cursor-zoom, zoom-in;
   }
 
-  // prev/next cursors
+  @at-root #the-context .slide:not(.has-samples) {
+    &::after {
+      pointer-events: none;
+      @include absolute-center();
+      content: 'No samples available. :-(';
+      font-size: 2em;
+      line-height: 2em;
+      padding: 0 0.5em;
+      color: red;
+      background: white;
+      border-radius: $radius;
+      opacity: 0;
+      @include short-transition;
+    }
+
+    &.current {
+      cursor: not-allowed;
+
+      &::after {
+        opacity: 1;
+      }
+    }
+  }
+
   @at-root
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.before-current,
   [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.after-current {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5,16 l 16,-16 2,2 -14,14 14,14 -2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
+    cursor: $cursor-prev, grab;
   }
   @at-root
   [data-dir="ltr"] .slider:not([aria-grabbed]) .slide.after-current,
   [data-dir="rtl"] .slider:not([aria-grabbed]) .slide.before-current {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M27,16 l -16,-16 -2,2 14,14 -14,14 2,2z' fill='#{$theme-color-data-uri}' /%3E%3C/svg%3E") 16 16, grab;
+    cursor: $cursor-next, grab;
   }
 
   @at-root [data-dir="ltr"] &.non-sequential-after {
@@ -1231,18 +1493,8 @@ $radius-lg: $radius * 2;
     opacity: .25; // match opacity of :not(.current) slides to maintain constant color tone
   }
 
-  &::before {
-    z-index: 1; // make sure it's above <img>
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    border: 1px solid hsl(0, 0%, 60%);
-  }
-
   .slide-liner {
+    z-index: 1; // make sure it's above container
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1250,7 +1502,6 @@ $radius-lg: $radius * 2;
     height: 100%;
     overflow: hidden;
 
-    // TODO specific to #the-samples
     @at-root #the-samples &::after {
       pointer-events: none;
       @include absolute-center(x);
@@ -1260,15 +1511,100 @@ $radius-lg: $radius * 2;
       color: darken($alert-color, 25%);
       text-shadow: -1px -1px 0 white, 1px -1px 0 white, 1px 1px 0 white, -1px 1px 0 white;
     }
-    // ^^^
+  }
+
+  perspective: $standard-perspective;
+
+  &.has-samples::after { // "reverse" of cover
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px solid $border-color;
+    background-color: darken(white, 10%);
+  }
+
+  &.current.has-samples {
+    z-index: 1;
+    .slide-liner {
+      transition: transform 1s ease;
+      outline: 1px solid transparent; // [2019-03] fix for jagged edges in Firefox
+      backface-visibility: hidden;
+    }
+    &::after {
+      transition: transform 1s ease;
+    }
+    &.spine-left {
+      perspective-origin: 75% 50%;
+      &::after,
+      .slide-liner {
+        transform-origin: left;
+      }
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateY(-20deg);
+        }
+      }
+      @at-root .context-to-samples .slide.current.spine-left {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateY(-90deg) !important;
+        }
+      }
+    }
+    &.spine-top {
+      perspective-origin: 50% 75%;
+      &::after,
+      .slide-liner {
+        transform-origin: top;
+      }
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateX(15deg);
+        }
+      }
+      @at-root .context-to-samples .slide.current.spine-top {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateX(90deg) !important;
+        }
+      }
+    }
+    &.spine-right {
+      perspective-origin: 25% 50%;
+      &::after,
+      .slide-liner {
+        transform-origin: right;
+      }
+      &:hover {
+        &::after,
+        .slide-liner {
+          transform: rotateY(20deg);
+        }
+      }
+      @at-root .context-to-samples .slide.current.spine-right {
+        &::after,
+        .slide-liner {
+          @include short-transition;
+          transform: rotateY(90deg) !important;
+        }
+      }
+    }
   }
 
   img {
-    // icons sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cstyle type='text/css'%3E .c1, .c2 %7B transform-origin: 100px 100px; animation: x 2s ease-out infinite; %7D .c2 %7B animation-delay:-1s; %7D @keyframes x %7B from %7B transform: scale%280%29; opacity:.5; %7D to %7B transform:scale%281.0%29; opacity:0; %7D %7D %3C/style%3E%3Ccircle class='c1' cx='100' cy='100' r='20' fill='black' /%3E%3Ccircle class='c2' cx='100' cy='100' r='20' fill='black' /%3E%3C/svg%3E") no-repeat center / cover;
+    background: $data-uri-img-loading no-repeat center / cover;
 
     &[data-error] {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='-100 -100 400 400'%3E%3Cstyle type='text/css'%3E .sad %3E * %7B transform-origin: 100px 100px; animation: sad 1s ease-in forwards; %7D @keyframes sad %7B from %7B opacity: 0; transform: scale(0); %7D to %7B opacity: 1; %7D %7D .face %3E * %7B opacity: .25; %7D .teardrop %7B transform-origin: 15px 3px; opacity: .25; animation-delay: -1s; animation: t 5s ease-out infinite; %7D @keyframes t %7B from, 40%25 %7B transform: translate(94px, 95px) scale(0); %7D 95%25 %7B transform: translate(94px, 95px) scale(.15); %7D to %7B transform: translate(94px, 140px) scale(.15); %7D %7D text %7B fill: red; font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-anchor: middle; %7D %3C/style%3E%3Cg class='sad'%3E%3Cg class='face'%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='black' stroke-width='4' /%3E%3Ccircle cx='94' cy='95' r='3' fill='black' /%3E%3Ccircle cx='106' cy='95' r='3' fill='black' /%3E%3Cpath d='M 90,109 a 12 12 0 0 1 20,0' stroke='black' stroke-width='2' stroke-linecap='round' fill='none' /%3E%3C/g%3E%3Cpath class='teardrop' fill='black' d='M15 3 Q16.5 6.8 25 18 A12.8 12.8 0 1 1 5 18 Q13.5 6.8 15 3z' /%3E%3Ctext x='100' y='150'%3Eimage failed to load%3C/text%3E%3C/g%3E%3C/svg%3E");
+      background-image: $data-uri-img-error;
     }
   }
 
@@ -1280,11 +1616,11 @@ $radius-lg: $radius * 2;
     &::after {
       content: '';
       display: block;
-      width: 100%;
       margin-top: 0.25em;
+      width: 100%;
+      min-width: 4em;
       height: 4em;
-      // icon sourced from <https://codepen.io/livelysalt/pen/Emwzdj> encoded via <https://yoksel.github.io/url-encoder/>
-      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M0,6 v6 h4 l5,5 v-16 l-5,5 h-4 z' /%3E%3Cpath d='M13.5,9 c0,-1.8 -1,-3.3 -2.5,-4 v8 c1.5,-0.7 2.5,-2.2 2.5,-4 z' /%3E%3Cpath d='M11,.2 v2 c3,1 5,3.6 5,6.8 s-2,5.8 -5,6.7 v2 c4,-0.8 7,-4.4 7,-8.7 s-3,-8 -7,-8.8 z' /%3E%3C/svg%3E") no-repeat center;
+      background: $data-uri-img-audio no-repeat center;
       opacity: .05;
     }
   }
@@ -1294,8 +1630,8 @@ $radius-lg: $radius * 2;
 //----------------------------------------------------------------------------------------------------------------------
 
 .sidebar {
-  z-index: $layer-the-nav - 1;
-  height: 8em;
+  z-index: $layer-the-navbar - 1;
+  height: 2 * $unit;
   @include short-transition;
 
   &.disabled {

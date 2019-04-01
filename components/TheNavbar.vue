@@ -1,46 +1,50 @@
 <template>
-  <aside :class="`the-nav sidebar top h ${isListShown ? 'is-list-shown' : ''}`" @click="onMaskClick">
+  <div :class="`the-navbar ${isListShown ? 'is-list-shown' : ''} ${$_i.samples.length === 1 ? 'hide' : ''}`" @click="onMaskClick">
+    <aside class="sidebar top h">
 
-    <div class="controls">
-      <nuxt-link class="btn btn-nav prev ltr" tabindex="1" :title="getSample(-1, 'title')" :disabled="!getSample(-1)" :to="'#' + getSample(-1, 'id')" replace aria-label="previous sample" tag="button">
-        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-      </nuxt-link>
-      <button ref="btnList" class="btn btn-nav btn-list" tabindex="1" :title="btnListTitle" @click="toggleList" @keydown="onListKey">
-        <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
-          <span v-for="sample in s.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
-        </span></span>
-      </button>
-      <nuxt-link class="btn btn-nav next ltr" tabindex="1" :title="getSample(+1, 'title')" :disabled="!getSample(+1)" :to="'#' + getSample(+1, 'id')" replace aria-label="next sample" tag="button">
-        <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
-      </nuxt-link>
-    </div>
+      <div class="controls">
+        <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
+          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+        </nuxt-link>
+        <button ref="btnList" :class="`btn btn-nav btn-list w${idFrameWidth}`" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
+          <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
+            <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
+          </span></span>
+        </button>
+        <nuxt-link tag="button" class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample">
+          <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
+        </nuxt-link>
+      </div>
 
-    <nav :class="['list',listClass]" :aria-hidden="!isListShown" @keydown="onListKey">
-      <div class="pages">
-        <button v-for="sample in s.samples" tabindex="1" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && s.isCompactListTitles ? sample.title : ''"
-            @mouseenter="onListItemMouseEnter" @click="gotoId(sample.id)">
-          <span class="item-flex">
-            <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
-            <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
-          </span>
+    </aside>
+
+    <nav ref="navList" :class="['list',listClass]" :disabled="!isListShown" :aria-hidden="!isListShown" @keydown.stop="onListKey">
+      <div class="slides" @click="onSlidesClick">
+        <button v-for="sample in $_i.samples" tabindex="0" :disabled="!isListShown" :key="sample.index" :class="listItemClass(sample)" :data-id="sample.id" :title="sample.title && $_.isCompactListTitles ? sample.title : ''"
+                @mouseenter="onListItemMouseEnter">
+            <span class="item-flex">
+              <span class="track"><span class="font-resize">{{ sample.id }}</span></span>
+              <span class="title"><span class="font-resize">{{ sample.title }}</span></span>
+            </span>
         </button>
       </div>
       <ul class="settings">
-        <li><label><input type="checkbox" v-model="compactList" />compact list</label></li>
-        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" />autoplay</label></li>
-        <li v-if="s.type === 'audio'"><label><input type="checkbox" v-model="autoNext" />autonext</label></li>
+        <li><label><input type="checkbox" v-model="compactList" tabindex="0" :disabled="!isListShown" />compact list</label></li>
+        <li v-if="$_i.type === 'audio'"><label><input type="checkbox" v-model="autoPlay" tabindex="0" :disabled="!isListShown" />autoplay</label></li>
       </ul>
     </nav>
+    <div class="list-shadow-mask"></div>
 
-  </aside>
+  </div>
 </template>
 
 <script>
 import SvgIcon from './SvgIcon.vue';
 
-import { mapGetters, mapMutations } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import settings from '~/assets/settings';
+import mixins   from '~/plugins/mixins.vue';
 
 export default {
   components: {
@@ -49,7 +53,9 @@ export default {
 
   data () {
     return {
+      idFrameWidth: 3, // expand to 4 when needed
       isListShown: false,
+      listAcceptPointerEvents: false,
       keyActive: false,
     }
   }, // data()
@@ -57,54 +63,60 @@ export default {
   //--------------------------------------------------------------------------------------------------------------------
 
   computed: {
-    ...mapGetters([
-      'getSample',
+    ...mapGetters('item', [
+      'getSlide',
       'listItemClass',
     ]),
-    s() {
+
+    $_() {
       return this.$store.state;
     },
-    p() {
+
+    $_i() {
+      return this.$store.state.item;
+    },
+
+    $_p() {
       return this.$store.state.player;
     },
+
     btnNavPath() {
       return 'M2,2 h4 v24 h-4z M26,2 l -18,12 18,12z'; // right-pointing: 'M2,2 l 18,12 -18,12z M22,2 h4 v24 h-4z'
     },
+
     btnListTitle() {
       return `${this.isListShown ? 'hide' : 'show'} sample list`;
     },
+
     listClass() {
       return {
-        'compact': ((this.s.type === 'items' && this.s.isCompactList) || (this.s.type === 'audio' && this.s.isCompactListTitles))
+        'compact': ((this.$_i.type === 'items' && this.$_.isCompactList) || (this.$_i.type === 'audio' && this.$_.isCompactListTitles)),
+        'accept-events': this.listAcceptPointerEvents,
       };
     },
+
     idStyle() {
-      return `transform: translateX(${2.8 * this.s.currentIndex * (this.s.direction === 'rtl' ? 1 : -1)}rem)`;
+      return `transform: translateX(${this.$_i.currentIndex * (this.$_i.direction === 'rtl' ? 1 : -1) * (this.idFrameWidth - 0.2)}rem)`;
     },
+
     autoPlay: {
       get() {
-        return this.p.isAutoPlay;
+        return this.$_p.isAutoPlay;
       },
       set(isAutoPlay) {
-        this.setPlayer({isAutoPlay});
+        this.set('player', {isAutoPlay});
       },
     },
-    autoNext: {
-      get() {
-        return this.p.isAutoNext;
-      },
-      set(isAutoNext) {
-        this.setPlayer({isAutoNext});
-      },
-    },
+
     compactList: {
       get() {
-        return (this.s.type === 'audio' ?  this.s.isCompactListTitles : this.s.isCompactList);
+        return (this.$_i.type === 'audio' ? this.$_.isCompactListTitles : this.$_.isCompactList);
       },
       set(isCompactList) {
-        this.set({[this.s.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
+        this.set({[this.$_i.type === 'audio' ? 'isCompactListTitles' : 'isCompactList']: isCompactList});
       },
     },
+
   }, // computed {}
 
   //====================================================================================================================
@@ -117,39 +129,30 @@ export default {
         if (document.activeElement.hasAttribute('disabled')) document.activeElement.blur();
       });
     },
+
+    '$_i.currentIndex'() {
+      this.idFrameWidth = this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3;
+    },
   },
 
   //====================================================================================================================
 
   methods: {
 
-    ...mapMutations([
-      'set',
-    ]),
-    ...mapMutations('player', {
-      'setPlayer': 'set',
-    }),
+    set: mixins.set,
 
-    //------------------------------------------------------------------------------------------------------------------
-
-    throttleKey(e) {
-      if (this.keyActive) {
-        e.preventDefault();
-        return true;
-      }
-
-      this.keyActive = true;
-
-      setTimeout(() => {
-        this.keyActive = false;
-      }, settings.TRANSITION_TIME_MS);
-    }, // throttleKey()
+    throttleKey: mixins.throttleKey,
 
     //------------------------------------------------------------------------------------------------------------------
 
     showList() {
       this.isListShown = true;
       this.updateListFocus();
+
+      // pointer events delayed until list is fully expanded (otherwise Firefox fires mouseover events while expanding)
+      setTimeout(() => {
+        this.listAcceptPointerEvents = true;
+      }, settings.TRANSITION_TIME_MS);
     }, // showList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -158,6 +161,7 @@ export default {
       if (!this.isListShown) return;
 
       this.isListShown = false;
+      this.listAcceptPointerEvents = false;
     }, // hideList()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -179,20 +183,29 @@ export default {
 
       const id = e.target.getAttribute('data-id');
 
-      switch (e.key) {
-      case 'ArrowLeft': case 'Left':
+      switch (e.key) { // <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key>
+      case 'ArrowLeft': case 'Left': case 'PageUp':
         dir.x = -1; break;
       case 'ArrowUp': case 'Up':
-        dir.y = -1;
-        break;
-      case 'ArrowRight': case 'Right':
+        dir.y = -1; break;
+      case 'Home':
+        dir.x = -1; dir.end = true; break;
+      case 'ArrowRight': case 'Right': case 'PageDown':
         dir.x = 1; break;
       case 'ArrowDown': case 'Down':
         dir.y = 1; break;
+      case 'End':
+        dir.x = 1; dir.end = true; break;
       case ' ':
       case 'Enter':
         if (isBtn) this.toggleList();
         else this.gotoId(id);
+        break;
+      case 'Escape': case 'Esc':
+        if (this.isListShown) {
+          this.hideList();
+          this.$refs.btnList.focus();
+        }
         break;
       default:
         dir = null;
@@ -212,7 +225,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     getIndexById(id) {
-      const sample = this.s.samples.find((i) => i.id === id);
+      const sample = this.$_i.samples.find((i) => i.id === id);
       return (sample !== undefined ? sample.index : null);
     }, // getIndexById()
 
@@ -225,14 +238,24 @@ export default {
 
       const dir = this.getListKeyDir(e, isBtn);
 
+      if (e.target === this.$refs.navList && !this.isListShown) {
+        if (e.key !== 'Tab' && e.key !== 'Shift') this.$refs.btnList.focus();
+        return;
+      }
+
       if (!dir) return;
 
       e.preventDefault();
 
       const id = e.target.getAttribute('data-id');
-      const i  = this.getIndexById(id);
+      let i = this.getIndexById(id);
 
-      const newId = this.getSample(dir.value, 'id', i);
+      if (dir.end === true) {
+        i = dir.value < 0 ? 0 : this.$_i.samples.length - 1;
+        dir.value = 0;
+      }
+
+      const newId = this.getSlide(dir.value, 'id', i);
       if (newId === null) return;
 
       if (!this.isListShown) return this.gotoId(newId);
@@ -244,9 +267,16 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     updateListFocus(id = null) {
-      if (!id) id = this.getSample(0, 'id');
-      window.$(`.list .item[data-id="${id}"]`)[0].focus();
+      if (!id) id = this.getSlide(0, 'id');
+      window.$(this.$el).find(`.list .item[data-id="${id}"]`)[0].focus();
     }, // updateListFocus()
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    onSlidesClick(e) {
+      const id = window.$(e.target).closest('[data-id]').attr('data-id');
+      if (id) this.gotoId(id);
+    }, // onSlidesClick()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -263,7 +293,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     onMaskClick(e) {
-      if (e.target === window.$('.is-list-shown')[0]) this.hideList();
+      if (e.target === window.$(this.$el).filter('.is-list-shown')[0]) this.hideList();
     }, // onMaskClick()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -278,15 +308,30 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-.the-nav {
-  z-index: $layer-the-nav;
-  width: 3 * $unit;
+.the-navbar {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
 
+  &.hide {
+    display: none;
+  }
+
+  > * {
+    pointer-events: all;
+  }
+
+  // modal mask
   &::before {
+    z-index: $layer-the-navbar;
     content: '';
-    @include absolute-center(x);
-    width: 100vw;
-    height: 100vh;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
     background: white;
     opacity: 0;
     pointer-events: none;
@@ -298,19 +343,33 @@ export default {
     pointer-events: auto;
   }
 
+  .sidebar {
+    z-index: $layer-the-navbar;
+    width: 3 * $unit;
+  }
+
   .controls {
     width: 100%;
     height: 100%;
   }
 }
 
+.has-scrollbar-y .the-navbar {
+  .sidebar,
+  .list,
+  .list-shadow-mask {
+    // TODO: [2018-11] IE seems to subtract half the width of .sidebar (6em) in calculating left edge
+    left: calc(50% - #{round($scrollbar-width / 2)}); // decimal values can produce misalignments in Edge
+  }
+}
+
 .btn:not(:disabled) {
   &:focus,
   &:hover {
-    & .id-indicator-frame {
+    & .id-indicator-frame,
+    & .id-indicator {
       color: $focus-color;
       border-color: $focus-color;
-      @include short-transition;
     }
   }
 }
@@ -342,13 +401,16 @@ export default {
   left: 50%;
 }
 
+$frame_width:    3rem;
+$frame_width_w4: 4rem;
+
 .btn-list {
   z-index: 1; // raise above .list shadow
   padding: 1em 1em 0 1em;
   transform: translateY(-50%) translateY(-.5em) translateX(-50%); // sequential because IE11 doesn't support calc() here
 
   & .id-indicator-frame {
-    width: 3em;
+    width: $frame_width;
     height: 2em;
     @include absolute-center();
     text-align: left;
@@ -358,7 +420,10 @@ export default {
     background-color: white;
     white-space: nowrap;
     overflow: hidden;
-    //@include short-transition;
+    @include short-transition;
+  }
+  &.w4 .id-indicator-frame {
+    width: $frame_width_w4;
   }
 
   & .id-indicator-tray {
@@ -366,6 +431,10 @@ export default {
     display: inline-block;
     height: 100%;
     @include short-transition;
+
+    @at-root .no-transition#{&} {
+      transition: opacity $transition-time-ms ease-in-out;
+    }
   }
 
   & .id-indicator {
@@ -375,10 +444,13 @@ export default {
     line-height: 1.2em; // 16 * 1.2 = 19.2 (best compromise between Chrome and Firefox alignment)
     font-weight: bold;
     text-align: center;
-    width: 2.8rem;
+    width: $frame_width - 0.2rem;
     height: 1.8rem;
     overflow: hidden;
-    //transition: transform $transition-time ease-in-out; // match slide transition time
+    @include short-transition;
+  }
+  &.w4 .id-indicator {
+    width: $frame_width_w4 - 0.2rem;
   }
 } // .btn-list
 
@@ -395,16 +467,37 @@ export default {
   }
 }
 
+// decoration to make list appear seamless with button
+.list-shadow-mask {
+  pointer-events: none;
+  position: absolute;
+  z-index: $layer-the-navbar + 1;
+  @include absolute-center(x);
+  background: $background-color;
+  top: 3.25em;
+  width: 4em;
+  height: .75em;
+  @include short-transition;
+
+  opacity: 0;
+  transform: translateX(-50%) scale(0);
+
+  @at-root .is-list-shown & {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
 .list {
-  //display: none;
+  z-index: $layer-the-navbar;
   pointer-events: none;
   user-select: none;
   @include absolute-center(x);
   box-sizing: border-box;
-  top: 100%;
-  width: 100vw;
+  top: $unit;
+  width: 100%;
   max-width: 10 * $unit;
-  max-height: calc(100vh - 6em);
+  max-height: calc(100% - 6em);
   padding: $list-padding;
   background-color: $list-bg-color;
   box-shadow: $list-shadow;
@@ -413,24 +506,38 @@ export default {
   @include short-transition;
 
   opacity: 0;
-  transform-origin: center -4em;
+  transform-origin: center -$unit;
   transform: translateX(-50%) scale(0);
 
   &:not([aria-hidden]) {
-    pointer-events: all;
     opacity: 1;
     transform: translateX(-50%) scale(1);
+  }
+  &.accept-events {
+    pointer-events: all;
+  }
+
+  &::before {
+    content: '';
+    width: 4em;
+    height: .75em;
+    @include absolute-center(x);
+    bottom: 100%;
   }
 
   * {
     position: relative;
   }
 
-  .pages {
+  :focus {
+    outline: none;
+  }
+
+  .slides {
     display: flex;
     flex-direction: column;
   }
-  &.compact .pages {
+  &.compact .slides {
     flex-direction: row;
     flex-wrap: wrap;
     padding: $list-padding;
@@ -465,7 +572,7 @@ export default {
     width: 1 * $unit;
     margin-bottom: ($list-padding * 2);
   }
-  &.compact .pages {
+  &.compact .slides {
     margin-bottom: -($list-padding * 2);
   }
 

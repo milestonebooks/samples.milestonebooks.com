@@ -6,21 +6,21 @@ export const state = () => ({
   _showDebugger: (process.env.NODE_ENV === 'development' || process.env.NUXT_ENV_DEBUG === 'on'),
   _debugText:    null,
   _debugCheck:   null,
-  _focusItem:    true, // TODO
 
-  isDev:      false,
-  isInit:     false,
-  gtmID:      'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
-  psID:       '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
-  urlBase:    'https://samples.milestonebooks.com/',
-  urlBaseImg: 'https://www.milestonebooks.com/img/',
-  isResizing:  false,
+  isDev:       false,
+  isInit:      false,
+  gtmID:       'GTM-PHD5MBC', // <https://tagmanager.google.com/?hl=en#/container/accounts/1378342715/containers/6846012>
+  psID:        '03yw2k4fbbp6t0zkx602uk0nqu', // <https://admin8.providesupport.com/view/my-account/setup-instructions/monitor-code;wsid=J4SKYwqqHvZIwjTrG3m66KdsVuCskjrm>
+  urlBase:     'https://samples.milestonebooks.com/',
+  urlBaseImg:  'https://www.milestonebooks.com/img/',
+  urlBaseItem: 'https://www.milestonebooks.com/item/',
+
+  isResizing:     false,
+  uiStateClasses: ['ui-state'],
+  uiStateShow:    'init',
 
   isCompactList:       true,
   isCompactListTitles: false,
-
-  showContext:  false,
-  isContexting: false,
 
   hasTouch:     false,
   hasMouse:     false,
@@ -32,6 +32,8 @@ export const state = () => ({
   alerts: [],
 
   history: [],
+
+  request: null, // can by watched by components to trigger internal function calls
 
   persist: [
     {key:'isCompactList',       get: v => v === 'true'},
@@ -46,7 +48,17 @@ export const state = () => ({
 
 export const getters = {
 
-  //------------------------------------------------------------------------------------------------------------------
+  //--------------------------------------------------------------------------------------------------------------------
+
+  uiStateClassString(state) {
+    return (state.isInit ? 'is-init ' : '') + state.uiStateClasses.join(' ') + ` show-${state.uiStateShow}`;
+  },
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  isSamplesShown(state) {
+    return state.uiStateShow === 'samples';
+  },
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +69,8 @@ export const getters = {
 export const mutations = {
 
   set: mixins.mutations.set,
+
+  uiStateClass: mixins.mutations.uiStateClass,
 
   //--------------------------------------------------------------------------------------------------------------------
 

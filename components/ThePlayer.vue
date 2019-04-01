@@ -1,14 +1,14 @@
 <template>
-  <aside class="audio-player sidebar bottom h" :class="uiClass">
+  <aside class="audio-player sidebar bottom h controls" :class="uiClass">
 
-    <button class="btn btn-play ltr" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
+    <button class="btn btn-play ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
     </button>
 
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a ref="handle" class="bar-handle" tabindex="0" :style="barHandleStyle" @keydown="onHandleKey" @click.prevent>
+          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isSamplesShown" :style="barHandleStyle" @keydown.stop="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -23,7 +23,6 @@ import SvgIcon from './SvgIcon.vue';
 
 import { mapGetters } from 'vuex';
 
-import settings from '~/assets/settings';
 import mixins   from '~/plugins/mixins.vue';
 
 export default {
@@ -48,7 +47,7 @@ export default {
 
   computed: {
     ...mapGetters('item', [
-      'getSample',
+      'getSlide',
       'listItemClass',
     ]),
     ...mapGetters('player',[
@@ -60,9 +59,15 @@ export default {
       'playTitle',
       'handleTip',
     ]),
+
+    $_i() {
+      return this.$store.state.item;
+    },
+
     $_p() {
       return this.$store.state.player;
     },
+
     btnPlayPath() {
       return (this.$_p.isPlaying ? 'M4,2 h7 v24 h-7 v-24 z M17,2 h7 v24 h-7 v-24z' : (this.isPlayable ? 'M6,2 l 21,12 -21,12z' : ''));
     },
@@ -72,7 +77,7 @@ export default {
     if (typeof window === 'undefined' || typeof document === 'undefined' || typeof $ === 'undefined') return;
     this.bindEvents();
     this.$store.subscribeAction((action) => {
-      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSample(+1)) this.$router.replace('#' + this.getSample(+1, 'id'));
+      if (action.type === 'player/onEnd' && this.$_p.isAutoPlay && this.getSlide(+1)) this.$router.replace('#' + this.getSlide(+1, 'id'));
     });
     this.init();
   }, // mounted ()
@@ -86,6 +91,14 @@ export default {
       this.update();
     },
 
+    '$store.getters.isSamplesShown'() {
+      if (this.$store.getters.isSamplesShown) {
+        this.update();
+      } else {
+        if (this.$_p.isPlaying) this.$store.dispatch('player/togglePlay', {play: false});
+      }
+    },
+
     '$_p.isAutoPlay'() {
       this.$store.dispatch('player/togglePlay', {play: this.$_p.isAutoPlay});
     },
@@ -96,6 +109,8 @@ export default {
   methods: {
 
     set: mixins.set,
+
+    throttleKey: mixins.throttleKey,
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -132,34 +147,21 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      this.load(this.currentIndex);
+      if (this.$_i.type === 'audio' && this.$store.getters.isSamplesShown) {
+        this.load();
+      }
     }, // update()
 
     //------------------------------------------------------------------------------------------------------------------
 
-    async load(index) {
-      if (this.currentIndex === null) return;
+    async load() {
+      if (this.currentIndex === -1) return;
 
-      await this.$store.dispatch('player/loadAudio', index).catch((err_code) => {
-        this.$root.error({statusCode:500, message:`Error loading audio #${index} [${err_code}]`});
+      await this.$store.dispatch('player/loadAudio').catch((err_code) => {
+        this.$root.error({statusCode:500, message:`Error loading audio #${this.currentIndex} [${err_code}]`});
       });
       this.refresh();
     }, // load()
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    throttleKey(e) {
-      if (this.keyActive) {
-        e.preventDefault();
-        return true;
-      }
-
-      this.keyActive = true;
-
-      setTimeout(() => {
-        this.keyActive = false;
-      }, settings.TRANSITION_TIME_MS);
-    }, // throttleKey()
 
     //------------------------------------------------------------------------------------------------------------------
 
@@ -271,23 +273,22 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "../assets/settings.scss";
-
-[data-type="audio"] .below-sheet-music-width .slider {
-  margin-bottom: $controls-height;
-}
-</style>
-
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
+#the-samples:not([data-type="audio"]) .audio-player {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .audio-player {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   font: $base-size/1 Calibri,Arial,Helvetica,Verdana,sans-serif;
   width: 10 * $unit;
 
   @at-root .below-sheet-music-width & {
+    left: 0;
+    transform: translateX(0);
     width: 100%;
     border-radius: 0 !important;
   }

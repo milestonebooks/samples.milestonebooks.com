@@ -33,7 +33,7 @@ export default {
 
 .btn-opt.revert {
   position: absolute;
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   right: 1em;
   top: auto;
   bottom: 1em;

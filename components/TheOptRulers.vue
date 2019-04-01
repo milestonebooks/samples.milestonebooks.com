@@ -1,7 +1,7 @@
 <template>
   <div class="the-samples-rulers">
     <aside class="the-opt-rulers controls sidebar floating">
-      <button class="btn btn-opt btn-rulers ltr" tabindex="1" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
+      <button class="btn btn-opt btn-rulers ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
         <SvgIcon view="28" :d="btnRulerPath" />
       </button>
     </aside>
@@ -101,7 +101,6 @@ export default {
           top:  '',
         });
       }
-
     }, // onToggleRulers()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -218,6 +217,10 @@ export default {
 $ruler-inch: 80px;
 $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 
+.slider-frame:not(.has-rulers) .the-samples-rulers {
+  display: none;
+}
+
 .the-samples-rulers {
   position: absolute;
   top: 0;
@@ -232,7 +235,7 @@ $ruler-width-half: ($ruler-width-nominal - 1) / 2;
 }
 
 .the-opt-rulers {
-  z-index: $layer-the-nav - 1;
+  z-index: $layer-the-navbar - 1;
   top: 1em;
   right: 1em;
   width: $unit;

@@ -1,6 +1,4 @@
-//import settings from '~/assets/settings';
-import mixins   from '~/plugins/mixins.store';
-//import sleep    from '~/plugins/sleep';
+import mixins from '~/plugins/mixins.store';
 
 //======================================================================================================================
 
@@ -16,6 +14,7 @@ export const state = () => ({
   currentIndex:  null,
   currentWScale: 1,
   direction:    'ltr', // 'ltr' | 'rtl'
+  isInactive:    false,
 
   hasRulers:     false,
   showRulers:    false,
@@ -42,13 +41,7 @@ export const state = () => ({
 
 export const getters = {
 
-  //--------------------------------------------------------------------------------------------------------------------
-
-  getSample: (state) => (dir = 0, key, currentIndex = null) => {
-    const i = (currentIndex === null ? state.currentIndex : currentIndex) + dir;
-    const sample = (state.samples[i] ? state.samples[i] : null);
-    return sample && key ? sample[key] : sample;
-  }, // getSample()
+  getSlide: mixins.getters.getSlide,
 
   //------------------------------------------------------------------------------------------------------------------
 
@@ -82,7 +75,6 @@ export const mutations = {
   //--------------------------------------------------------------------------------------------------------------------
 
   setImageLoaded(state, {i, dpi, loaded = true}) {
-    //console.log('setImageLoaded', i, dpi, loaded);
     state.samples[i].image.loaded[dpi] = loaded;
   }, //setImageLoaded()
 

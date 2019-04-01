@@ -1,12 +1,13 @@
 <template>
   <AppFrame id="the-context">
     <AppSlider type="series" slot="view"
-               :slides="$_s.items" :currentIndex="$_s.currentIndex" :isLoading="$_s.isLoading"
+               :slides="$_s.items" :currentIndex="$_s.currentIndex" :isLoading="$_s.isLoading" :marginY="10"
                v-bind="{imageSrc, onImageLoaded, onImageLoadError}"></AppSlider>
 
     <template slot="frame">
-      <span style="position:relative; color:orange">TheContext [{{ this.$_s.currentIndex }}] of {{ this.$_s.items.length }}</span>
-      <div class="info"><div v-for="i of 20">Info-info-info-info</div></div>
+      <div class="info"><div class="info-liner">
+        <h1 class="title"><a tabindex="0" :href="$_.urlBaseItem + ($_i.isInactive ? $_s.code : $_i.code ) + '/'" @click="$event.target.style.cursor = 'progress'">{{ $_i.title }}</a></h1>
+      </div></div>
     </template>
   </AppFrame>
 </template>
@@ -30,6 +31,9 @@ export default {
     $_s() {
       return this.$store.state.series;
     },
+    $_i() {
+      return this.$store.state.item;
+    },
   }, // computed {}
 
   mounted() {
@@ -47,8 +51,8 @@ export default {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    onImageLoaded(i) {
-      this.isLoaded = true; // TODO
+    onImageLoaded() {
+      // not used
     }, // onImageLoaded()
 
     //------------------------------------------------------------------------------------------------------------------
@@ -69,27 +73,49 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/settings.scss";
 
-$slider-height: 75%;
+$slider-height: 100%;//calc(100% - #{$info-visibility-height});
 
-.debug #the-context {
-  left: 50px;
-  top: 50px;
-  width: 60%;
-  height: 50vh;
-  outline: 1px solid orange;
+.samples-to-context #the-context {
+  z-index: $layer-context-btn + 1;
 }
 
 #the-context /deep/ .app-view {
-  height: calc(#{$slider-height} - 20px);
-  margin-top: 10px;
+  height: $slider-height;
 }
+
+#the-context /deep/ .slider-view {
+  overflow: hidden;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 .info {
   position: absolute;
-  top: $slider-height;
+  top: 0;//$slider-height;
+  //height: $info-visibility-height;
   width: 100%;
-  background: white;
-  @include drop-shadow;
+
+  .info-liner {
+    box-sizing: border-box;
+    height: 100%;
+    padding: 10px;
+    //background: white;
+    //@include drop-shadow;
+  }
+
+  .title {
+    margin: 0;
+    text-align: center;
+    font: normal 2em "Trebuchet MS", Helvetica, sans-serif;
+
+    a {
+      color: hsl(210, 100%, 40%); /* match store links */
+      text-decoration: none;
+      @at-root .show-samples:not(.-xing) & {
+        display: none;
+      }
+    }
+  }
 }
 
 </style>

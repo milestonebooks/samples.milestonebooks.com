@@ -1,6 +1,19 @@
 import storage from '~/plugins/storage.client';
 import mixins from '~/plugins/mixins.store';
 
+const currentSound = function(newSound = null) {
+  const item = window.$nuxt.$store.state.player.current;
+  const key = `${item.code}:${item.index}`;
+
+  window.howls = window.howls || {};
+
+  window.howls[key] = window.howls[key] || newSound;
+
+  return window.howls[key];
+}; // currentSound()
+
+//======================================================================================================================
+
 export const state = () => ({
   isInit:      false,
   isPlaying:   false,
@@ -14,7 +27,8 @@ export const state = () => ({
   isAutoPlay: null, // default to true if mouse is detected
 
   current: {
-    index: null, // = rootState.currentIndex
+    code: null,
+    index: null,
     duration: 0,
     pct: 0,
     pctPixel: 0,
@@ -115,7 +129,7 @@ export const mutations = {
 
   setLoaded(state) {
     state.isLoading = false;
-    state.current.duration = window.howls[state.current.index].duration();
+    state.current.duration = currentSound().duration();
   }, // setLoaded()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -124,7 +138,7 @@ export const mutations = {
 
     if (t) {
       if (!state.interrupted) {
-        const sound = window.howls[state.current.index];
+        const sound = currentSound();
         sound.fade(sound.volume(), 0, 400);
       }
       state.interrupt_t = t;
@@ -143,7 +157,7 @@ export const mutations = {
 
     if (state.current.index === null || (state.isPlaying && !state.interrupted)) return;
 
-    const sound = window.howls[state.current.index];
+    const sound = currentSound();
 
     if (from === 'handle') {
       sound.seek(state.current.duration * state.current.pctHandle / 100);
@@ -175,26 +189,31 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async loadAudio({dispatch, commit, rootState}, index) {
+  async loadAudio({dispatch, commit, state, rootState}) {
 
     await dispatch('reset');
 
-    commit('setCurrent', {index});
+    const index = rootState.item.currentIndex;
+
+    commit('setCurrent', {
+      code: rootState.item.code,
+      index
+    });
     commit('set', {isLoading:true});
 
-    window.howls = window.howls || {};
+    const audioFile = rootState.item.samples[index].audio;
 
-    if (!window.howls[index] && rootState.item.samples[index].audio) {
+    if (!currentSound() && audioFile) {
 
       await new Promise((resolve, reject) => {
-        window.howls[index] = new window.Howl({
-          src: [rootState.urlBase + rootState.item.samples[index].audio],
+        currentSound(new window.Howl({
+          src: [rootState.urlBase + audioFile],
           html5: true, // enable playing before loading is complete
           onload: async () => { await dispatch('onLoad'); resolve(); },
           onloaderror: async (id, error) => { reject(error); },
           onplay: () => { dispatch('setPct') },
           onend:  () => { dispatch('onEnd') },
-        });
+        }));
       });
 
     } else {
@@ -206,13 +225,13 @@ export const actions = {
   //--------------------------------------------------------------------------------------------------------------------
 
   async togglePlay({state, commit, getters}, {play = null} = {}) {
-    if (!getters.isPlayable || !(window.howls && window.howls[state.current.index])) return false;
+    if (!getters.isPlayable || !(currentSound())) return false;
 
     if (play === null) play = !state.isPlaying;
 
     commit('set', {isPlaying: play});
 
-    window.howls[state.current.index][play ? 'play' : 'pause']();
+    currentSound()[play ? 'play' : 'pause']();
   }, // togglePlay()
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -227,7 +246,7 @@ export const actions = {
   async setPct({dispatch, commit, getters, state}, pct) {
 
     if (pct === undefined) {
-      const sec = window.howls[state.current.index].seek();
+      const sec = currentSound().seek();
       pct = (sec / state.current.duration) * 100;
     }
 
@@ -270,7 +289,7 @@ export const actions = {
 
   async onEnd({dispatch, state, rootState}) {
 
-    if (!state.isAutoPlay || state.current.index === rootState.item.samples.length - 1) await dispatch('reset');
+    if (!state.isAutoPlay || rootState.item.currentIndex === rootState.item.samples.length - 1) await dispatch('reset');
 
   }, // onEnd()
 
