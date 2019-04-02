@@ -365,12 +365,13 @@ export default {
       // if id is not given in the hash, select the first in the samples list
       const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
 
-      const index = this.$_i.samples.findIndex(i => i.id === id);
+      let index = this.$_i.samples.findIndex(i => i.id === id);
 
       // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
         if (this.getRouteFromSequence(id)) return;
-        return this.$router.replace('./');
+        index = 0;
+        this.$router.replace('./');
       }
 
       //console.log('update route hash', `|${this.$route.hash}|`, 'index:', index, 'current:', this.$_i.currentIndex, 'id:', id);
