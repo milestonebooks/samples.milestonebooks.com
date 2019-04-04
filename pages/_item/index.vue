@@ -38,7 +38,7 @@ export default {
     const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (s && this.$store.getters.isSamplesShown ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
+      title: (s && this.$store.getters.isShowSamples ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
         class: this.$store.getters.uiStateClassString,
@@ -278,6 +278,7 @@ export default {
           maxHRatio: maxHRatio,
         };
       } else {
+        // TODO
         if (this.$store.getters.isSamplesShown) {
           this.$store.commit('set', {request: 'showContext'});
         }
@@ -349,7 +350,17 @@ export default {
         await this.initItemData(item);
       }
 
-      if (this.$store.getters.isSamplesShown && !this.$route.hash) {
+      let hash = this.$route.hash;
+
+      const regexAutoPlay = /#auto-next|#autoplay/;
+
+      // #auto-next was used in the pre-2019 system
+      if (hash.match(regexAutoPlay)) {
+        this.set('player', {isAutoPlay:true});
+        hash = hash.replace(regexAutoPlay, '');
+      }
+
+      if (this.$store.getters.isSamplesShown && !hash) {
         if (!this.$_.isInit) {
           return this.$router.replace(`./#${this.$_i.firstId}`);
         } else {
@@ -358,12 +369,12 @@ export default {
       }
 
       // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
-      const seq = +(this.$route.hash.match(/##(\d+)/) || [0,0])[1];
+      const seq = +(hash.match(/##(\d+)/) || [0,0])[1];
 
       if (seq && this.getRouteFromSequence(seq)) return;
 
       // if id is not given in the hash, select the first in the samples list
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
+      const id = (hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
 
       let index = this.$_i.samples.findIndex(i => i.id === id);
 
@@ -373,8 +384,6 @@ export default {
         index = 0;
         this.$router.replace('./');
       }
-
-      //console.log('update route hash', `|${this.$route.hash}|`, 'index:', index, 'current:', this.$_i.currentIndex, 'id:', id);
 
       this.set('item', {currentIndex: index});
 

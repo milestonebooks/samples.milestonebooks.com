@@ -163,7 +163,7 @@ export default {
     },
 
     isActive() {
-      return (this.type === 'series' && !this.$store.getters.isSamplesShown) || (this.type === 'item' && this.$store.getters.isSamplesShown);
+      return (this.type === 'series' && !this.$store.getters.isShowSamples) || (this.type === 'item' && this.$store.getters.isShowSamples);
     },
 
     isFirst() {

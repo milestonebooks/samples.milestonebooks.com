@@ -1,7 +1,7 @@
 <template>
   <div class="the-samples-rulers">
     <aside class="the-opt-rulers controls sidebar floating">
-      <button class="btn btn-opt btn-rulers ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
+      <button class="btn btn-opt btn-rulers ltr" tabindex="0" :disabled="!$store.getters.isShowSamples" :title="`${$_i.showRulers ? 'hide' : 'show'} rulers`" @click="toggleRulers">
         <SvgIcon view="28" :d="btnRulerPath" />
       </button>
     </aside>

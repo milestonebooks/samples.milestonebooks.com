@@ -44,6 +44,7 @@ export default {
 
   modules: [
     'cookie-universal-nuxt',
+    'nuxt-vuex-router-sync',
   ],
 
   mode: 'spa',

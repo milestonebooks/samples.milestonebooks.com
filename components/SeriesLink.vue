@@ -56,7 +56,7 @@ export default {
     },
 
     isEnabled() {
-      return this.$store.getters.isSamplesShown && !this.getItemSlide(this.dirIndex) && this.slide.code;
+      return this.$store.getters.isShowSamples && !this.getItemSlide(this.dirIndex) && this.slide.code;
     },
 
     isDisabled() {
