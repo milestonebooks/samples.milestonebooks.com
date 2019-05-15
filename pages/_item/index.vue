@@ -368,13 +368,13 @@ export default {
         }
       }
 
-      // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
+      // original link system [default until 2019] uses sequential numbers for sample id (i.e., index + 1)
       const seq = +(hash.match(/##(\d+)/) || [0,0])[1];
 
       if (seq && this.getRouteFromSequence(seq)) return;
 
-      // if id is not given in the hash, select the first in the samples list
-      const id = (hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
+      // if id (compare with server-side regex) is not given in the hash, select the first in the samples list
+      const id = (hash.match(/[\w-]+/) || [this.$_i.firstId])[0];
 
       let index = this.$_i.samples.findIndex(i => i.id === id);
 
