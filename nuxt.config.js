@@ -4,8 +4,8 @@
 // v2.0.0-beta.3 gzipped size: 75.81 KB
 // v2.0.0-beta.5 gzipped size: 78.90 KB
 // v2.0.0        gzipped size: 80.94 KB
+// v2.1.1        gzipped size: 81.33 KB
 // TODO: implement behavior analytics (low priority)
-// TODO: indicate verso pages
 
 export default {
   env: {

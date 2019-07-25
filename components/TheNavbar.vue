@@ -131,7 +131,7 @@ export default {
     },
 
     '$_i.currentIndex'() {
-      this.idFrameWidth = this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3;
+      this.idFrameWidth = (this.$_i.currentIndex !== -1 && this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3);
     },
   },
 
