@@ -376,7 +376,6 @@ export default {
       // if id (compare with server-side regex) is not given in the hash, select the first in the samples list
       const id = (hash.match(/[\w-]+/) || [this.$_i.firstId])[0];
 
-      console.log('update id:', id); // TODO
       let index = this.$_i.samples.findIndex(i => i.id === id);
 
       // if id is not found, it may be an old-style url using #sequence instead of #id

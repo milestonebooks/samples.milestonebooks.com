@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -19,9 +19,9 @@
     "node": ">=8.0.0"
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "axios": "^0.18.1",
     "cookie-universal-nuxt": "^2.0.14",
-    "nuxt": "^2.4.2",
+    "nuxt": "^2.8.1",
     "nuxt-vuex-router-sync": "0.0.3"
   },
   "devDependencies": {
