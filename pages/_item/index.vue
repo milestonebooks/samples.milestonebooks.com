@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-dir="$_i.direction">
+  <main :class="mainClass" :data-dir="$_i.direction" :data-dev="dev">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
@@ -19,6 +19,8 @@ import TheContext  from '~/components/TheContext';
 
 import settings  from '~/assets/settings';
 import mixins    from '~/plugins/mixins.vue';
+
+import p from '../../package';
 
 import axios from 'axios';
 
@@ -78,6 +80,7 @@ export default {
 
   data () {
     return {
+      dev: this.$store.state.isDev ? `__ ${p.version} | nuxt@${p.dependencies.nuxt}` : '',
     }
   }, // data()
 
@@ -428,12 +431,14 @@ main {
   &.is-dev::after {
     pointer-events: none;
     z-index: $layer-the-alerts;
-    content: '';
+    content: attr(data-dev);
+    white-space: nowrap;
     position: absolute;
     left: 0;
     top: 0;
     width: 1em;
     height: 1em;
+    color: gray;
     background-color: red;
   }
 }
