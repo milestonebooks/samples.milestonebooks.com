@@ -6,6 +6,7 @@
 // v2.0.0        gzipped size: 80.94 KB
 // v2.1.1        gzipped size: 81.33 KB
 // v2.2.0        gzipped size: 85.19 KB
+// v2.2.2        gzipped size: 91.92 KB
 // TODO: implement behavior analytics (low priority)
 // TODO: [bug] Source map error: request failed with status 404 | Resource URL: http://localhost:3000/_nuxt/modern-vendors.app.js
 
