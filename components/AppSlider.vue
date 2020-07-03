@@ -1515,6 +1515,7 @@ $radius-lg: $radius * 2;
 
   perspective: $standard-perspective;
 
+  //noinspection ALL
   &.has-samples::after { // "reverse" of cover
     content: '';
     position: absolute;

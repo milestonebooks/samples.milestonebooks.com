@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -16,29 +16,29 @@
     "precommit": "npm run lint"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=10.0.0"
   },
   "dependencies": {
     "axios": "^0.18.1",
-    "cookie-universal-nuxt": "^2.0.14",
-    "nuxt": "^2.8.1",
+    "cookie-universal-nuxt": "^2.1.4",
+    "nuxt": "^2.13.3",
     "nuxt-vuex-router-sync": "0.0.3"
   },
   "devDependencies": {
-    "acorn": "^6.0.7",
+    "acorn": "^6.4.1",
     "acorn-dynamic-import": "^4.0.0",
     "babel-eslint": "^8.2.6",
-    "cross-env": "^5.2.0",
+    "cross-env": "^5.2.1",
     "eslint": "^4.19.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-loader": "^1.9.0",
     "eslint-plugin-html": "^3.1.1",
-    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^5.1.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "node-sass": "^4.11.0",
-    "sass-loader": "^7.1.0",
+    "node-sass": "^4.14.1",
+    "sass-loader": "^7.3.1",
     "webpack": "4.28.4"
   }
 }
