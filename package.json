@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -19,10 +19,14 @@
     "node": ">=10.0.0"
   },
   "dependencies": {
-    "axios": "^0.19.2",
+    "@babel/preset-env": "^7.12.13",
+    "axios": "^0.24.0",
     "cookie-universal-nuxt": "^2.1.4",
-    "nuxt": "^2.13.3",
+    "nuxt": "^2.14.12",
     "nuxt-vuex-router-sync": "0.0.3"
+  },
+  "dependenciesComments": {
+    "@babel/preset-env": "Added 2021-10-29 to fix bug in nuxt@2.14.12 resolved in @2.15.2 <https://stackoverflow.com/questions/66325582/nuxt-js-cannot-find-module-babel-preset-env-lib-utils>"
   },
   "devDependencies": {
     "acorn": "^7.3.1",
