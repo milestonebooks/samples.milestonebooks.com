@@ -3,15 +3,15 @@
     <aside class="sidebar top h">
 
       <div class="controls">
-        <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
+        <nuxt-link tag="button" class="btn btn-nav prev ltr" tabindex="0" :disabled="!$store.getters.isShowSamples || !getSlide(-1)" :title="getSlide(-1, 'title')" :to="'#' + getSlide(-1, 'id')" replace aria-label="previous sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
-        <button ref="btnList" :class="`btn btn-nav btn-list w${idFrameWidth}`" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
+        <button ref="btnList" :class="`btn btn-nav btn-list w${idFrameWidth}`" tabindex="0" :disabled="!$store.getters.isShowSamples" :title="btnListTitle" @click="toggleList" @keydown.stop="onListKey">
           <span class="id-indicator-frame"><span class="id-indicator-tray" :style="idStyle">
             <span v-for="sample in $_i.samples" :key="sample.index" class="id-indicator">{{ sample.id }}</span>
           </span></span>
         </button>
-        <nuxt-link tag="button" class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample">
+        <nuxt-link tag="button" class="btn btn-nav next ltr" tabindex="0" :disabled="!$store.getters.isShowSamples || !getSlide(+1)" :title="getSlide(+1, 'title')" :to="'#' + getSlide(+1, 'id')" replace aria-label="next sample">
           <SvgIcon view="28" :d="btnNavPath"></SvgIcon>
         </nuxt-link>
       </div>
@@ -131,7 +131,7 @@ export default {
     },
 
     '$_i.currentIndex'() {
-      this.idFrameWidth = this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3;
+      this.idFrameWidth = (this.$_i.currentIndex !== -1 && this.$_i.samples[this.$_i.currentIndex].id.length > 3 ? 4 : 3);
     },
   },
 

@@ -163,7 +163,7 @@ export default {
     },
 
     isActive() {
-      return (this.type === 'series' && !this.$store.getters.isSamplesShown) || (this.type === 'item' && this.$store.getters.isSamplesShown);
+      return (this.type === 'series' && !this.$store.getters.isShowSamples) || (this.type === 'item' && this.$store.getters.isShowSamples);
     },
 
     isFirst() {
@@ -1515,6 +1515,7 @@ $radius-lg: $radius * 2;
 
   perspective: $standard-perspective;
 
+  //noinspection ALL
   &.has-samples::after { // "reverse" of cover
     content: '';
     position: absolute;

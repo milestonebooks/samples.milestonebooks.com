@@ -4,7 +4,12 @@
 // v2.0.0-beta.3 gzipped size: 75.81 KB
 // v2.0.0-beta.5 gzipped size: 78.90 KB
 // v2.0.0        gzipped size: 80.94 KB
+// v2.1.1        gzipped size: 81.33 KB
+// v2.2.0        gzipped size: 85.19 KB
+// v2.2.2        gzipped size: 91.92 KB
+// v2.2.3        gzipped size: 95.99 KB
 // TODO: implement behavior analytics (low priority)
+// TODO: [bug] Source map error: request failed with status 404 | Resource URL: http://localhost:3000/_nuxt/modern-vendors.app.js
 
 export default {
   env: {
@@ -44,9 +49,10 @@ export default {
 
   modules: [
     'cookie-universal-nuxt',
+    'nuxt-vuex-router-sync',
   ],
 
-  mode: 'spa',
+  ssr: false,
 
   modern: 'client',
 
@@ -94,4 +100,6 @@ export default {
 
     routes: ['/_item'], // unique data is loaded client-side, so only one template is necessary
   },
+
+  target: 'static',
 };

@@ -1,6 +1,7 @@
 import storage from '~/plugins/storage.client';
 import mixins from '~/plugins/mixins.store';
 
+// sounds (Howl objects) cannot be stored in Vuex
 const currentSound = function(newSound = null) {
   const item = window.$nuxt.$store.state.player.current;
   const key = `${item.code}:${item.index}`;
@@ -189,7 +190,7 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async loadAudio({dispatch, commit, state, rootState}) {
+  async loadAudio({dispatch, commit, rootState}) {
 
     await dispatch('reset');
 
@@ -204,7 +205,6 @@ export const actions = {
     const audioFile = rootState.item.samples[index].audio;
 
     if (!currentSound() && audioFile) {
-
       await new Promise((resolve, reject) => {
         currentSound(new window.Howl({
           src: [rootState.urlBase + audioFile],
@@ -236,9 +236,9 @@ export const actions = {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  async onLoad({dispatch, commit, state}) {
+  async onLoad({dispatch, commit, state, rootGetters}) {
     commit('setLoaded');
-    if (state.isAutoPlay) dispatch('togglePlay');
+    if (state.isAutoPlay && rootGetters.isShowSamples) dispatch('togglePlay');
   }, // onLoad()
 
   //--------------------------------------------------------------------------------------------------------------------

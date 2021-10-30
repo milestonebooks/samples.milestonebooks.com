@@ -1,14 +1,14 @@
 <template>
   <aside class="audio-player sidebar bottom h controls" :class="uiClass">
 
-    <button class="btn btn-play ltr" tabindex="0" :disabled="!$store.getters.isSamplesShown" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
+    <button class="btn btn-play ltr" tabindex="0" :disabled="!$store.getters.isShowSamples" :title="playTitle" @click.stop="$store.dispatch('player/togglePlay')">
       <SvgIcon view="28" :d="btnPlayPath"></SvgIcon>
     </button>
 
     <div class="bar-progress">
       <div class="bar-seek" :class="{captured: $_p.isCaptured}" :style="barSeekStyle" @mousedown="moveStart" @touchstart="moveStart">
         <div class="bar-play" :style="barPlayStyle">
-          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isSamplesShown" :style="barHandleStyle" @keydown.stop="onHandleKey" @click.prevent>
+          <a ref="handle" class="bar-handle" tabindex="0" v-if="$store.getters.isShowSamples" :style="barHandleStyle" @keydown.stop="onHandleKey" @click.prevent>
             <span class="bar-tip" :title="handleTip"></span>
           </a>
         </div>
@@ -91,8 +91,8 @@ export default {
       this.update();
     },
 
-    '$store.getters.isSamplesShown'() {
-      if (this.$store.getters.isSamplesShown) {
+    '$store.getters.isShowSamples'() {
+      if (this.$store.getters.isShowSamples) {
         this.update();
       } else {
         if (this.$_p.isPlaying) this.$store.dispatch('player/togglePlay', {play: false});
@@ -147,7 +147,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     update() {
-      if (this.$_i.type === 'audio' && this.$store.getters.isSamplesShown) {
+      if (this.$_i.type === 'audio' && this.$store.getters.isShowSamples) {
         this.load();
       }
     }, // update()
@@ -155,7 +155,7 @@ export default {
     //------------------------------------------------------------------------------------------------------------------
 
     async load() {
-      if (this.currentIndex === -1) return;
+      if (this.currentIndex === null) return;
 
       await this.$store.dispatch('player/loadAudio').catch((err_code) => {
         this.$root.error({statusCode:500, message:`Error loading audio #${this.currentIndex} [${err_code}]`});

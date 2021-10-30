@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-dir="$_i.direction">
+  <main :class="mainClass" :data-dir="$_i.direction" :data-dev="dev">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
@@ -20,6 +20,8 @@ import TheContext  from '~/components/TheContext';
 import settings  from '~/assets/settings';
 import mixins    from '~/plugins/mixins.vue';
 
+import p from '../../package';
+
 import axios from 'axios';
 
 import { mapMutations } from 'vuex';
@@ -38,7 +40,7 @@ export default {
     const s = this.$_i.samples[this.$_i.currentIndex];
 
     return {
-      title: (s && this.$store.getters.isSamplesShown ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
+      title: (s && this.$store.getters.isShowSamples ? `(${s.id}) ${s.title || ''} • ` : '') + (this.$_i.title || 'Samples'),
 
       bodyAttrs: {
         class: this.$store.getters.uiStateClassString,
@@ -78,6 +80,7 @@ export default {
 
   data () {
     return {
+      dev: this.$store.state.isDev ? `__ ${p.version} | nuxt@${p.dependencies.nuxt}` : '',
     }
   }, // data()
 
@@ -278,6 +281,7 @@ export default {
           maxHRatio: maxHRatio,
         };
       } else {
+        // TODO
         if (this.$store.getters.isSamplesShown) {
           this.$store.commit('set', {request: 'showContext'});
         }
@@ -349,7 +353,17 @@ export default {
         await this.initItemData(item);
       }
 
-      if (this.$store.getters.isSamplesShown && !this.$route.hash) {
+      let hash = this.$route.hash;
+
+      const regexAutoPlay = /#auto-next|#autoplay/;
+
+      // #auto-next was used in the pre-2019 system
+      if (hash.match(regexAutoPlay)) {
+        this.set('player', {isAutoPlay:true});
+        hash = hash.replace(regexAutoPlay, '');
+      }
+
+      if (this.$store.getters.isSamplesShown && !hash) {
         if (!this.$_.isInit) {
           return this.$router.replace(`./#${this.$_i.firstId}`);
         } else {
@@ -357,23 +371,22 @@ export default {
         }
       }
 
-      // original link system [until 2019] use sequential numbers for sample id (i.e., index + 1)
-      const seq = +(this.$route.hash.match(/##(\d+)/) || [0,0])[1];
+      // original link system [default until 2019] uses sequential numbers for sample id (i.e., index + 1)
+      const seq = +(hash.match(/##(\d+)/) || [0,0])[1];
 
       if (seq && this.getRouteFromSequence(seq)) return;
 
-      // if id is not given in the hash, select the first in the samples list
-      const id = (this.$route.hash.match(/[a-zA-Z0-9]+/) || [this.$_i.firstId])[0];
+      // if id (compare with server-side regex) is not given in the hash, select the first in the samples list
+      const id = (hash.match(/[\w-]+/) || [this.$_i.firstId])[0];
 
-      const index = this.$_i.samples.findIndex(i => i.id === id);
+      let index = this.$_i.samples.findIndex(i => i.id === id);
 
       // if id is not found, it may be an old-style url using #sequence instead of #id
       if (index === -1) {
         if (this.getRouteFromSequence(id)) return;
-        return this.$router.replace('./');
+        index = 0;
+        this.$router.replace('./');
       }
-
-      //console.log('update route hash', `|${this.$route.hash}|`, 'index:', index, 'current:', this.$_i.currentIndex, 'id:', id);
 
       this.set('item', {currentIndex: index});
 
@@ -418,12 +431,14 @@ main {
   &.is-dev::after {
     pointer-events: none;
     z-index: $layer-the-alerts;
-    content: '';
+    content: attr(data-dev);
+    white-space: nowrap;
     position: absolute;
     left: 0;
     top: 0;
     width: 1em;
     height: 1em;
+    color: gray;
     background-color: red;
   }
 }

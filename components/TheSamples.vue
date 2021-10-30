@@ -21,8 +21,6 @@
         <TheOptRulers />
 
         <ThePlayer :currentIndex="$_i.currentIndex" />
-
-        <TheOptRevert v-if="$_i.type === 'items'" />
       </template>
     </AppSlider>
   </AppFrame>
@@ -35,7 +33,6 @@ import SeriesLink    from '~/components/SeriesLink';
 import TheOptContext from '~/components/TheOptContext';
 import TheOptRulers  from '~/components/TheOptRulers';
 import TheOptPrint   from '~/components/TheOptPrint';
-import TheOptRevert  from '~/components/TheOptRevert';
 import TheNavbar     from '~/components/TheNavbar';
 import ThePlayer     from '~/components/ThePlayer';
 
@@ -51,7 +48,6 @@ export default {
     TheOptContext,
     TheOptRulers,
     TheOptPrint,
-    TheOptRevert, // TODO: temporary
     TheNavbar,
     ThePlayer,
   },
