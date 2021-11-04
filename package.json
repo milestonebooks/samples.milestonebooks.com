@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -19,30 +19,26 @@
     "node": ">=10.0.0"
   },
   "dependencies": {
-    "@babel/preset-env": "^7.12.13",
     "axios": "^0.24.0",
-    "cookie-universal-nuxt": "^2.1.4",
-    "nuxt": "^2.14.12",
+    "cookie-universal-nuxt": "^2.1.5",
+    "nuxt": "^2.15.8",
     "nuxt-vuex-router-sync": "0.0.3"
   },
-  "dependenciesComments": {
-    "@babel/preset-env": "Added 2021-10-29 to fix bug in nuxt@2.14.12 resolved in @2.15.2 <https://stackoverflow.com/questions/66325582/nuxt-js-cannot-find-module-babel-preset-env-lib-utils>"
-  },
   "devDependencies": {
-    "acorn": "^7.3.1",
+    "acorn": "^7.4.1",
     "acorn-dynamic-import": "^4.0.0",
     "babel-eslint": "^10.1.0",
-    "cross-env": "^7.0.2",
-    "eslint": "^7.3.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^7.32.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-loader": "^4.0.2",
-    "eslint-plugin-html": "^6.0.2",
-    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-html": "^6.2.0",
+    "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-promise": "^4.3.1",
+    "eslint-plugin-standard": "^4.1.0",
     "node-sass": "^4.14.1",
-    "sass-loader": "^9.0.1",
-    "webpack": "4.43.0"
+    "sass-loader": "^10.1.1",
+    "webpack": "4.46.0"
   }
 }
