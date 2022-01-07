@@ -1,0 +1,84 @@
+# allow public access
+Header set Access-Control-Allow-Origin "*"
+
+Options +FollowSymLinks 
+RewriteEngine on
+
+########################################################################################################
+## creates ENVironment variable [dev] to store '.dev' if cookie is set, or '' if not
+RewriteRule ^ - [E=dev:]
+
+RewriteCond %{HTTP_COOKIE} dev=([^;]+)
+RewriteRule ^ - [E=dev:.dev]
+########################################################################################################
+
+## [2017 September 14] force https
+RewriteCond %{HTTPS} off
+RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R,L]
+
+## [2012 October 17] switched domain: now...
+## forward to milestonebooks.com
+RewriteCond %{HTTP_HOST} !milestonebooks\.com$ [NC]
+RewriteRule ^(.*)$ https://samples.milestonebooks.com/$1 [QSA,R=301,L]
+
+## forwards home page
+#RewriteCond %{QUERY_STRING} ^$
+RewriteRule ^$ https://www.milestonebooks.com/ [R,L]
+
+## force trailing slash
+## /
+RewriteCond %{REQUEST_URI} /+[^\.]+$
+RewriteRule ^(.+[^/])$ %{REQUEST_URI}/ [R,L]
+
+##------------------------------------------------------------------------------------------------------
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+## ends with file type
+RewriteCond %{REQUEST_URI} !(jpg|gif|pdf|css)$
+RewriteCond %{REQUEST_URI} !^/(_|~|index|min)
+## /
+RewriteRule . _index.php [L]
+
+
+## /
+## forward nuxt-generated resources
+RewriteCond %{REQUEST_URI} ^/_nuxt
+## /
+RewriteRule ^(.*)$ _dist%{ENV:dev}/$1 [QSA,L]
+
+
+
+########################################################################################################
+# gzip compression.
+<IfModule mod_deflate.c>
+  # html, txt, css, js, json, xml, htc:
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/json
+  AddOutputFilterByType DEFLATE text/javascript application/javascript application/x-javascript
+  AddOutputFilterByType DEFLATE text/xml application/xml text/x-component
+  
+  # webfonts and svg:
+  <FilesMatch "\.(ttf|otf|eot|svg)$" >
+    SetOutputFilter DEFLATE
+  </FilesMatch>
+</IfModule>
+
+########################################################################################################
+# Cache Control with .htaccess EXPIRES BY TYPE
+# from http://forum.powweb.com/showthread.php?t=62786
+
+### turn on the Expires engine
+ExpiresActive On
+
+### expires after a month (2592000 seconds) in the client's cache
+ExpiresByType image/gif A2592000
+ExpiresByType image/png A2592000
+ExpiresByType image/jpg A2592000
+ExpiresByType image/x-icon A2592000
+
+# Force no caching for specific files
+<FilesMatch "\.nocache\.">
+  ExpiresActive Off
+  Header set Cache-Control "private, no-cache, no-store, proxy-revalidate, no-transform"
+  Header set Pragma "no-cache"
+</FilesMatch>
