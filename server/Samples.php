@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
 
-  var $version = '2022-01-07';
+  var $version = '2022-01-13';
   var $limit   = false;
 
   var $code,
@@ -201,6 +201,8 @@ class Samples extends _Object2 {
       'items'   => [],
     ];
 
+    $res = null;
+
     if (!$data->isGroup) {
       $sql = "SELECT i.id AS item_id
                     FROM a01i_SeriesItems si
@@ -208,11 +210,11 @@ class Samples extends _Object2 {
                     LEFT JOIN a01i_Items i ON (i.id = series.item_id)
                     WHERE si.item_id = $item_id
                     ORDER BY series.sort_order";
+
+      $res = $this->Query($sql);
     }
 
-    $res = $this->Query($sql);
-
-    if ($res->num_rows) {
+    if ($res && $res->num_rows) {
       $series->id = (int)$this->QueryFetchField("SELECT series_id FROM a01i_SeriesItems WHERE item_id = $item_id");
 
     } else {
