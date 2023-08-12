@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
 
-    var $version = '2022-07-19';
+    var $version = '2023-08-11';
     var $limit   = false;
 
     var $code,
@@ -136,7 +136,7 @@ class Samples extends _Object2 {
 
         if (!$r->img_file) {
             $this->SendMsg([
-                'msg' => "Samples Alert: $code has no image",
+                'msg' => "[SYSTEM] Samples Alert: $code has no image",
                 'prevent_duplicate' => '1 week',
             ]);
 
@@ -172,13 +172,13 @@ class Samples extends _Object2 {
 
         if (!count($data->samples)) {
             $this->SendMsg([
-                'subject' => "Samples Alert: $code has no samples",
+                'subject' => "[SYSTEM] Samples Alert: $code has no samples",
                 'msg'     => "Samples Alert: $code has no samples ($this->code)",
                 'prevent_duplicate' => '1 month',
             ]);
         } else if (!$r->samples_class) {
             $this->SendMsg([
-                'msg' => "Samples Alert: $code has no samples class",
+                'msg' => "[SYSTEM] Samples Alert: $code has no samples class",
                 'prevent_duplicate' => '1 week',
             ]);
         }
