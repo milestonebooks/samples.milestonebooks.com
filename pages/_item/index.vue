@@ -1,5 +1,5 @@
 <template>
-  <main :class="mainClass" :data-dir="$_i.direction" :data-dev="dev">
+  <main :class="mainClass" :data-dir="$_i.direction" :data-version="version" :data-dev="dev">
     <TheDebugger v-if="$_._showDebugger" />
 
     <TheAlerts />
@@ -79,8 +79,10 @@ export default {
   },
 
   data () {
+    let version = `${p.version} | nuxt@${p.dependencies.nuxt}`;
     return {
-      dev: this.$store.state.isDev ? `__ ${p.version} | nuxt@${p.dependencies.nuxt}` : '',
+      version,
+      dev: this.$store.state.isDev ? `__ ${version}` : '',
     }
   }, // data()
 
