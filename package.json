@@ -1,6 +1,6 @@
 {
   "name": "samples",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
@@ -21,11 +21,11 @@
   "dependencies": {
     "axios": "^0.24.0",
     "cookie-universal-nuxt": "^2.1.5",
-    "nuxt": "^2.15.8",
+    "nuxt": "^2.18.1",
     "nuxt-vuex-router-sync": "0.0.3"
   },
   "devDependencies": {
-    "acorn": "^7.4.1",
+    "acorn": "^6.4.2",
     "acorn-dynamic-import": "^4.0.0",
     "babel-eslint": "^10.1.0",
     "cross-env": "^7.0.3",
@@ -37,7 +37,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-standard": "^4.1.0",
-    "node-sass": "^4.14.1",
+    "node-sass": "^6.0.1",
     "sass-loader": "^10.1.1",
     "webpack": "4.46.0"
   }
