@@ -12,7 +12,11 @@
 // TODO: implement behavior analytics (low priority)
 // TODO: [bug] Source map error: request failed with status 404 | Resource URL: http://localhost:3000/_nuxt/modern-vendors.app.js
 
-export default {
+import { defineNuxtConfig } from '@nuxt/bridge'
+
+export default defineNuxtConfig({
+  bridge: false,
+
   env: {
     tracking: (process.env.NODE_ENV === 'production'),
   },
@@ -105,4 +109,4 @@ export default {
   },
 
   target: 'static',
-};
+});

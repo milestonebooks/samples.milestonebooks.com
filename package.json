@@ -1,17 +1,17 @@
 {
   "name": "samples",
-  "version": "2.2.5",
+  "version": "2.3.0",
   "description": "samples.milestonebooks.com",
   "author": "Milestone Books",
   "private": true,
   "scripts": {
-    "dev": "nuxt",
-    "analyze": "nuxt build --analyze --modern=client",
-    "generatedebug": "cross-env NUXT_ENV_DEBUG=on nuxt generate",
-    "generate": "cross-env NODE_ENV=production nuxt generate",
-    "build": "nuxt build",
-    "spa": "nuxt build --spa",
-    "start": "nuxt start",
+    "dev": "nuxt2",
+    "analyze": "nuxt2 build --analyze --modern=client",
+    "generatedebug": "cross-env NUXT_ENV_DEBUG=on nuxt2 generate",
+    "generate": "cross-env NODE_ENV=production nuxt2 generate",
+    "build": "nuxt2 build",
+    "spa": "nuxt2 build --spa",
+    "start": "nuxt2 start",
     "lint": "eslint --fix --ext .js,.vue --ignore-path .gitignore .",
     "precommit": "npm run lint"
   },
@@ -25,6 +25,7 @@
     "nuxt-vuex-router-sync": "0.0.3"
   },
   "devDependencies": {
+    "@nuxt/bridge": "^3.3.1",
     "acorn": "^6.4.2",
     "acorn-dynamic-import": "^4.0.0",
     "babel-eslint": "^10.1.0",
@@ -38,6 +39,7 @@
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-standard": "^4.1.0",
     "node-sass": "^6.0.1",
+    "nuxi": "^3.12.0",
     "sass-loader": "^10.1.1",
     "webpack": "4.46.0"
   }
