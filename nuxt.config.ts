@@ -15,7 +15,11 @@
 import { defineNuxtConfig } from '@nuxt/bridge'
 
 export default defineNuxtConfig({
-  bridge: false,
+  bridge: {
+    typescript: true,
+    capi: true,
+    nitro: false,
+  },
 
   env: {
     tracking: (process.env.NODE_ENV === 'production'),
@@ -34,8 +38,6 @@ export default defineNuxtConfig({
       { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' },
     ],
     script: [
-      // enable IE11 access
-      { src: 'https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.includes,Array.prototype.find,Array.prototype.findIndex,IntersectionObserver' },
       //{ src: 'https://cdn.jsdelivr.net/npm/cash-dom@1.3.7/dist/cash.min.js' },  // (4.1 KB) -- jquery substitute used by player <https://github.com/kenwheeler/cash>
       //{ src: 'https://cdn.jsdelivr.net/npm/howler@2.0.15/dist/howler.min.js' }, // (9.3 KB) -- sound <https://github.com/goldfire/howler.js>
       //{ src: 'https://cdn.jsdelivr.net/npm/animejs@2.2.0/anime.min.js' },       // (6.5 KB) -- animations <http://animejs.com/documentation/> [2018-10-23] NOT USED
