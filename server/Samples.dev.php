@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
     
-    var $version = '2023-09-29';
+    var $version = '2025-07-10';
     var $limit   = false;
     
     var $code,
@@ -313,12 +313,12 @@ class Samples extends _Object2 {
         
         $ext = ($type == 'image' ? 'jpg|gif' : 'mp3');
         
-        //                  [1]id        [2]dpi     [3]format
+        //                          [1]id        [2]dpi     [3]format
         if (!preg_match("'\.([\w-]+)(?:\((\d+)\))?\.({$ext})$'", $file, $m)) return null;
         
         list(,$id,$dpi,$ext) = $m;
         
-        if ($dpi && !is_numeric($dpi)) {
+        if ($type == 'image' && (!$dpi || !is_numeric($dpi))) {
             $this->SystemAlert("Invalid samples dpi: $file");
             return $id;
         }
