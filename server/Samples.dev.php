@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
     
-    var $version = '2025-07-10';
+    var $version = '2025-08-14';
     var $limit   = false;
     
     var $code,
@@ -247,11 +247,13 @@ class Samples extends _Object2 {
                 $series->code    = $r->code;
                 $series->title   = $r->title;
                 
-                // a couple groups (preschool) have subgroups
-                $sql = "SELECT ig.item_id, sub_g.item_id AS sub_item_id
+                // a couple groups (preschool) have subgroups, but only include those items if they have samples
+                $sql = "SELECT ig.item_id, IF(sub_iXv.value <> '', sub_g.item_id, NULL) AS sub_item_id, sub_iXv.value AS sub_samples_class
                         FROM a01i_ItemsGroup ig
                         LEFT JOIN a01i_ItemsGroup sub_g ON (sub_g.group_item_id = ig.item_id)
+                        LEFT JOIN a01i_ItemsXValues sub_iXv ON (sub_iXv.id = sub_g.item_id AND sub_iXv.field_id = 11) /* samples */
                         WHERE ig.group_item_id = $group_item_id
+                        GROUP BY ig.item_id, sub_item_id
                         ORDER BY ig.sort_order, sub_g.sort_order";
             } else {
                 // item is the only one in the "series"
