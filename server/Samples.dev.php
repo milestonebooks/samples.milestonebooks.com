@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
     
-    var $version = '2025-08-14';
+    var $version = '2026-03-16';
     var $limit   = false;
     
     var $code,
@@ -97,7 +97,10 @@ class Samples extends _Object2 {
             
             // a samples group does not have any directly associated samples
             // an item may be a group on the back end but function as a single item on the front end (e.g. 4-009--L)
-            $isGroup = ($r->is_group && !file_exists("items/$this->code") && !file_exists("audio/$this->code"));
+            $isGroup = ($r->is_group
+                && !file_exists("items/$this->code") && !file_exists("items/". strtoupper($this->code))
+                && !file_exists("audio/$this->code") && !file_exists("audio/". strtoupper($this->code))
+            );
             
             $data = (object)[
                 'item_id'     => (int)$r->id,
