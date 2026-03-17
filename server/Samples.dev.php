@@ -49,7 +49,7 @@ const ROMAN_REGEX = "'^[ivxlcdm]+$'";
 /*************************************************************************************************/
 class Samples extends _Object2 {
     
-    var $version = '2023-09-29';
+    var $version = '2026-03-16';
     var $limit   = false;
     
     var $code,
@@ -97,7 +97,10 @@ class Samples extends _Object2 {
             
             // a samples group does not have any directly associated samples
             // an item may be a group on the back end but function as a single item on the front end (e.g. 4-009--L)
-            $isGroup = ($r->is_group && !file_exists("items/$this->code") && !file_exists("audio/$this->code"));
+            $isGroup = ($r->is_group
+                && !file_exists("items/$this->code") && !file_exists("items/". strtoupper($this->code))
+                && !file_exists("audio/$this->code") && !file_exists("audio/". strtoupper($this->code))
+            );
             
             $data = (object)[
                 'item_id'     => (int)$r->id,
@@ -247,11 +250,13 @@ class Samples extends _Object2 {
                 $series->code    = $r->code;
                 $series->title   = $r->title;
                 
-                // a couple groups (preschool) have subgroups
-                $sql = "SELECT ig.item_id, sub_g.item_id AS sub_item_id
+                // a couple groups (preschool) have subgroups, but only include those items if they have samples
+                $sql = "SELECT ig.item_id, IF(sub_iXv.value <> '', sub_g.item_id, NULL) AS sub_item_id, sub_iXv.value AS sub_samples_class
                         FROM a01i_ItemsGroup ig
                         LEFT JOIN a01i_ItemsGroup sub_g ON (sub_g.group_item_id = ig.item_id)
+                        LEFT JOIN a01i_ItemsXValues sub_iXv ON (sub_iXv.id = sub_g.item_id AND sub_iXv.field_id = 11) /* samples */
                         WHERE ig.group_item_id = $group_item_id
+                        GROUP BY ig.item_id, sub_item_id
                         ORDER BY ig.sort_order, sub_g.sort_order";
             } else {
                 // item is the only one in the "series"
@@ -313,12 +318,12 @@ class Samples extends _Object2 {
         
         $ext = ($type == 'image' ? 'jpg|gif' : 'mp3');
         
-        //                  [1]id        [2]dpi     [3]format
+        //                          [1]id        [2]dpi     [3]format
         if (!preg_match("'\.([\w-]+)(?:\((\d+)\))?\.({$ext})$'", $file, $m)) return null;
         
         list(,$id,$dpi,$ext) = $m;
         
-        if ($dpi && !is_numeric($dpi)) {
+        if ($type == 'image' && (!$dpi || !is_numeric($dpi))) {
             $this->SystemAlert("Invalid samples dpi: $file");
             return $id;
         }
